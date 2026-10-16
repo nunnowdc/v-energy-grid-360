@@ -1,0 +1,1 @@
+# Diagnóstico da receita e dicionário de dados

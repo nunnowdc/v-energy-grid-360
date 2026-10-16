@@ -1,0 +1,16 @@
+# Dados (confidenciais e muito grandes para o GitHub)
+data/*
+!data/README.md
+
+# Arquivos de dados e documentos do case fora da pasta data/
+*.zip
+*.csv
+*.xlsx
+*.pdf
+
+# Sigiloso (chaves de API)
+.env
+.env.*
+!.env.example
+
+# Ir incrementando conforme necessário
