@@ -1,0 +1,12 @@
+# Leitura e análise das fontes da EDA
+polars>=1.0
+pandas>=2.0
+openpyxl>=3.1
+numpy>=1.24
+matplotlib>=3.7
+
+# Execução dos notebooks no VS Code/Jupyter
+ipykernel>=6.25
+jupyter>=1.0
+nbconvert>=7.0
+jupytext>=1.16

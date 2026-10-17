@@ -1,0 +1,206 @@
+{
+  "fontes": {
+    "unidades_consumidoras": {
+      "linhas_fonte": 46461,
+      "linhas_usadas": 46460,
+      "variaveis": [
+        "numero",
+        "latitude",
+        "longitude"
+      ],
+      "valores_nao_convertidos": {
+        "numero": 1,
+        "latitude": 1,
+        "longitude": 1
+      },
+      "pearson": {
+        "numero": {
+          "numero": 1.0,
+          "latitude": -0.00424602,
+          "longitude": -0.00303376
+        },
+        "latitude": {
+          "numero": -0.00424602,
+          "latitude": 1.0,
+          "longitude": 0.57735036
+        },
+        "longitude": {
+          "numero": -0.00303376,
+          "latitude": 0.57735036,
+          "longitude": 1.0
+        }
+      },
+      "spearman": {
+        "numero": {
+          "numero": 1.0,
+          "latitude": -0.00360947,
+          "longitude": -0.00055276
+        },
+        "latitude": {
+          "numero": -0.00360947,
+          "latitude": 1.0,
+          "longitude": 0.51871228
+        },
+        "longitude": {
+          "numero": -0.00055276,
+          "latitude": 0.51871228,
+          "longitude": 1.0
+        }
+      },
+      "pngs": [
+        "analisys\\graficos\\resultados\\correlacao_unidades_consumidoras_pearson.png",
+        "analisys\\graficos\\resultados\\correlacao_unidades_consumidoras_spearman.png"
+      ]
+    },
+    "faturas": {
+      "linhas_fonte": 2184623,
+      "linhas_usadas": 2184621,
+      "variaveis": [
+        "valor_energia",
+        "tributos",
+        "valor_total"
+      ],
+      "valores_nao_convertidos": {
+        "valor_energia": 2,
+        "tributos": 2,
+        "valor_total": 8053
+      },
+      "pearson": {
+        "valor_energia": {
+          "valor_energia": 1.0,
+          "tributos": 1.0,
+          "valor_total": 1.0
+        },
+        "tributos": {
+          "valor_energia": 1.0,
+          "tributos": 1.0,
+          "valor_total": 1.0
+        },
+        "valor_total": {
+          "valor_energia": 1.0,
+          "tributos": 1.0,
+          "valor_total": 1.0
+        }
+      },
+      "spearman": {
+        "valor_energia": {
+          "valor_energia": 1.0,
+          "tributos": 0.99999999,
+          "valor_total": 1.0
+        },
+        "tributos": {
+          "valor_energia": 0.99999999,
+          "tributos": 1.0,
+          "valor_total": 0.99999999
+        },
+        "valor_total": {
+          "valor_energia": 1.0,
+          "tributos": 0.99999999,
+          "valor_total": 1.0
+        }
+      },
+      "pngs": [
+        "analisys\\graficos\\resultados\\correlacao_faturas_pearson.png",
+        "analisys\\graficos\\resultados\\correlacao_faturas_spearman.png"
+      ]
+    },
+    "geracao_distribuida": {
+      "linhas_fonte": 3510,
+      "linhas_usadas": 3510,
+      "variaveis": [
+        "potencia_kwp",
+        "energia_injetada_kwh_media_mensal"
+      ],
+      "valores_nao_convertidos": {
+        "potencia_kwp": 0,
+        "energia_injetada_kwh_media_mensal": 0
+      },
+      "pearson": {
+        "potencia_kwp": {
+          "potencia_kwp": 1.0,
+          "energia_injetada_kwh_media_mensal": -0.00558185
+        },
+        "energia_injetada_kwh_media_mensal": {
+          "potencia_kwp": -0.00558185,
+          "energia_injetada_kwh_media_mensal": 1.0
+        }
+      },
+      "spearman": {
+        "potencia_kwp": {
+          "potencia_kwp": 1.0,
+          "energia_injetada_kwh_media_mensal": 0.79796448
+        },
+        "energia_injetada_kwh_media_mensal": {
+          "potencia_kwp": 0.79796448,
+          "energia_injetada_kwh_media_mensal": 1.0
+        }
+      },
+      "pngs": [
+        "analisys\\graficos\\resultados\\correlacao_geracao_distribuida_pearson.png",
+        "analisys\\graficos\\resultados\\correlacao_geracao_distribuida_spearman.png"
+      ]
+    },
+    "leituras": {
+      "linhas_fonte": 2182468,
+      "linhas_usadas": 2182468,
+      "variaveis": [
+        "leitura_anterior",
+        "leitura_atual",
+        "consumo_kwh"
+      ],
+      "valores_nao_convertidos": {
+        "leitura_anterior": 8269,
+        "leitura_atual": 0,
+        "consumo_kwh": 0
+      },
+      "pearson": {
+        "leitura_anterior": {
+          "leitura_anterior": 1.0,
+          "leitura_atual": 0.99227644,
+          "consumo_kwh": 0.18805648
+        },
+        "leitura_atual": {
+          "leitura_anterior": 0.99227644,
+          "leitura_atual": 1.0,
+          "consumo_kwh": 0.27722647
+        },
+        "consumo_kwh": {
+          "leitura_anterior": 0.18805648,
+          "leitura_atual": 0.27722647,
+          "consumo_kwh": 1.0
+        }
+      },
+      "spearman": {
+        "leitura_anterior": {
+          "leitura_anterior": 1.0,
+          "leitura_atual": 0.9856643,
+          "consumo_kwh": 0.15464075
+        },
+        "leitura_atual": {
+          "leitura_anterior": 0.9856643,
+          "leitura_atual": 1.0,
+          "consumo_kwh": 0.17193819
+        },
+        "consumo_kwh": {
+          "leitura_anterior": 0.15464075,
+          "leitura_atual": 0.17193819,
+          "consumo_kwh": 1.0
+        }
+      },
+      "pngs": [
+        "analisys\\graficos\\resultados\\correlacao_leituras_pearson.png",
+        "analisys\\graficos\\resultados\\correlacao_leituras_spearman.png"
+      ]
+    }
+  },
+  "pngs": [
+    "analisys\\graficos\\resultados\\correlacao_unidades_consumidoras_pearson.png",
+    "analisys\\graficos\\resultados\\correlacao_unidades_consumidoras_spearman.png",
+    "analisys\\graficos\\resultados\\correlacao_faturas_pearson.png",
+    "analisys\\graficos\\resultados\\correlacao_faturas_spearman.png",
+    "analisys\\graficos\\resultados\\correlacao_geracao_distribuida_pearson.png",
+    "analisys\\graficos\\resultados\\correlacao_geracao_distribuida_spearman.png",
+    "analisys\\graficos\\resultados\\correlacao_leituras_pearson.png",
+    "analisys\\graficos\\resultados\\correlacao_leituras_spearman.png"
+  ]
+}
