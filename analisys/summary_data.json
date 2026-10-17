@@ -1,0 +1,2878 @@
+{
+  "cadastro": {
+    "classe": [
+      {
+        "classe": "Residencial",
+        "count": 37160
+      },
+      {
+        "classe": "Comercial",
+        "count": 4746
+      },
+      {
+        "classe": "residencial",
+        "count": 1238
+      },
+      {
+        "classe": "RESIDENCIAL",
+        "count": 1198
+      },
+      {
+        "classe": "Industrial",
+        "count": 842
+      },
+      {
+        "classe": "Rural",
+        "count": 629
+      },
+      {
+        "classe": "Poder Publico",
+        "count": 220
+      },
+      {
+        "classe": "COMERCIAL",
+        "count": 160
+      },
+      {
+        "classe": "comercial",
+        "count": 159
+      },
+      {
+        "classe": "industrial",
+        "count": 30
+      },
+      {
+        "classe": "INDUSTRIAL",
+        "count": 28
+      },
+      {
+        "classe": "RURAL",
+        "count": 23
+      },
+      {
+        "classe": "rural",
+        "count": 19
+      },
+      {
+        "classe": "PODER PUBLICO",
+        "count": 5
+      },
+      {
+        "classe": "Poder Público",
+        "count": 3
+      },
+      {
+        "classe": "classe",
+        "count": 1
+      }
+    ],
+    "municipio": [
+      {
+        "municipio": "Recife",
+        "count": 18570
+      },
+      {
+        "municipio": "Jaboatão dos Guararapes",
+        "count": 8053
+      },
+      {
+        "municipio": "Olinda",
+        "count": 4348
+      },
+      {
+        "municipio": "Paulista",
+        "count": 4145
+      },
+      {
+        "municipio": "Cabo de Santo Agostinho",
+        "count": 2602
+      },
+      {
+        "municipio": "Camaragibe",
+        "count": 1842
+      },
+      {
+        "municipio": "São Lourenço da Mata",
+        "count": 1462
+      },
+      {
+        "municipio": "Igarassu",
+        "count": 1438
+      },
+      {
+        "municipio": "Ipojuca",
+        "count": 1209
+      },
+      {
+        "municipio": "Abreu e Lima",
+        "count": 1205
+      },
+      {
+        "municipio": "Moreno",
+        "count": 694
+      },
+      {
+        "municipio": "Itapissuma",
+        "count": 348
+      },
+      {
+        "municipio": "Ilha de Itamaracá",
+        "count": 313
+      },
+      {
+        "municipio": "Araçoiaba",
+        "count": 231
+      },
+      {
+        "municipio": "municipio",
+        "count": 1
+      }
+    ],
+    "bairro": [
+      {
+        "bairro": "Brasília Teimosa",
+        "count": 2150
+      },
+      {
+        "bairro": "Iputinga",
+        "count": 1288
+      },
+      {
+        "bairro": "Curado",
+        "count": 1154
+      },
+      {
+        "bairro": "Jardim Jordão",
+        "count": 1124
+      },
+      {
+        "bairro": "Centro",
+        "count": 1120
+      },
+      {
+        "bairro": "Fragoso",
+        "count": 982
+      },
+      {
+        "bairro": "Pixete",
+        "count": 727
+      },
+      {
+        "bairro": "Barra de Jangada",
+        "count": 720
+      },
+      {
+        "bairro": "Prazeres",
+        "count": 687
+      },
+      {
+        "bairro": "Vila Torres Galvão",
+        "count": 655
+      },
+      {
+        "bairro": "Arruda",
+        "count": 650
+      },
+      {
+        "bairro": "Sucupira",
+        "count": 650
+      },
+      {
+        "bairro": "Aguazinha",
+        "count": 628
+      },
+      {
+        "bairro": "Macaxeira",
+        "count": 579
+      },
+      {
+        "bairro": "Pirapama",
+        "count": 558
+      },
+      {
+        "bairro": "Monteiro",
+        "count": 544
+      },
+      {
+        "bairro": "Engenho Velho",
+        "count": 531
+      },
+      {
+        "bairro": "Jardim Caetés",
+        "count": 519
+      },
+      {
+        "bairro": "Saramandaia",
+        "count": 495
+      },
+      {
+        "bairro": "Vila da Fábrica",
+        "count": 471
+      },
+      {
+        "bairro": "Piedade",
+        "count": 455
+      },
+      {
+        "bairro": "Madalena",
+        "count": 450
+      },
+      {
+        "bairro": "Peixinhos",
+        "count": 430
+      },
+      {
+        "bairro": "Zona Industrial de Suape",
+        "count": 424
+      },
+      {
+        "bairro": "Tiúma",
+        "count": 402
+      },
+      {
+        "bairro": "Pina",
+        "count": 393
+      },
+      {
+        "bairro": "Rosarinho",
+        "count": 377
+      },
+      {
+        "bairro": "Vargem Fria",
+        "count": 372
+      },
+      {
+        "bairro": "Casa Caiada",
+        "count": 370
+      },
+      {
+        "bairro": "Linha do Tiro",
+        "count": 349
+      },
+      {
+        "bairro": "Jardim Paulista",
+        "count": 347
+      },
+      {
+        "bairro": "Ilha do Retiro",
+        "count": 345
+      },
+      {
+        "bairro": "Santo Amaro",
+        "count": 343
+      },
+      {
+        "bairro": "Barro",
+        "count": 340
+      },
+      {
+        "bairro": "Tamarineira",
+        "count": 337
+      },
+      {
+        "bairro": "Inhamã",
+        "count": 307
+      },
+      {
+        "bairro": "Santa Tereza",
+        "count": 304
+      },
+      {
+        "bairro": "Tabajara",
+        "count": 298
+      },
+      {
+        "bairro": "Aldeia dos Camarás",
+        "count": 293
+      },
+      {
+        "bairro": "Bulhões",
+        "count": 286
+      },
+      {
+        "bairro": "Candeias",
+        "count": 280
+      },
+      {
+        "bairro": "Alto do Mandu",
+        "count": 276
+      },
+      {
+        "bairro": "Área Rural do Cabo de Santo Agostinho",
+        "count": 271
+      },
+      {
+        "bairro": "Caetés III",
+        "count": 268
+      },
+      {
+        "bairro": "Engenho do Meio",
+        "count": 268
+      },
+      {
+        "bairro": "Alto da Nação",
+        "count": 264
+      },
+      {
+        "bairro": "Varadouro",
+        "count": 262
+      },
+      {
+        "bairro": "Mustardinha",
+        "count": 259
+      },
+      {
+        "bairro": "Jardim Atlântico",
+        "count": 256
+      },
+      {
+        "bairro": "Santana",
+        "count": 254
+      },
+      {
+        "bairro": "Areias",
+        "count": 250
+      },
+      {
+        "bairro": "Jardim São Paulo",
+        "count": 248
+      },
+      {
+        "bairro": "Coelhos",
+        "count": 247
+      },
+      {
+        "bairro": "Afogados",
+        "count": 246
+      },
+      {
+        "bairro": "Alto José do Pinho",
+        "count": 240
+      },
+      {
+        "bairro": "Nobre",
+        "count": 240
+      },
+      {
+        "bairro": "Jaguarana",
+        "count": 240
+      },
+      {
+        "bairro": "Mangabeira",
+        "count": 239
+      },
+      {
+        "bairro": "Aflitos",
+        "count": 238
+      },
+      {
+        "bairro": "Bairro Novo do Carmelo",
+        "count": 238
+      },
+      {
+        "bairro": "Parnamirim",
+        "count": 237
+      },
+      {
+        "bairro": "Muribequinha",
+        "count": 236
+      },
+      {
+        "bairro": "Vila Doutor Manoel Clementino",
+        "count": 233
+      },
+      {
+        "bairro": "Águas Compridas",
+        "count": 227
+      },
+      {
+        "bairro": "Estância",
+        "count": 225
+      },
+      {
+        "bairro": "Ipsep",
+        "count": 224
+      },
+      {
+        "bairro": "Janga",
+        "count": 222
+      },
+      {
+        "bairro": "Santo Inácio",
+        "count": 218
+      },
+      {
+        "bairro": "Ibura",
+        "count": 215
+      },
+      {
+        "bairro": "Guararapes",
+        "count": 215
+      },
+      {
+        "bairro": "Bultrins",
+        "count": 214
+      },
+      {
+        "bairro": "Artur Lundgren I",
+        "count": 214
+      },
+      {
+        "bairro": "Artur Lundgren II",
+        "count": 214
+      },
+      {
+        "bairro": "Fundão",
+        "count": 212
+      },
+      {
+        "bairro": "Torrões",
+        "count": 209
+      },
+      {
+        "bairro": "Imbiribeira",
+        "count": 209
+      },
+      {
+        "bairro": "Bongi",
+        "count": 207
+      },
+      {
+        "bairro": "Nova Descoberta",
+        "count": 206
+      },
+      {
+        "bairro": "Jiquiá",
+        "count": 201
+      },
+      {
+        "bairro": "Jardim Primavera",
+        "count": 195
+      },
+      {
+        "bairro": "Beberibe",
+        "count": 188
+      },
+      {
+        "bairro": "Água Fria",
+        "count": 187
+      },
+      {
+        "bairro": "Bela Vista",
+        "count": 180
+      },
+      {
+        "bairro": "Porto da Madeira",
+        "count": 174
+      },
+      {
+        "bairro": "Tejipió",
+        "count": 173
+      },
+      {
+        "bairro": "Caixa D'Água",
+        "count": 173
+      },
+      {
+        "bairro": "Cajueiro Seco",
+        "count": 173
+      },
+      {
+        "bairro": "Recife",
+        "count": 172
+      },
+      {
+        "bairro": "Zumbi",
+        "count": 172
+      },
+      {
+        "bairro": "Vila Teatrólogo Barreto Júnior",
+        "count": 172
+      },
+      {
+        "bairro": "Ponto de Parada",
+        "count": 170
+      },
+      {
+        "bairro": "Pontezinha",
+        "count": 169
+      },
+      {
+        "bairro": "Monte",
+        "count": 166
+      },
+      {
+        "bairro": "Dois Irmãos",
+        "count": 166
+      },
+      {
+        "bairro": "Muribeca",
+        "count": 166
+      },
+      {
+        "bairro": "Brejo da Guabiraba",
+        "count": 158
+      },
+      {
+        "bairro": "Jardim Maranguape",
+        "count": 158
+      },
+      {
+        "bairro": "Guabiraba",
+        "count": 157
+      },
+      {
+        "bairro": "Dois Carneiros",
+        "count": 156
+      },
+      {
+        "bairro": "Tabatinga",
+        "count": 153
+      },
+      {
+        "bairro": "Vista Alegre",
+        "count": 152
+      },
+      {
+        "bairro": "Rurópolis de Ipojuca",
+        "count": 150
+      },
+      {
+        "bairro": "Comportas",
+        "count": 149
+      },
+      {
+        "bairro": "Dois Unidos",
+        "count": 148
+      },
+      {
+        "bairro": "Nazaré",
+        "count": 145
+      },
+      {
+        "bairro": "Espinheiro",
+        "count": 142
+      },
+      {
+        "bairro": "Campo Grande",
+        "count": 142
+      },
+      {
+        "bairro": "Cordeiro",
+        "count": 140
+      },
+      {
+        "bairro": "Apipucos",
+        "count": 139
+      },
+      {
+        "bairro": "Soledade",
+        "count": 137
+      },
+      {
+        "bairro": "Boa Viagem",
+        "count": 131
+      },
+      {
+        "bairro": "Maranguape I",
+        "count": 128
+      },
+      {
+        "bairro": "Zumbi do Pacheco",
+        "count": 128
+      },
+      {
+        "bairro": "Rurópolis de Camela",
+        "count": 128
+      },
+      {
+        "bairro": "Nossa Senhora do Ó",
+        "count": 127
+      },
+      {
+        "bairro": "Jaguaribe",
+        "count": 123
+      },
+      {
+        "bairro": "Hipódromo",
+        "count": 122
+      },
+      {
+        "bairro": "Ouro Preto",
+        "count": 122
+      },
+      {
+        "bairro": "Torre",
+        "count": 121
+      },
+      {
+        "bairro": "Jagatá",
+        "count": 121
+      },
+      {
+        "bairro": "Caxangá",
+        "count": 120
+      },
+      {
+        "bairro": "Torrinha",
+        "count": 113
+      },
+      {
+        "bairro": "Santo Agostinho",
+        "count": 113
+      },
+      {
+        "bairro": "Engenho Maranguape",
+        "count": 113
+      },
+      {
+        "bairro": "Chã da Tábua",
+        "count": 111
+      },
+      {
+        "bairro": "Poço",
+        "count": 110
+      },
+      {
+        "bairro": "Prado",
+        "count": 110
+      },
+      {
+        "bairro": "Cavaleiro",
+        "count": 106
+      },
+      {
+        "bairro": "Canoas",
+        "count": 105
+      },
+      {
+        "bairro": "Guadalupe",
+        "count": 105
+      },
+      {
+        "bairro": "Maranguape II",
+        "count": 104
+      },
+      {
+        "bairro": "Nossa Senhora da Conceição",
+        "count": 103
+      },
+      {
+        "bairro": "Sancho",
+        "count": 102
+      },
+      {
+        "bairro": "Distrito Industrial",
+        "count": 102
+      },
+      {
+        "bairro": "Alto do Pau D'arco (Bonança)",
+        "count": 102
+      },
+      {
+        "bairro": "Várzea",
+        "count": 101
+      },
+      {
+        "bairro": "Sítio dos Pintos",
+        "count": 101
+      },
+      {
+        "bairro": "Casa Amarela",
+        "count": 97
+      },
+      {
+        "bairro": "Brejo de Beberibe",
+        "count": 95
+      },
+      {
+        "bairro": "Salgadinho",
+        "count": 95
+      },
+      {
+        "bairro": "Borralho",
+        "count": 94
+      },
+      {
+        "bairro": "Paissandu",
+        "count": 94
+      },
+      {
+        "bairro": "Pancó",
+        "count": 93
+      },
+      {
+        "bairro": "Timbó",
+        "count": 89
+      },
+      {
+        "bairro": "Manassu",
+        "count": 87
+      },
+      {
+        "bairro": "Areeiro",
+        "count": 85
+      },
+      {
+        "bairro": "Pilar",
+        "count": 84
+      },
+      {
+        "bairro": "Caçote",
+        "count": 83
+      },
+      {
+        "bairro": "Cajueiro",
+        "count": 81
+      },
+      {
+        "bairro": "Jordão",
+        "count": 80
+      },
+      {
+        "bairro": "Alto José Bonifácio",
+        "count": 79
+      },
+      {
+        "bairro": "Mangueira",
+        "count": 79
+      },
+      {
+        "bairro": "Desterro",
+        "count": 78
+      },
+      {
+        "bairro": "Parque Capibaribe",
+        "count": 78
+      },
+      {
+        "bairro": "Campina do Barreto",
+        "count": 77
+      },
+      {
+        "bairro": "Vasco da Gama",
+        "count": 77
+      },
+      {
+        "bairro": "Nossa Senhora do Ó Centro",
+        "count": 77
+      },
+      {
+        "bairro": "Sítio Novo",
+        "count": 76
+      },
+      {
+        "bairro": "Santa Mônica",
+        "count": 74
+      },
+      {
+        "bairro": "Rio Doce",
+        "count": 73
+      },
+      {
+        "bairro": "Encanto Igarassu",
+        "count": 69
+      },
+      {
+        "bairro": "São Francisco",
+        "count": 68
+      },
+      {
+        "bairro": "Planalto",
+        "count": 68
+      },
+      {
+        "bairro": "Sapucaia",
+        "count": 68
+      },
+      {
+        "bairro": "Jardim Brasil",
+        "count": 66
+      },
+      {
+        "bairro": "Vila de Porto de Galinhas",
+        "count": 66
+      },
+      {
+        "bairro": "COHAB",
+        "count": 65
+      },
+      {
+        "bairro": "Vila Popular",
+        "count": 65
+      },
+      {
+        "bairro": "Derby",
+        "count": 64
+      },
+      {
+        "bairro": "Pau Amarelo",
+        "count": 62
+      },
+      {
+        "bairro": "Santo Antônio",
+        "count": 61
+      },
+      {
+        "bairro": "Paiva",
+        "count": 60
+      },
+      {
+        "bairro": "Passarinho",
+        "count": 60
+      },
+      {
+        "bairro": "São José",
+        "count": 57
+      },
+      {
+        "bairro": "Paratibe",
+        "count": 57
+      },
+      {
+        "bairro": "BrasÃ­lia Teimosa",
+        "count": 56
+      },
+      {
+        "bairro": "Ilha Joana Bezerra",
+        "count": 56
+      },
+      {
+        "bairro": "São Miguel",
+        "count": 55
+      },
+      {
+        "bairro": "Ana de Albuquerque",
+        "count": 54
+      },
+      {
+        "bairro": "Antônio Dourado Neto",
+        "count": 53
+      },
+      {
+        "bairro": "Graças",
+        "count": 53
+      },
+      {
+        "bairro": "Marcos Freire",
+        "count": 52
+      },
+      {
+        "bairro": "Encruzilhada",
+        "count": 50
+      },
+      {
+        "bairro": "Bonsucesso",
+        "count": 50
+      },
+      {
+        "bairro": "Jardim Massaranduba (Bonança)",
+        "count": 49
+      },
+      {
+        "bairro": "Cabanga",
+        "count": 49
+      },
+      {
+        "bairro": "Olaria",
+        "count": 49
+      },
+      {
+        "bairro": "Cidade Universitária",
+        "count": 49
+      },
+      {
+        "bairro": "Muribara",
+        "count": 48
+      },
+      {
+        "bairro": "Alberto Maia",
+        "count": 47
+      },
+      {
+        "bairro": "Garapu",
+        "count": 43
+      },
+      {
+        "bairro": "Enseadinha",
+        "count": 42
+      },
+      {
+        "bairro": "Morro da Conceição",
+        "count": 42
+      },
+      {
+        "bairro": "San Martin",
+        "count": 41
+      },
+      {
+        "bairro": "Boa Vista",
+        "count": 41
+      },
+      {
+        "bairro": "Parque dos Eucaliptos",
+        "count": 41
+      },
+      {
+        "bairro": "Coqueiral",
+        "count": 38
+      },
+      {
+        "bairro": "Agamenon Magalhães",
+        "count": 38
+      },
+      {
+        "bairro": "Monjope",
+        "count": 37
+      },
+      {
+        "bairro": "Porto Summer",
+        "count": 37
+      },
+      {
+        "bairro": "Povoado de Botafogo",
+        "count": 37
+      },
+      {
+        "bairro": "Socorro",
+        "count": 36
+      },
+      {
+        "bairro": "Santo Aleixo",
+        "count": 35
+      },
+      {
+        "bairro": "Alto da Palmeira",
+        "count": 35
+      },
+      {
+        "bairro": "Casa Forte",
+        "count": 34
+      },
+      {
+        "bairro": "Quatro Cantos",
+        "count": 33
+      },
+      {
+        "bairro": "Maracaipe",
+        "count": 33
+      },
+      {
+        "bairro": "Vera Cruz",
+        "count": 33
+      },
+      {
+        "bairro": "Vila Rica",
+        "count": 32
+      },
+      {
+        "bairro": "Bairro Novo",
+        "count": 32
+      },
+      {
+        "bairro": "Rio Âmbar",
+        "count": 32
+      },
+      {
+        "bairro": "José da Bica",
+        "count": 32
+      },
+      {
+        "bairro": "Jardim JordÃ£o",
+        "count": 30
+      },
+      {
+        "bairro": "Bonança I (Bonança)",
+        "count": 29
+      },
+      {
+        "bairro": "Novo Horizonte (Bonança)",
+        "count": 28
+      },
+      {
+        "bairro": "São Benedito",
+        "count": 27
+      },
+      {
+        "bairro": "Salinas",
+        "count": 27
+      },
+      {
+        "bairro": "Oitenta",
+        "count": 26
+      },
+      {
+        "bairro": "Forno da Cal",
+        "count": 26
+      },
+      {
+        "bairro": "Vila Torres GalvÃ£o",
+        "count": 26
+      },
+      {
+        "bairro": "Vila Canaã",
+        "count": 26
+      },
+      {
+        "bairro": "Porto Coqueiral",
+        "count": 25
+      },
+      {
+        "bairro": "Califórnia",
+        "count": 25
+      },
+      {
+        "bairro": "Bonfim",
+        "count": 25
+      },
+      {
+        "bairro": "Enseada de Serrambi",
+        "count": 25
+      },
+      {
+        "bairro": "Alto das Estrelas",
+        "count": 24
+      },
+      {
+        "bairro": "Maria Farinha",
+        "count": 24
+      },
+      {
+        "bairro": "Capibaribe",
+        "count": 23
+      },
+      {
+        "bairro": "Mirueira",
+        "count": 23
+      },
+      {
+        "bairro": "Distrito Industrial Santo Estevão",
+        "count": 22
+      },
+      {
+        "bairro": "Timbí",
+        "count": 22
+      },
+      {
+        "bairro": "Ponta de Serrambi",
+        "count": 22
+      },
+      {
+        "bairro": "Alto da Liberdade",
+        "count": 22
+      },
+      {
+        "bairro": "Sossego",
+        "count": 21
+      },
+      {
+        "bairro": "Cercado Grande",
+        "count": 21
+      },
+      {
+        "bairro": "Vila Liberdade",
+        "count": 21
+      },
+      {
+        "bairro": "Bonança II (Bonança)",
+        "count": 21
+      },
+      {
+        "bairro": "Merepe",
+        "count": 19
+      },
+      {
+        "bairro": "Terra Nostra",
+        "count": 19
+      },
+      {
+        "bairro": "Jardim CaetÃ©s",
+        "count": 18
+      },
+      {
+        "bairro": "Cruz do Rebouças",
+        "count": 17
+      },
+      {
+        "bairro": "Bomba do Hemetério",
+        "count": 17
+      },
+      {
+        "bairro": "Enseada dos Golfinhos",
+        "count": 16
+      },
+      {
+        "bairro": "Caetés II",
+        "count": 16
+      },
+      {
+        "bairro": "InhamÃ£",
+        "count": 16
+      },
+      {
+        "bairro": "Ponte dos Carvalhos",
+        "count": 16
+      },
+      {
+        "bairro": "Distrito Industrial de Ipojuca - Suape",
+        "count": 16
+      },
+      {
+        "bairro": "Chã de Cruz",
+        "count": 15
+      },
+      {
+        "bairro": "Pedreiras",
+        "count": 14
+      },
+      {
+        "bairro": "Vila da FÃ¡brica",
+        "count": 14
+      },
+      {
+        "bairro": "Campina de Feira",
+        "count": 14
+      },
+      {
+        "bairro": "Vila da Inabi",
+        "count": 14
+      },
+      {
+        "bairro": "Engenho São João",
+        "count": 14
+      },
+      {
+        "bairro": "Nossa Senhora de Fátima",
+        "count": 12
+      },
+      {
+        "bairro": "Ãguas Compridas",
+        "count": 12
+      },
+      {
+        "bairro": "Alto da Conquista (Bonança)",
+        "count": 12
+      },
+      {
+        "bairro": "Sítio dos Marcos",
+        "count": 12
+      },
+      {
+        "bairro": "Engenho Macaxeira",
+        "count": 11
+      },
+      {
+        "bairro": "EstÃ¢ncia",
+        "count": 11
+      },
+      {
+        "bairro": "Poço do Cobre",
+        "count": 11
+      },
+      {
+        "bairro": "BulhÃµes",
+        "count": 10
+      },
+      {
+        "bairro": "Alto de Santo Antônio",
+        "count": 9
+      },
+      {
+        "bairro": "Pontal da Ilha",
+        "count": 9
+      },
+      {
+        "bairro": "Penedo",
+        "count": 9
+      },
+      {
+        "bairro": "Camela Centro",
+        "count": 9
+      },
+      {
+        "bairro": "Caetés I",
+        "count": 9
+      },
+      {
+        "bairro": "TiÃºma",
+        "count": 8
+      },
+      {
+        "bairro": "Nossa Senhora do Ã",
+        "count": 8
+      },
+      {
+        "bairro": "Caixa D'Ãgua",
+        "count": 8
+      },
+      {
+        "bairro": "Várzea da Cruz (Bonança)",
+        "count": 8
+      },
+      {
+        "bairro": "JiquiÃ¡",
+        "count": 8
+      },
+      {
+        "bairro": "Vila Holandesa",
+        "count": 8
+      },
+      {
+        "bairro": "Santo InÃ¡cio",
+        "count": 8
+      },
+      {
+        "bairro": "Miguel Arraes",
+        "count": 7
+      },
+      {
+        "bairro": "Alto do Sol Nascente",
+        "count": 7
+      },
+      {
+        "bairro": "Jardim AtlÃ¢ntico",
+        "count": 7
+      },
+      {
+        "bairro": "CaetÃ©s III",
+        "count": 7
+      },
+      {
+        "bairro": "Alto da Caixa D'Água",
+        "count": 6
+      },
+      {
+        "bairro": "Baixa Verde",
+        "count": 6
+      },
+      {
+        "bairro": "João Paulo II",
+        "count": 6
+      },
+      {
+        "bairro": "Jardim Massaranduba (BonanÃ§a)",
+        "count": 6
+      },
+      {
+        "bairro": "Alto da NaÃ§Ã£o",
+        "count": 5
+      },
+      {
+        "bairro": "VÃ¡rzea",
+        "count": 5
+      },
+      {
+        "bairro": "Dois IrmÃ£os",
+        "count": 5
+      },
+      {
+        "bairro": "TejipiÃ³",
+        "count": 5
+      },
+      {
+        "bairro": "PoÃ§o",
+        "count": 5
+      },
+      {
+        "bairro": "Ãgua Fria",
+        "count": 5
+      },
+      {
+        "bairro": "TimbÃ³",
+        "count": 5
+      },
+      {
+        "bairro": "Alto JosÃ© do Pinho",
+        "count": 4
+      },
+      {
+        "bairro": "Nossa Senhora da ConceiÃ§Ã£o",
+        "count": 4
+      },
+      {
+        "bairro": "Monte Sinai (Bonança)",
+        "count": 4
+      },
+      {
+        "bairro": "Forte Orange",
+        "count": 4
+      },
+      {
+        "bairro": "Cupe",
+        "count": 3
+      },
+      {
+        "bairro": "PancÃ³",
+        "count": 3
+      },
+      {
+        "bairro": "Sítio Canoas",
+        "count": 3
+      },
+      {
+        "bairro": "FundÃ£o",
+        "count": 3
+      },
+      {
+        "bairro": "Alto da Maternidade",
+        "count": 3
+      },
+      {
+        "bairro": "RurÃ³polis de Camela",
+        "count": 3
+      },
+      {
+        "bairro": "Vila TeatrÃ³logo Barreto JÃºnior",
+        "count": 3
+      },
+      {
+        "bairro": "Ãrea Rural do Cabo de Santo Agostinho",
+        "count": 3
+      },
+      {
+        "bairro": "JagatÃ¡",
+        "count": 3
+      },
+      {
+        "bairro": "ChÃ£ da TÃ¡bua",
+        "count": 3
+      },
+      {
+        "bairro": "Jardim SÃ£o Paulo",
+        "count": 3
+      },
+      {
+        "bairro": "Aldeia dos CamarÃ¡s",
+        "count": 3
+      },
+      {
+        "bairro": "RurÃ³polis de Ipojuca",
+        "count": 3
+      },
+      {
+        "bairro": "SÃ£o Francisco",
+        "count": 2
+      },
+      {
+        "bairro": "Rio Ãmbar",
+        "count": 2
+      },
+      {
+        "bairro": "Santa MÃ´nica",
+        "count": 2
+      },
+      {
+        "bairro": "PoÃ§o do Cobre",
+        "count": 2
+      },
+      {
+        "bairro": "JordÃ£o",
+        "count": 2
+      },
+      {
+        "bairro": "São Paulo",
+        "count": 2
+      },
+      {
+        "bairro": "Galinha D'Água",
+        "count": 2
+      },
+      {
+        "bairro": "SÃ£o Miguel",
+        "count": 2
+      },
+      {
+        "bairro": "BonanÃ§a I (BonanÃ§a)",
+        "count": 2
+      },
+      {
+        "bairro": "Morro da ConceiÃ§Ã£o",
+        "count": 1
+      },
+      {
+        "bairro": "HipÃ³dromo",
+        "count": 1
+      },
+      {
+        "bairro": "NazarÃ©",
+        "count": 1
+      },
+      {
+        "bairro": "Engenho SÃ£o JoÃ£o",
+        "count": 1
+      },
+      {
+        "bairro": "Alto do Pau D'arco (BonanÃ§a)",
+        "count": 1
+      },
+      {
+        "bairro": "TorrÃµes",
+        "count": 1
+      },
+      {
+        "bairro": "Biquinha",
+        "count": 1
+      },
+      {
+        "bairro": "Santo AntÃ´nio",
+        "count": 1
+      },
+      {
+        "bairro": "SÃ­tio dos Pintos",
+        "count": 1
+      },
+      {
+        "bairro": "GraÃ§as",
+        "count": 1
+      },
+      {
+        "bairro": "CaxangÃ¡",
+        "count": 1
+      },
+      {
+        "bairro": "bairro",
+        "count": 1
+      },
+      {
+        "bairro": "Alto da Caixa D'Ãgua",
+        "count": 1
+      },
+      {
+        "bairro": "Distrito Industrial Santo EstevÃ£o",
+        "count": 1
+      },
+      {
+        "bairro": "CaÃ§ote",
+        "count": 1
+      },
+      {
+        "bairro": "SÃ£o JosÃ©",
+        "count": 1
+      },
+      {
+        "bairro": "Cruz do RebouÃ§as",
+        "count": 1
+      },
+      {
+        "bairro": "ChÃ£ de Cruz",
+        "count": 1
+      }
+    ],
+    "med_types": [
+      {
+        "tipo": "ELETRONICO",
+        "count": 23919
+      },
+      {
+        "tipo": "ELETROMECANICO",
+        "count": 14844
+      },
+      {
+        "tipo": "SMART",
+        "count": 7695
+      },
+      {
+        "tipo": "Eletronico",
+        "count": 1369
+      },
+      {
+        "tipo": "eletrônico",
+        "count": 1320
+      },
+      {
+        "tipo": "ELETRO-MECANICO",
+        "count": 606
+      },
+      {
+        "tipo": "Eletromecanico",
+        "count": 601
+      },
+      {
+        "tipo": "eletromecânico",
+        "count": 596
+      },
+      {
+        "tipo": "smart meter",
+        "count": 443
+      },
+      {
+        "tipo": "Smart",
+        "count": 419
+      }
+    ],
+    "alim": [
+      {
+        "alimentador": "ALM-REC-008",
+        "count": 2364
+      },
+      {
+        "alimentador": "ALM-REC-024",
+        "count": 1395
+      },
+      {
+        "alimentador": "ALM-JAB-007",
+        "count": 1269
+      },
+      {
+        "alimentador": "ALM-SAO-004",
+        "count": 1137
+      },
+      {
+        "alimentador": "ALM-REC-004",
+        "count": 1036
+      },
+      {
+        "alimentador": "ALM-JAB-001",
+        "count": 1016
+      },
+      {
+        "alimentador": "ALM-PAU-003",
+        "count": 1011
+      },
+      {
+        "alimentador": "ALM-OLI-001",
+        "count": 965
+      },
+      {
+        "alimentador": "ALM-JAB-004",
+        "count": 902
+      },
+      {
+        "alimentador": "ALM-PAU-011",
+        "count": 712
+      },
+      {
+        "alimentador": "ALM-CAB-007",
+        "count": 698
+      },
+      {
+        "alimentador": "ALM-JAB-005",
+        "count": 687
+      },
+      {
+        "alimentador": "ALM-REC-029",
+        "count": 687
+      },
+      {
+        "alimentador": "ALM-JAB-017",
+        "count": 664
+      },
+      {
+        "alimentador": "ALM-REC-028",
+        "count": 650
+      },
+      {
+        "alimentador": "ALM-REC-035",
+        "count": 609
+      },
+      {
+        "alimentador": "ALM-OLI-006",
+        "count": 597
+      },
+      {
+        "alimentador": "ALM-JAB-003",
+        "count": 584
+      },
+      {
+        "alimentador": "ALM-REC-023",
+        "count": 583
+      },
+      {
+        "alimentador": "ALM-ABR-001",
+        "count": 581
+      },
+      {
+        "alimentador": "ALM-REC-025",
+        "count": 577
+      },
+      {
+        "alimentador": "ALM-IGA-004",
+        "count": 575
+      },
+      {
+        "alimentador": "ALM-REC-027",
+        "count": 565
+      },
+      {
+        "alimentador": "ALM-JAB-013",
+        "count": 563
+      },
+      {
+        "alimentador": "ALM-OLI-004",
+        "count": 553
+      },
+      {
+        "alimentador": "ALM-REC-019",
+        "count": 548
+      },
+      {
+        "alimentador": "ALM-REC-037",
+        "count": 545
+      },
+      {
+        "alimentador": "ALM-IPO-003",
+        "count": 538
+      },
+      {
+        "alimentador": "ALM-REC-005",
+        "count": 528
+      },
+      {
+        "alimentador": "ALM-CAM-002",
+        "count": 527
+      },
+      {
+        "alimentador": "ALM-CAM-005",
+        "count": 521
+      },
+      {
+        "alimentador": "ALM-PAU-005",
+        "count": 505
+      },
+      {
+        "alimentador": "ALM-IGA-003",
+        "count": 491
+      },
+      {
+        "alimentador": "ALM-REC-030",
+        "count": 465
+      },
+      {
+        "alimentador": "ALM-PAU-004",
+        "count": 459
+      },
+      {
+        "alimentador": "ALM-REC-032",
+        "count": 453
+      },
+      {
+        "alimentador": "ALM-REC-002",
+        "count": 447
+      },
+      {
+        "alimentador": "ALM-CAB-006",
+        "count": 445
+      },
+      {
+        "alimentador": "ALM-REC-016",
+        "count": 434
+      },
+      {
+        "alimentador": "ALM-ABR-003",
+        "count": 430
+      },
+      {
+        "alimentador": "ALM-MOR-001",
+        "count": 428
+      },
+      {
+        "alimentador": "ALM-CAM-001",
+        "count": 428
+      },
+      {
+        "alimentador": "ALM-CAB-003",
+        "count": 426
+      },
+      {
+        "alimentador": "ALM-IPO-002",
+        "count": 404
+      },
+      {
+        "alimentador": "ALM-JAB-014",
+        "count": 404
+      },
+      {
+        "alimentador": "ALM-OLI-011",
+        "count": 393
+      },
+      {
+        "alimentador": "ALM-REC-026",
+        "count": 390
+      },
+      {
+        "alimentador": "ALM-JAB-018",
+        "count": 372
+      },
+      {
+        "alimentador": "ALM-OLI-003",
+        "count": 371
+      },
+      {
+        "alimentador": "ALM-CAB-002",
+        "count": 371
+      },
+      {
+        "alimentador": "ALM-REC-001",
+        "count": 360
+      },
+      {
+        "alimentador": "ALM-JAB-002",
+        "count": 355
+      },
+      {
+        "alimentador": "ALM-REC-014",
+        "count": 348
+      },
+      {
+        "alimentador": "ALM-ITA-001",
+        "count": 348
+      },
+      {
+        "alimentador": "ALM-REC-033",
+        "count": 344
+      },
+      {
+        "alimentador": "ALM-JAB-012",
+        "count": 344
+      },
+      {
+        "alimentador": "ALM-OLI-002",
+        "count": 339
+      },
+      {
+        "alimentador": "ALM-REC-041",
+        "count": 337
+      },
+      {
+        "alimentador": "ALM-REC-031",
+        "count": 331
+      },
+      {
+        "alimentador": "ALM-ILH-001",
+        "count": 313
+      },
+      {
+        "alimentador": "ALM-PAU-001",
+        "count": 313
+      },
+      {
+        "alimentador": "ALM-CAB-004",
+        "count": 309
+      },
+      {
+        "alimentador": "ALM-OLI-010",
+        "count": 300
+      },
+      {
+        "alimentador": "ALM-OLI-009",
+        "count": 294
+      },
+      {
+        "alimentador": "ALM-REC-007",
+        "count": 288
+      },
+      {
+        "alimentador": "ALM-PAU-008",
+        "count": 282
+      },
+      {
+        "alimentador": "ALM-REC-021",
+        "count": 280
+      },
+      {
+        "alimentador": "ALM-REC-003",
+        "count": 279
+      },
+      {
+        "alimentador": "ALM-REC-020",
+        "count": 269
+      },
+      {
+        "alimentador": "ALM-REC-017",
+        "count": 268
+      },
+      {
+        "alimentador": "ALM-IPO-001",
+        "count": 267
+      },
+      {
+        "alimentador": "ALM-MOR-002",
+        "count": 266
+      },
+      {
+        "alimentador": "ALM-CAB-005",
+        "count": 259
+      },
+      {
+        "alimentador": "ALM-PAU-002",
+        "count": 255
+      },
+      {
+        "alimentador": "ALM-REC-022",
+        "count": 242
+      },
+      {
+        "alimentador": "ALM-PAU-010",
+        "count": 233
+      },
+      {
+        "alimentador": "ALM-PAU-006",
+        "count": 232
+      },
+      {
+        "alimentador": "ALM-ARA-001",
+        "count": 231
+      },
+      {
+        "alimentador": "ALM-REC-018",
+        "count": 230
+      },
+      {
+        "alimentador": "ALM-REC-011",
+        "count": 217
+      },
+      {
+        "alimentador": "ALM-OLI-008",
+        "count": 215
+      },
+      {
+        "alimentador": "ALM-CAM-003",
+        "count": 211
+      },
+      {
+        "alimentador": "ALM-REC-044",
+        "count": 210
+      },
+      {
+        "alimentador": "ALM-SAO-002",
+        "count": 205
+      },
+      {
+        "alimentador": "ALM-REC-012",
+        "count": 198
+      },
+      {
+        "alimentador": "ALM-ABR-002",
+        "count": 194
+      },
+      {
+        "alimentador": "ALM-REC-048",
+        "count": 192
+      },
+      {
+        "alimentador": "ALM-IGA-001",
+        "count": 188
+      },
+      {
+        "alimentador": "ALM-OLI-005",
+        "count": 187
+      },
+      {
+        "alimentador": "ALM-IGA-002",
+        "count": 184
+      },
+      {
+        "alimentador": "ALM-REC-042",
+        "count": 178
+      },
+      {
+        "alimentador": "ALM-REC-015",
+        "count": 178
+      },
+      {
+        "alimentador": "ALM-REC-047",
+        "count": 172
+      },
+      {
+        "alimentador": "ALM-JAB-010",
+        "count": 166
+      },
+      {
+        "alimentador": "ALM-REC-034",
+        "count": 165
+      },
+      {
+        "alimentador": "ALM-REC-038",
+        "count": 164
+      },
+      {
+        "alimentador": "ALM-CAM-004",
+        "count": 155
+      },
+      {
+        "alimentador": "ALM-REC-013",
+        "count": 153
+      },
+      {
+        "alimentador": "ALM-JAB-020",
+        "count": 152
+      },
+      {
+        "alimentador": "ALM-REC-036",
+        "count": 143
+      },
+      {
+        "alimentador": "ALM-OLI-007",
+        "count": 134
+      },
+      {
+        "alimentador": "ALM-JAB-021",
+        "count": 128
+      },
+      {
+        "alimentador": "ALM-REC-040",
+        "count": 127
+      },
+      {
+        "alimentador": "ALM-REC-043",
+        "count": 121
+      },
+      {
+        "alimentador": "ALM-JAB-011",
+        "count": 119
+      },
+      {
+        "alimentador": "ALM-REC-010",
+        "count": 110
+      },
+      {
+        "alimentador": "ALM-REC-006",
+        "count": 108
+      },
+      {
+        "alimentador": "ALM-REC-046",
+        "count": 106
+      },
+      {
+        "alimentador": "ALM-JAB-009",
+        "count": 101
+      },
+      {
+        "alimentador": "ALM-JAB-006",
+        "count": 100
+      },
+      {
+        "alimentador": "ALM-PAU-009",
+        "count": 96
+      },
+      {
+        "alimentador": "ALM-CAB-001",
+        "count": 94
+      },
+      {
+        "alimentador": "ALM-SAO-003",
+        "count": 87
+      },
+      {
+        "alimentador": "ALM-REC-045",
+        "count": 77
+      },
+      {
+        "alimentador": "ALM-REC-009",
+        "count": 66
+      },
+      {
+        "alimentador": "ALM-PAU-007",
+        "count": 47
+      },
+      {
+        "alimentador": "ALM-JAB-008",
+        "count": 38
+      },
+      {
+        "alimentador": "ALM-JAB-015",
+        "count": 35
+      },
+      {
+        "alimentador": "ALM-REC-039",
+        "count": 33
+      },
+      {
+        "alimentador": "ALM-SAO-001",
+        "count": 33
+      },
+      {
+        "alimentador": "ALM-JAB-019",
+        "count": 32
+      },
+      {
+        "alimentador": "ALM-JAB-016",
+        "count": 22
+      },
+      {
+        "alimentador": "alimentador",
+        "count": 1
+      }
+    ]
+  },
+  "consumo": {
+    "evolucao": [
+      {
+        "mes_referencia": "2022-07",
+        "n_leituras": 45251,
+        "consumo_total": 14210900.0,
+        "n_ucs": 44638
+      },
+      {
+        "mes_referencia": "2022-08",
+        "n_leituras": 45270,
+        "consumo_total": 14284097.0,
+        "n_ucs": 44644
+      },
+      {
+        "mes_referencia": "2022-09",
+        "n_leituras": 45283,
+        "consumo_total": 15716598.0,
+        "n_ucs": 44653
+      },
+      {
+        "mes_referencia": "2022-10",
+        "n_leituras": 45322,
+        "consumo_total": 18693453.0,
+        "n_ucs": 44669
+      },
+      {
+        "mes_referencia": "2022-11",
+        "n_leituras": 45302,
+        "consumo_total": 21120481.0,
+        "n_ucs": 44677
+      },
+      {
+        "mes_referencia": "2022-12",
+        "n_leituras": 45316,
+        "consumo_total": 22122336.0,
+        "n_ucs": 44685
+      },
+      {
+        "mes_referencia": "2023-01",
+        "n_leituras": 45367,
+        "consumo_total": 23010682.0,
+        "n_ucs": 44693
+      },
+      {
+        "mes_referencia": "2023-02",
+        "n_leituras": 45307,
+        "consumo_total": 22331436.0,
+        "n_ucs": 44704
+      },
+      {
+        "mes_referencia": "2023-03",
+        "n_leituras": 45334,
+        "consumo_total": 22470628.0,
+        "n_ucs": 44711
+      },
+      {
+        "mes_referencia": "2023-04",
+        "n_leituras": 45352,
+        "consumo_total": 21170006.0,
+        "n_ucs": 44720
+      },
+      {
+        "mes_referencia": "2023-05",
+        "n_leituras": 45349,
+        "consumo_total": 18627486.0,
+        "n_ucs": 44732
+      },
+      {
+        "mes_referencia": "2023-06",
+        "n_leituras": 45356,
+        "consumo_total": 15954710.0,
+        "n_ucs": 44741
+      },
+      {
+        "mes_referencia": "2023-07",
+        "n_leituras": 45394,
+        "consumo_total": 14280844.0,
+        "n_ucs": 44748
+      },
+      {
+        "mes_referencia": "2023-08",
+        "n_leituras": 45399,
+        "consumo_total": 14403698.0,
+        "n_ucs": 44758
+      },
+      {
+        "mes_referencia": "2023-09",
+        "n_leituras": 45423,
+        "consumo_total": 15743060.0,
+        "n_ucs": 44768
+      },
+      {
+        "mes_referencia": "2023-10",
+        "n_leituras": 45433,
+        "consumo_total": 18677195.0,
+        "n_ucs": 44777
+      },
+      {
+        "mes_referencia": "2023-11",
+        "n_leituras": 45403,
+        "consumo_total": 21189660.0,
+        "n_ucs": 44785
+      },
+      {
+        "mes_referencia": "2023-12",
+        "n_leituras": 45429,
+        "consumo_total": 22178998.0,
+        "n_ucs": 44791
+      },
+      {
+        "mes_referencia": "2024-01",
+        "n_leituras": 45412,
+        "consumo_total": 22942933.0,
+        "n_ucs": 44799
+      },
+      {
+        "mes_referencia": "2024-02",
+        "n_leituras": 45440,
+        "consumo_total": 22166819.0,
+        "n_ucs": 44807
+      },
+      {
+        "mes_referencia": "2024-03",
+        "n_leituras": 45434,
+        "consumo_total": 22334966.0,
+        "n_ucs": 44816
+      },
+      {
+        "mes_referencia": "2024-04",
+        "n_leituras": 45516,
+        "consumo_total": 21024726.0,
+        "n_ucs": 44826
+      },
+      {
+        "mes_referencia": "2024-05",
+        "n_leituras": 45483,
+        "consumo_total": 18546916.0,
+        "n_ucs": 44836
+      },
+      {
+        "mes_referencia": "2024-06",
+        "n_leituras": 45477,
+        "consumo_total": 15761841.0,
+        "n_ucs": 44842
+      },
+      {
+        "mes_referencia": "2024-07",
+        "n_leituras": 45435,
+        "consumo_total": 14080419.0,
+        "n_ucs": 44847
+      },
+      {
+        "mes_referencia": "2024-08",
+        "n_leituras": 45437,
+        "consumo_total": 14141251.0,
+        "n_ucs": 44859
+      },
+      {
+        "mes_referencia": "2024-09",
+        "n_leituras": 45490,
+        "consumo_total": 15410950.0,
+        "n_ucs": 44867
+      },
+      {
+        "mes_referencia": "2024-10",
+        "n_leituras": 45493,
+        "consumo_total": 18125852.0,
+        "n_ucs": 44879
+      },
+      {
+        "mes_referencia": "2024-11",
+        "n_leituras": 45543,
+        "consumo_total": 20487341.0,
+        "n_ucs": 44888
+      },
+      {
+        "mes_referencia": "2024-12",
+        "n_leituras": 45492,
+        "consumo_total": 21381645.0,
+        "n_ucs": 44892
+      },
+      {
+        "mes_referencia": "2025-01",
+        "n_leituras": 45501,
+        "consumo_total": 22257759.0,
+        "n_ucs": 44900
+      },
+      {
+        "mes_referencia": "2025-02",
+        "n_leituras": 45540,
+        "consumo_total": 21560213.0,
+        "n_ucs": 44904
+      },
+      {
+        "mes_referencia": "2025-03",
+        "n_leituras": 45540,
+        "consumo_total": 21704047.0,
+        "n_ucs": 44916
+      },
+      {
+        "mes_referencia": "2025-04",
+        "n_leituras": 45563,
+        "consumo_total": 20381123.0,
+        "n_ucs": 44925
+      },
+      {
+        "mes_referencia": "2025-05",
+        "n_leituras": 45566,
+        "consumo_total": 17930557.0,
+        "n_ucs": 44932
+      },
+      {
+        "mes_referencia": "2025-06",
+        "n_leituras": 45566,
+        "consumo_total": 15191603.0,
+        "n_ucs": 44939
+      },
+      {
+        "mes_referencia": "2025-07",
+        "n_leituras": 45595,
+        "consumo_total": 13712412.0,
+        "n_ucs": 44945
+      },
+      {
+        "mes_referencia": "2025-08",
+        "n_leituras": 45606,
+        "consumo_total": 13716920.0,
+        "n_ucs": 44950
+      },
+      {
+        "mes_referencia": "2025-09",
+        "n_leituras": 45610,
+        "consumo_total": -41458076.0,
+        "n_ucs": 44961
+      },
+      {
+        "mes_referencia": "2025-10",
+        "n_leituras": 45601,
+        "consumo_total": -40789102.0,
+        "n_ucs": 44971
+      },
+      {
+        "mes_referencia": "2025-11",
+        "n_leituras": 45617,
+        "consumo_total": -31092832.0,
+        "n_ucs": 44976
+      },
+      {
+        "mes_referencia": "2025-12",
+        "n_leituras": 45603,
+        "consumo_total": -36067686.0,
+        "n_ucs": 44986
+      },
+      {
+        "mes_referencia": "2026-01",
+        "n_leituras": 45599,
+        "consumo_total": -38299109.0,
+        "n_ucs": 44990
+      },
+      {
+        "mes_referencia": "2026-02",
+        "n_leituras": 45581,
+        "consumo_total": -28736678.0,
+        "n_ucs": 44993
+      },
+      {
+        "mes_referencia": "2026-03",
+        "n_leituras": 45617,
+        "consumo_total": -35665510.0,
+        "n_ucs": 44996
+      },
+      {
+        "mes_referencia": "2026-04",
+        "n_leituras": 45635,
+        "consumo_total": 19767875.0,
+        "n_ucs": 45000
+      },
+      {
+        "mes_referencia": "2026-05",
+        "n_leituras": 45581,
+        "consumo_total": 17470378.0,
+        "n_ucs": 45000
+      },
+      {
+        "mes_referencia": "2026-06",
+        "n_leituras": 45605,
+        "consumo_total": 15031703.0,
+        "n_ucs": 45000
+      }
+    ],
+    "bandeiras": [
+      {
+        "bandeira_tarifaria": "Verde",
+        "count": 1546130
+      },
+      {
+        "bandeira_tarifaria": "Amarela",
+        "count": 273630
+      },
+      {
+        "bandeira_tarifaria": "Vermelha P1",
+        "count": 228042
+      },
+      {
+        "bandeira_tarifaria": "Vermelha P2",
+        "count": 136819
+      },
+      {
+        "bandeira_tarifaria": "bandeira_tarifaria",
+        "count": 2
+      }
+    ],
+    "pagamentos": [
+      {
+        "status": "PAGA",
+        "count": 2009453
+      },
+      {
+        "status": "EM ABERTO",
+        "count": 175168
+      },
+      {
+        "status": "status",
+        "count": 2
+      }
+    ]
+  },
+  "rede": {
+    "oco_tipo": [
+      {
+        "tipo": "FALTA DE ENERGIA",
+        "count": 121593
+      },
+      {
+        "tipo": "DANO EM EQUIPAMENTO",
+        "count": 14868
+      },
+      {
+        "tipo": "OSCILACAO",
+        "count": 14562
+      },
+      {
+        "tipo": "SOBRECARGA",
+        "count": 14547
+      },
+      {
+        "tipo": "FIO PARTIDO",
+        "count": 14430
+      }
+    ],
+    "oco_alim": [
+      {
+        "alimentador": "ALM-REC-008",
+        "count": 8211
+      },
+      {
+        "alimentador": "ALM-SAO-004",
+        "count": 4664
+      },
+      {
+        "alimentador": "ALM-JAB-004",
+        "count": 3913
+      },
+      {
+        "alimentador": "ALM-CAM-003",
+        "count": 1474
+      },
+      {
+        "alimentador": "ALM-REC-037",
+        "count": 1468
+      },
+      {
+        "alimentador": "ALM-REC-014",
+        "count": 1456
+      },
+      {
+        "alimentador": "ALM-IGA-003",
+        "count": 1447
+      },
+      {
+        "alimentador": "ALM-SAO-003",
+        "count": 1443
+      },
+      {
+        "alimentador": "ALM-REC-018",
+        "count": 1434
+      },
+      {
+        "alimentador": "ALM-REC-006",
+        "count": 1430
+      },
+      {
+        "alimentador": "ALM-REC-019",
+        "count": 1428
+      },
+      {
+        "alimentador": "ALM-REC-017",
+        "count": 1426
+      },
+      {
+        "alimentador": "ALM-REC-002",
+        "count": 1424
+      },
+      {
+        "alimentador": "ALM-CAM-004",
+        "count": 1424
+      },
+      {
+        "alimentador": "ALM-PAU-009",
+        "count": 1423
+      },
+      {
+        "alimentador": "ALM-REC-001",
+        "count": 1419
+      },
+      {
+        "alimentador": "ALM-REC-048",
+        "count": 1418
+      },
+      {
+        "alimentador": "ALM-PAU-002",
+        "count": 1418
+      },
+      {
+        "alimentador": "ALM-REC-025",
+        "count": 1416
+      },
+      {
+        "alimentador": "ALM-REC-024",
+        "count": 1416
+      },
+      {
+        "alimentador": "ALM-JAB-002",
+        "count": 1415
+      },
+      {
+        "alimentador": "ALM-CAB-002",
+        "count": 1414
+      },
+      {
+        "alimentador": "ALM-REC-007",
+        "count": 1413
+      },
+      {
+        "alimentador": "ALM-REC-040",
+        "count": 1412
+      },
+      {
+        "alimentador": "ALM-REC-027",
+        "count": 1412
+      },
+      {
+        "alimentador": "ALM-REC-032",
+        "count": 1410
+      },
+      {
+        "alimentador": "ALM-JAB-017",
+        "count": 1409
+      },
+      {
+        "alimentador": "ALM-ABR-002",
+        "count": 1409
+      },
+      {
+        "alimentador": "ALM-REC-047",
+        "count": 1407
+      },
+      {
+        "alimentador": "ALM-PAU-007",
+        "count": 1407
+      },
+      {
+        "alimentador": "ALM-REC-041",
+        "count": 1407
+      },
+      {
+        "alimentador": "ALM-OLI-011",
+        "count": 1406
+      },
+      {
+        "alimentador": "ALM-OLI-001",
+        "count": 1405
+      },
+      {
+        "alimentador": "ALM-CAB-006",
+        "count": 1405
+      },
+      {
+        "alimentador": "ALM-OLI-009",
+        "count": 1405
+      },
+      {
+        "alimentador": "ALM-ABR-003",
+        "count": 1404
+      },
+      {
+        "alimentador": "ALM-REC-003",
+        "count": 1403
+      },
+      {
+        "alimentador": "ALM-JAB-012",
+        "count": 1402
+      },
+      {
+        "alimentador": "ALM-REC-023",
+        "count": 1393
+      },
+      {
+        "alimentador": "ALM-JAB-013",
+        "count": 1392
+      },
+      {
+        "alimentador": "ALM-IGA-004",
+        "count": 1391
+      },
+      {
+        "alimentador": "ALM-OLI-006",
+        "count": 1391
+      },
+      {
+        "alimentador": "ALM-PAU-008",
+        "count": 1390
+      },
+      {
+        "alimentador": "ALM-CAB-007",
+        "count": 1389
+      },
+      {
+        "alimentador": "ALM-JAB-015",
+        "count": 1389
+      },
+      {
+        "alimentador": "ALM-JAB-005",
+        "count": 1387
+      },
+      {
+        "alimentador": "ALM-JAB-019",
+        "count": 1385
+      },
+      {
+        "alimentador": "ALM-REC-034",
+        "count": 1385
+      },
+      {
+        "alimentador": "ALM-CAM-005",
+        "count": 1384
+      },
+      {
+        "alimentador": "ALM-REC-044",
+        "count": 1383
+      },
+      {
+        "alimentador": "ALM-MOR-002",
+        "count": 1382
+      },
+      {
+        "alimentador": "ALM-JAB-007",
+        "count": 1381
+      },
+      {
+        "alimentador": "ALM-OLI-004",
+        "count": 1380
+      },
+      {
+        "alimentador": "ALM-IGA-002",
+        "count": 1380
+      },
+      {
+        "alimentador": "ALM-REC-016",
+        "count": 1379
+      },
+      {
+        "alimentador": "ALM-REC-030",
+        "count": 1379
+      },
+      {
+        "alimentador": "ALM-PAU-003",
+        "count": 1376
+      },
+      {
+        "alimentador": "ALM-IPO-003",
+        "count": 1376
+      },
+      {
+        "alimentador": "ALM-JAB-014",
+        "count": 1375
+      },
+      {
+        "alimentador": "ALM-REC-012",
+        "count": 1375
+      },
+      {
+        "alimentador": "ALM-JAB-011",
+        "count": 1374
+      },
+      {
+        "alimentador": "ALM-JAB-016",
+        "count": 1374
+      },
+      {
+        "alimentador": "ALM-REC-029",
+        "count": 1372
+      },
+      {
+        "alimentador": "ALM-PAU-001",
+        "count": 1371
+      },
+      {
+        "alimentador": "ALM-REC-009",
+        "count": 1371
+      },
+      {
+        "alimentador": "ALM-JAB-020",
+        "count": 1367
+      },
+      {
+        "alimentador": "ALM-CAB-005",
+        "count": 1367
+      },
+      {
+        "alimentador": "ALM-JAB-008",
+        "count": 1366
+      },
+      {
+        "alimentador": "ALM-REC-035",
+        "count": 1364
+      },
+      {
+        "alimentador": "ALM-REC-038",
+        "count": 1364
+      },
+      {
+        "alimentador": "ALM-REC-042",
+        "count": 1362
+      },
+      {
+        "alimentador": "ALM-REC-015",
+        "count": 1362
+      },
+      {
+        "alimentador": "ALM-OLI-008",
+        "count": 1361
+      },
+      {
+        "alimentador": "ALM-SAO-001",
+        "count": 1360
+      },
+      {
+        "alimentador": "ALM-REC-005",
+        "count": 1360
+      },
+      {
+        "alimentador": "ALM-PAU-006",
+        "count": 1358
+      },
+      {
+        "alimentador": "ALM-PAU-010",
+        "count": 1358
+      },
+      {
+        "alimentador": "ALM-REC-031",
+        "count": 1356
+      },
+      {
+        "alimentador": "ALM-PAU-004",
+        "count": 1356
+      },
+      {
+        "alimentador": "ALM-CAM-002",
+        "count": 1356
+      },
+      {
+        "alimentador": "ALM-REC-033",
+        "count": 1356
+      },
+      {
+        "alimentador": "ALM-CAB-004",
+        "count": 1356
+      },
+      {
+        "alimentador": "ALM-JAB-018",
+        "count": 1355
+      },
+      {
+        "alimentador": "ALM-REC-046",
+        "count": 1353
+      },
+      {
+        "alimentador": "ALM-ABR-001",
+        "count": 1351
+      },
+      {
+        "alimentador": "ALM-REC-028",
+        "count": 1349
+      },
+      {
+        "alimentador": "ALM-REC-039",
+        "count": 1349
+      },
+      {
+        "alimentador": "ALM-JAB-021",
+        "count": 1348
+      },
+      {
+        "alimentador": "ALM-SAO-002",
+        "count": 1346
+      },
+      {
+        "alimentador": "ALM-OLI-010",
+        "count": 1346
+      },
+      {
+        "alimentador": "ALM-REC-045",
+        "count": 1345
+      },
+      {
+        "alimentador": "ALM-JAB-006",
+        "count": 1344
+      },
+      {
+        "alimentador": "ALM-ILH-001",
+        "count": 1343
+      },
+      {
+        "alimentador": "ALM-ITA-001",
+        "count": 1343
+      },
+      {
+        "alimentador": "ALM-JAB-009",
+        "count": 1342
+      },
+      {
+        "alimentador": "ALM-JAB-010",
+        "count": 1341
+      },
+      {
+        "alimentador": "ALM-IPO-002",
+        "count": 1340
+      },
+      {
+        "alimentador": "ALM-REC-011",
+        "count": 1339
+      },
+      {
+        "alimentador": "ALM-OLI-007",
+        "count": 1338
+      },
+      {
+        "alimentador": "ALM-REC-036",
+        "count": 1336
+      },
+      {
+        "alimentador": "ALM-REC-013",
+        "count": 1335
+      },
+      {
+        "alimentador": "ALM-REC-026",
+        "count": 1335
+      },
+      {
+        "alimentador": "ALM-MOR-001",
+        "count": 1334
+      },
+      {
+        "alimentador": "ALM-REC-010",
+        "count": 1332
+      },
+      {
+        "alimentador": "ALM-IPO-001",
+        "count": 1331
+      },
+      {
+        "alimentador": "ALM-REC-020",
+        "count": 1328
+      },
+      {
+        "alimentador": "ALM-JAB-003",
+        "count": 1326
+      },
+      {
+        "alimentador": "ALM-IGA-001",
+        "count": 1324
+      },
+      {
+        "alimentador": "ALM-REC-004",
+        "count": 1323
+      },
+      {
+        "alimentador": "ALM-PAU-011",
+        "count": 1320
+      },
+      {
+        "alimentador": "ALM-REC-022",
+        "count": 1319
+      },
+      {
+        "alimentador": "ALM-OLI-005",
+        "count": 1317
+      },
+      {
+        "alimentador": "ALM-JAB-001",
+        "count": 1310
+      },
+      {
+        "alimentador": "ALM-ARA-001",
+        "count": 1309
+      },
+      {
+        "alimentador": "ALM-CAB-001",
+        "count": 1306
+      },
+      {
+        "alimentador": "ALM-REC-043",
+        "count": 1305
+      },
+      {
+        "alimentador": "ALM-REC-021",
+        "count": 1303
+      },
+      {
+        "alimentador": "ALM-OLI-002",
+        "count": 1294
+      },
+      {
+        "alimentador": "ALM-PAU-005",
+        "count": 1288
+      },
+      {
+        "alimentador": "ALM-CAM-001",
+        "count": 1283
+      },
+      {
+        "alimentador": "ALM-OLI-003",
+        "count": 1281
+      },
+      {
+        "alimentador": "ALM-CAB-003",
+        "count": 1259
+      }
+    ],
+    "ins_res": [
+      {
+        "resultado": "IRREGULARIDADE CONFIRMADA",
+        "count": 279
+      },
+      {
+        "resultado": "SEM IRREGULARIDADE",
+        "count": 175
+      },
+      {
+        "resultado": "Irregularidade Confirmada",
+        "count": 16
+      },
+      {
+        "resultado": "irregularidade confirmada",
+        "count": 12
+      },
+      {
+        "resultado": "CONFIRMADA",
+        "count": 11
+      },
+      {
+        "resultado": "sem irregularidade",
+        "count": 10
+      },
+      {
+        "resultado": "NADA CONSTA",
+        "count": 6
+      },
+      {
+        "resultado": "Sem Irregularidade",
+        "count": 2
+      }
+    ]
+  },
+  "qualidade": {
+    "consumo_nao_numerico": 0,
+    "faturas_cabecalho_repetido": 2
+  }
+}
