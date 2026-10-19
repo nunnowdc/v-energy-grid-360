@@ -1,8 +1,5 @@
 # Planejamento da estrutura inicial do backend FastAPI
 
-**Estado:** proposta para revisão; nenhuma implementação autorizada nesta tarefa.  
-**Branch de documentação:** `docs/planejamento-backend-fastapi`, derivada de `dev`.
-
 ## 1. Objetivo e escopo
 
 Planejar a inicialização de uma API FastAPI simples e testável para o Portal Web V-Energy Grid 360. A futura tarefa de implementação deve criar apenas a base da aplicação, configuração local, documentação OpenAPI, rota de saúde e testes essenciais. Endpoints de negócio, persistência PostgreSQL e integração GenAI entram em etapas posteriores, após os respectivos contratos serem validados. Este documento não define tabelas ou colunas físicas da Gold.
@@ -24,7 +21,7 @@ O estado atual do repositório sustenta essa separação: `backend/` contém ape
 
 **Já documentado:** FastAPI, React + TypeScript + Vite, PostgreSQL local e fluxo da Gold exportada constam da [visão geral](../context/01-visao-geral.md) e do [Portal](../context/04-portal-web.md). O Portal já nomeia os endpoints principais e a escrita operacional de inspeções. O [módulo IA](../context/05-inteligencia-artificial.md) escolheu PydanticAI e Gemini 3.1 Flash-Lite para sua etapa, além de exigir usuário de consulta somente leitura para o SQL gerado. O [Diagnóstico](../context/06-diagnostico-receita.md) definiu a decomposição Shapley e os cortes município, bairro e classe.
 
-**Decisão arquitetural do responsável pelo projeto:** organizar o backend em camadas `controllers/`, `entities/`, `exceptions/`, `repositories/`, `security/`, `services/` e `tests/`, preservando `app/main.py` e `core/`. Usar `schemas/` para contratos HTTP quando necessário, separados dos modelos ORM de `entities/`. Essa organização substitui a proposta anterior de `api/routers/` e `db/`.
+**Decisão arquitetural do responsável pelo projeto:** organizar o backend em camadas `controllers/`, `entities/`, `exceptions/`, `repositories/`, `security/`, `services/` e `tests/`, preservando `app/main.py` e `core/`. Usar `schemas/` para contratos HTTP quando necessário, separados dos modelos ORM de `entities/`.
 
 **Recomendação de execução, revisada pelo Gemini:** manter uma única aplicação HTTP em `backend/` e materializar cada camada somente ao surgir um caso de uso real. `ai-agent/` permanece responsável pela lógica de IA; o futuro controller de `/ai/ask` será o adaptador HTTP no FastAPI, com a integração concreta entre os módulos definida antes de implementá-la. A arquitetura de pastas é uma direção obrigatória, não uma ordem para criar arquivos vazios no bootstrap.
 
@@ -169,9 +166,8 @@ Para receita, comparar resultado do endpoint com casos de referência fornecidos
 
 ## 14. Revisões Gemini e consolidação
 
-Na primeira revisão, o Gemini recomendou explicitar a fronteira `backend/`–`ai-agent/`, separar consulta Text-to-SQL da escrita de auditoria, alinhar o contrato de receita ao Diagnóstico, reservar extensões de inspeções/perfis/contexto de IA e isolar dependências da API. Essas decisões permanecem.
+O Gemini recomendou explicitar a fronteira `backend/`–`ai-agent/`, separar consulta Text-to-SQL da escrita de auditoria, alinhar o contrato de receita ao Diagnóstico, reservar extensões de inspeções/perfis/contexto de IA e isolar dependências da API. Essas decisões permanecem.
 
-Nesta segunda revisão, o Gemini validou a arquitetura em camadas definida pelo responsável do projeto e recomendou: manter `security/` sem SQL ou conexão; concentrar SQL em `repositories/` com sessões fornecidas por `core/`; separar as camadas `entities/` e `schemas/`; centralizar em `main.py` a tradução das falhas de `exceptions/`; e testar borda, domínio e persistência nos níveis apropriados. Essas recomendações foram incorporadas às seções 4, 7, 8 e 10.
+O Gemini validou a arquitetura em camadas definida pelo responsável do projeto e recomendou: manter `security/` sem SQL ou conexão; concentrar SQL em `repositories/` com sessões fornecidas por `core/`; separar as camadas `entities/` e `schemas/`; centralizar em `main.py` a tradução das falhas de `exceptions/`; e testar borda, domínio e persistência nos níveis apropriados. Essas recomendações foram incorporadas às seções 4, 7, 8 e 10.
 
 A revisão também reforçou o faseamento: a árvore descreve a arquitetura futura, mas o bootstrap cria somente os arquivos necessários à aplicação e à rota de saúde. Não são exigidos modelos ORM da Gold, interfaces genéricas, três pools, schemas HTTP completos ou provedores em memória para preencher camadas.
-
