@@ -14,4 +14,3 @@ data/*
 !.env.example
 
 # Ir incrementando conforme necessário
-analisys/graficos/resultados/*
