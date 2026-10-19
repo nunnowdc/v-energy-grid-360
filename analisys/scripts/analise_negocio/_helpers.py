@@ -219,7 +219,8 @@ def load_all_raw_data(root: Path | None = None) -> dict[str, pd.DataFrame]:
 def to_numeric_safe(series: pd.Series, decimal_comma: bool = False) -> tuple[pd.Series, int]:
     values = series.astype("string").str.strip()
     if decimal_comma:
-        values = values.str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
+        br = values.str.contains(",", regex=False, na=False)  # só o formato pt-BR (1.234,56) perde os pontos
+        values = values.mask(br, values.str.replace(".", "", regex=False).str.replace(",", ".", regex=False))
     converted = pd.to_numeric(values, errors="coerce")
     failures = int((values.notna() & values.ne("") & converted.isna()).sum())
     return converted, failures
