@@ -8,6 +8,7 @@
 # %%
 import json
 import re
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -17,23 +18,53 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import polars as pl
 
+_starts = [Path.cwd()]
+if "__file__" in globals():
+    _starts.append(Path(__file__).resolve().parent)
+for _start in _starts:
+    for _candidate in (_start, *_start.parents):
+        if (_candidate / "data").is_dir() and (_candidate / "analisys").is_dir():
+            sys.path.insert(0, str(_candidate))
+            break
+    else:
+        continue
+    break
+
+try:
+    from analisys.scripts.analise_negocio._helpers import (
+        get_data_dir,
+        get_resultados_dir,
+        get_graficos_dir,
+        resolve_data_file,
+        resolve_readings_files,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "analisys":
+        raise
+    from analise_negocio._helpers import (
+        get_data_dir,
+        get_resultados_dir,
+        get_graficos_dir,
+        resolve_data_file,
+        resolve_readings_files,
+    )
+
 
 def find_root() -> Path:
-    base = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
-    root = base
-    while not (root / "data").is_dir() and root != root.parent:
-        root = root.parent
-    if not (root / "data").is_dir():
-        raise FileNotFoundError("Pasta 'data' não encontrada subindo a partir do script")
-    return root
+    try:
+        from analisys.scripts.analise_negocio._helpers import get_project_root
+    except ModuleNotFoundError as error:
+        if error.name != "analisys":
+            raise
+        from analise_negocio._helpers import get_project_root
+
+    return get_project_root()
 
 
 ROOT = find_root()
-DATA_DIR = ROOT / "data"
-RESULTS_DIR = ROOT / "analisys" / "resultados"
-GRAPHICS_DIR = ROOT / "analisys" / "graficos" / "resultados"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR = get_data_dir(ROOT)
+RESULTS_DIR = get_resultados_dir(root=ROOT)
+GRAPHICS_DIR = get_graficos_dir("resultados", ROOT)
 
 # %%
 
@@ -51,7 +82,7 @@ def read_csv(path: Path) -> pl.DataFrame:
     }
     try:
         return pl.read_csv(path, **kwargs)
-    except Exception:
+    except UnicodeDecodeError:
         return pl.read_csv(path, encoding="latin-1", **kwargs)
 
 
@@ -137,14 +168,14 @@ def heatmap(matrix: pd.DataFrame, source: str, method: str, rows: int) -> str:
 
 def source_files() -> dict[str, list[Path]]:
     files = {
-        "unidades_consumidoras": [DATA_DIR / "unidades_consumidoras.csv"],
-        "medidores": [DATA_DIR / "medidores.csv"],
-        "faturas": [DATA_DIR / "faturas.csv"],
-        "geracao_distribuida": [DATA_DIR / "geracao_distribuida.csv"],
-        "ocorrencias_rede": [DATA_DIR / "ocorrencias_rede.csv"],
-        "atendimentos": [DATA_DIR / "atendimentos.json"],
-        "inspecoes": [DATA_DIR / "inspecoes.xlsx"],
-        "leituras": sorted((DATA_DIR / "leituras").glob("*.csv")),
+        "unidades_consumidoras": [resolve_data_file("unidades_consumidoras.csv", ROOT)],
+        "medidores": [resolve_data_file("medidores.csv", ROOT)],
+        "faturas": [resolve_data_file("faturas.csv", ROOT)],
+        "geracao_distribuida": [resolve_data_file("geracao_distribuida.csv", ROOT)],
+        "ocorrencias_rede": [resolve_data_file("ocorrencias_rede.csv", ROOT)],
+        "atendimentos": [resolve_data_file("atendimentos.json", ROOT)],
+        "inspecoes": [resolve_data_file("inspecoes.xlsx", ROOT)],
+        "leituras": resolve_readings_files(ROOT),
     }
     return {name: paths for name, paths in files.items() if all(path.exists() for path in paths)}
 

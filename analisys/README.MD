@@ -42,9 +42,18 @@ data/
 └── unidades_consumidoras.csv
 ```
 
-Os scripts detectam a raiz subindo as pastas até encontrar `data/`, mas os
-comandos abaixo devem ser executados a partir da raiz do projeto, que contém
-`data/` e `analisys/`.
+Os scripts usam o helper compartilhado
+[`analisys/scripts/analise_negocio/_helpers.py`](scripts/analise_negocio/_helpers.py).
+Ele identifica a raiz pelo par `data/` + `analisys/`, usando o diretório atual
+e o local do arquivo quando disponível. Assim, scripts e notebooks podem ser
+executados a partir da raiz ou de qualquer subdiretório do projeto, sem
+depender exclusivamente de `__file__`.
+
+Os arquivos de entrada são resolvidos recursivamente dentro de `data/`.
+Arquivos das fontes principais podem ficar diretamente em `data/`; os CSVs de
+leituras são todos os arquivos cujo nome contém `leitura`, inclusive em
+subdiretórios como `data/leituras/`. Ausências ou ambiguidades geram erros
+explícitos com os caminhos considerados.
 
 ## 3. Fluxo de primeira execução
 
@@ -138,6 +147,25 @@ Para gerar um arquivo `.ipynb` a partir do script:
 ```powershell
 jupytext --to ipynb analisys/scripts/04_correlation.py --output analisys/scripts/04_correlation.ipynb
 ```
+
+Ao criar uma nova análise, copie o bloco de inicialização dos scripts de
+negócio (a busca de candidatos em `Path.cwd()` e `__file__`, quando existente)
+e importe os helpers. Não use `os.path.dirname(__file__)` diretamente:
+
+```python
+from analisys.scripts.analise_negocio._helpers import (
+    get_project_root, get_data_dir, resolve_data_file, resolve_readings_files
+)
+
+ROOT = get_project_root()
+DATA_DIR = get_data_dir(ROOT)
+leituras = resolve_readings_files(ROOT)
+```
+
+Em notebooks, `__file__` não existe; portanto, o padrão deve sempre permitir
+que `get_project_root()` use o diretório de trabalho. O helper também fornece
+`init_notebook()` para configurar o `sys.path` e os diretórios de saída sem
+alterar o diretório de trabalho global.
 
 Para executar e salvar as saídas:
 

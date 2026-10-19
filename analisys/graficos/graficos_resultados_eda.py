@@ -3,19 +3,36 @@
 
 # %%
 import json
+import sys
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-root = Path.cwd()
-while not (root / 'data').exists() and root != root.parent:
-    root = root.parent
-if not (root / 'data').exists():
-    raise FileNotFoundError(f"Pasta 'data' não encontrada subindo a partir de {Path.cwd()}")
+try:
+    from analisys.scripts.analise_negocio._helpers import (
+        get_analisys_dir, get_graficos_dir, get_project_root
+    )
+except ModuleNotFoundError as error:
+    if error.name != "analisys":
+        raise
+    _starts = [Path.cwd()]
+    if "__file__" in globals():
+        _starts.append(Path(__file__).resolve().parent)
+    for _start in _starts:
+        for _candidate in (_start, *_start.parents):
+            if (_candidate / "data").is_dir() and (_candidate / "analisys").is_dir():
+                sys.path.insert(0, str(_candidate))
+                break
+        else:
+            continue
+        break
+    from analisys.scripts.analise_negocio._helpers import (
+        get_analisys_dir, get_graficos_dir, get_project_root
+    )
 
-expl = root / 'analisys'
-out = expl / 'graficos' / 'resultados'
-out.mkdir(parents=True, exist_ok=True)
+root = get_project_root()
+expl = get_analisys_dir(root)
+out = get_graficos_dir('resultados', root)
 
 def find_json(*patterns):
     for p in patterns:

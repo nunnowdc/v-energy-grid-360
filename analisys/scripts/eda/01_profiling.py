@@ -3,18 +3,42 @@
 
 # %%
 import json
+import sys
 from pathlib import Path
 import pandas as pd
 import polars as pl
 
-root = Path.cwd()
-while not (root / 'data').exists() and root != root.parent:
-    root = root.parent
-if not (root / 'data').exists():
-    raise FileNotFoundError(f"Pasta 'data' não encontrada subindo a partir de {Path.cwd()}")
-data_dir = root / 'data'
-res_dir = root / 'analisys' / 'resultados'
-res_dir.mkdir(parents=True, exist_ok=True)
+_starts = [Path.cwd()]
+if "__file__" in globals():
+    _starts.append(Path(__file__).resolve().parent)
+for _start in _starts:
+    for _candidate in (_start, *_start.parents):
+        if (_candidate / "data").is_dir() and (_candidate / "analisys").is_dir():
+            sys.path.insert(0, str(_candidate))
+            break
+    else:
+        continue
+    break
+
+try:
+    from analisys.scripts.analise_negocio._helpers import (
+        get_data_dir,
+        get_resultados_dir,
+        resolve_data_file,
+        resolve_readings_files,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "analisys":
+        raise
+    from analise_negocio._helpers import (
+        get_data_dir,
+        get_resultados_dir,
+        resolve_data_file,
+        resolve_readings_files,
+    )
+
+data_dir = get_data_dir()
+res_dir = get_resultados_dir()
 print("Usando:", data_dir)
 
 # %%
@@ -28,7 +52,7 @@ def ler_csv(path):
     try:
         df = pl.read_csv(path, separator=sep, infer_schema_length=0, truncate_ragged_lines=True)
         enc = 'utf8'
-    except Exception:
+    except UnicodeDecodeError:
         df = pl.read_csv(path, separator=sep, infer_schema_length=0, truncate_ragged_lines=True, encoding='latin-1')
         enc = 'latin-1'
     return df, sep, enc
@@ -39,7 +63,7 @@ def perfilar_coluna(s):
          "null_pct": float(s.null_count() / n * 100) if n else 0.0}
     try:
         d["distinct"] = int(s.n_unique())
-    except Exception:
+    except (ValueError, TypeError):
         d["distinct"] = None
     if s.dtype == pl.String:
         nn = s.drop_nulls()
@@ -68,7 +92,7 @@ def perfilar_df(df):
             "columns": {c: perfilar_coluna(df[c]) for c in df.columns}}
 
 def carregar(nome):
-    path = data_dir / nome
+    path = resolve_data_file(nome)
     if nome.endswith('.csv'):
         df, sep, enc = ler_csv(path)
         return df, {"separador": sep, "encoding": enc}
@@ -89,10 +113,15 @@ fontes = [
     ('atendimentos.json', 'Atendimentos'),
     ('inspecoes.xlsx', 'Inspecoes'),
 ]
-faltando = [n for n, _ in fontes if not (data_dir / n).exists()]
-arqs = sorted((data_dir / 'leituras').glob('*.csv'))
-if faltando or not arqs:
-    raise FileNotFoundError(f"Arquivos faltando: {faltando}; leituras encontradas: {len(arqs)}")
+faltando = []
+for nome, _ in fontes:
+    try:
+        resolve_data_file(nome)
+    except FileNotFoundError:
+        faltando.append(nome)
+arqs = resolve_readings_files()
+if faltando:
+    raise FileNotFoundError(f"Arquivos obrigatórios ausentes em {data_dir}: {faltando}")
 
 resultados = {}
 for nome, rotulo in fontes:
@@ -100,7 +129,7 @@ for nome, rotulo in fontes:
     try:
         df, meta = carregar(nome)
         resultados[rotulo] = {**meta, **perfilar_df(df)}
-    except Exception as e:
+    except (OSError, ValueError, TypeError, KeyError) as e:
         resultados[rotulo] = f"Error: {type(e).__name__}: {e}"
 
 # %% [markdown]

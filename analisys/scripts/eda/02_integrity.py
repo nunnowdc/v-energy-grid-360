@@ -3,18 +3,42 @@
 
 # %%
 import json
+import sys
 from pathlib import Path
 import pandas as pd
 import polars as pl
 
-root = Path.cwd()
-while not (root / 'data').exists() and root != root.parent:
-    root = root.parent
-if not (root / 'data').exists():
-    raise FileNotFoundError(f"Pasta 'data' não encontrada subindo a partir de {Path.cwd()}")
-data_dir = root / 'data'
-res_dir = root / 'analisys' / 'resultados'
-res_dir.mkdir(parents=True, exist_ok=True)
+_starts = [Path.cwd()]
+if "__file__" in globals():
+    _starts.append(Path(__file__).resolve().parent)
+for _start in _starts:
+    for _candidate in (_start, *_start.parents):
+        if (_candidate / "data").is_dir() and (_candidate / "analisys").is_dir():
+            sys.path.insert(0, str(_candidate))
+            break
+    else:
+        continue
+    break
+
+try:
+    from analisys.scripts.analise_negocio._helpers import (
+        get_data_dir,
+        get_resultados_dir,
+        resolve_data_file,
+        resolve_readings_files,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "analisys":
+        raise
+    from analise_negocio._helpers import (
+        get_data_dir,
+        get_resultados_dir,
+        resolve_data_file,
+        resolve_readings_files,
+    )
+
+data_dir = get_data_dir()
+res_dir = get_resultados_dir()
 print("Usando:", data_dir)
 
 # %%
@@ -24,14 +48,12 @@ def detectar_sep(path):
     return ';' if linha.count(';') > linha.count(',') else ','
 
 def ler(nome, cols):
-    path = data_dir / nome
-    if not path.exists():
-        raise FileNotFoundError(f"Arquivo não encontrado: {path}")
+    path = resolve_data_file(nome)
     if nome.endswith('.csv'):
         sep = detectar_sep(path)
         try:
             return pl.read_csv(path, separator=sep, infer_schema_length=0, columns=cols, truncate_ragged_lines=True)
-        except Exception:
+        except UnicodeDecodeError:
             return pl.read_csv(path, separator=sep, infer_schema_length=0, columns=cols,
                                truncate_ragged_lines=True, encoding='latin-1')
     if nome.endswith('.json'):
@@ -48,10 +70,8 @@ gd  = ler('geracao_distribuida.csv', ['id_uc'])
 oco = ler('ocorrencias_rede.csv', ['id_uc'])
 ate = ler('atendimentos.json', ['id_uc'])
 ins = ler('inspecoes.xlsx', ['id_uc'])
-arqs = sorted((data_dir / 'leituras').glob('*.csv'))
-if not arqs:
-    raise FileNotFoundError("Nenhum arquivo em data/leituras")
-leit = pl.concat([ler(f"leituras/{f.name}", ['id_uc', 'id_medidor']) for f in arqs])
+arqs = resolve_readings_files()
+leit = pl.concat([ler(str(f), ['id_uc', 'id_medidor']) for f in arqs])
 print("Tabelas carregadas. Linhas de leituras:", leit.height)
 
 # %%
