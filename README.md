@@ -2,6 +2,18 @@
 
 Passo a passo para executar tudo.
 
+## Como executar
+
+### Frontend
+
+Pré-requisito: Node.js 20 ou superior.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ## Fluxo de trabalho (Git Flow)
 
 ### Branches
