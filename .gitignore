@@ -13,5 +13,21 @@ data/*
 .env.*
 !.env.example
 
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+# .ipynb_checkpoints/    SE FOR NECESSÁRIO, DESCOMENTE ESSA LINHA PARA IGNORAR CHECKPOINTS DE NOTEBOOKS
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Editor / SO
+.vscode/
+.DS_Store
+Thumbs.db
+
 # Ir incrementando conforme necessário
-analisys/graficos/resultados/*
