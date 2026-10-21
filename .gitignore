@@ -30,4 +30,10 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Saídas de análise com dados de clientes (nome, CPF, endereço) ou conteúdo confidencial do case
+analisys/**/perfil_bruto.json
+analisys/**/camila_tela_360_atendimento_dados_brutos.json
+analisys/graficos/graficos_resultados*.ipynb
+analisys/contexto_perguntas_case.md
+
 # Ir incrementando conforme necessário
