@@ -14,6 +14,18 @@ npm install
 npm run dev
 ```
 
+### Backend
+
+Pré-requisito: Python 3.11 ou superior.
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate # No Windows: .venv\Scripts\activate
+python -m pip install -r requirements.txt
+python -m app.main
+```
+
 ## Fluxo de trabalho (Git Flow)
 
 ### Branches
