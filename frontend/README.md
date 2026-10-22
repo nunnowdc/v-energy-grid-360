@@ -37,10 +37,25 @@ npm run dev     # sobe o servidor em http://localhost:5173
 
 O projeto segue o **Page-Component Pattern**:
 
-- **Páginas** (`src/pages/`): uma por tela do portal. Montam a tela juntando componentes.
-- **Componentes do projeto** (`src/components/`): partes da interface criadas pelo time (layout, cards de KPI, tabelas específicas).
-- **Componentes do shadcn/ui** (`src/components/ui/`): componentes base (botão, input, tabela, modal…) adicionados pelo CLI do shadcn. O código fica no projeto e pode ser editado.
+- **Páginas** (`src/pages/`): uma pasta por tela do portal. Montam a tela juntando componentes.
+- **Componentes do projeto** (`src/components/`): uma pasta por componente criado pelo time (ex.: `AppHeader/`, `AppSidebar/`, `Layout/`).
+- **Componentes do shadcn/ui** (`src/components/ui/`): componentes base (botão, input, tabela, modal…) adicionados pelo CLI do shadcn. Não seguem a regra de uma pasta por componente, porque é o CLI que cria os arquivos ali.
+- **Configurações** (`src/config/`): definições usadas em mais de um lugar, como a lista de telas do menu (`navegacao.ts`).
+- **Hooks** (`src/hooks/`): hooks reutilizáveis do React.
 - **Utilitários** (`src/lib/`): funções auxiliares, como o `cn`, que combina classes do Tailwind.
+
+```
+src/
+├── components/
+│   ├── AppHeader/AppHeader.tsx
+│   ├── AppSidebar/AppSidebar.tsx
+│   ├── Layout/Layout.tsx
+│   └── ui/                  ← shadcn/ui
+├── config/navegacao.ts
+├── hooks/
+├── lib/
+└── pages/
+```
 
 Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o tema ficam centralizados em variáveis CSS no `src/index.css`.
 
@@ -72,7 +87,7 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 | `/inspecoes` | Fila de inspeção | Gerente de Perdas | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Gerente de Operação | DEC e FEC por alimentador ao longo do tempo |
 
-As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/). Todas as telas são renderizadas dentro de `components/Layout`, que contém o cabeçalho e o menu de navegação.
+As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`) e o cabeçalho (`AppHeader`).
 
 ## Decisões em aberto
 

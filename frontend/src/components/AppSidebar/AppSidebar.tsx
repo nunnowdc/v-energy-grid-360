@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { estaAtivo, itensNavegacao } from './navegacao'
+import { estaAtivo, itensNavegacao } from '@/config/navegacao'
 
 function AppSidebar() {
   const { pathname } = useLocation()
