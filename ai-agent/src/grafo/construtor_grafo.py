@@ -11,21 +11,21 @@ from typing import Any, Dict, Optional
 
 from langgraph.graph import StateGraph, START, END
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
-from ai_agent.src.interfaces.stub_validador_sql import StubValidadorSQL
-from ai_agent.src.interfaces.validador_sql_interface import ValidadorSQLInterface
-from ai_agent.src.nos.no_filtro_seguranca import no_filtro_seguranca, rota_pos_filtro
-from ai_agent.src.nos.no_completa_followup import no_completa_followup
-from ai_agent.src.nos.no_checa_escopo import no_checa_escopo, rota_pos_escopo
-from ai_agent.src.nos.no_roteador_consulta import no_roteador_consulta, rota_pos_roteador
-from ai_agent.src.nos.no_escreve_sql import no_escreve_sql
-from ai_agent.src.nos.no_valida_sql import no_valida_sql, rota_pos_validacao
-from ai_agent.src.nos.no_executa_sql import no_executa_sql, rota_pos_execucao
-from ai_agent.src.nos.no_recusa_honesta import no_recusa_honesta
-from ai_agent.src.nos.no_sintetiza_resposta import no_sintetiza_resposta
-from ai_agent.src.nos.no_finaliza_auditoria import no_finaliza_auditoria
-from ai_agent.src.provedores.cliente_llm import ClienteLLM
-from ai_agent.src.services.sql_executor import SQLExecutor
+from ..contratos.estado_agente import EstadoAgente
+from ..interfaces.stub_validador_sql import StubValidadorSQL
+from ..interfaces.validador_sql_interface import ValidadorSQLInterface
+from ..nos.no_filtro_seguranca import no_filtro_seguranca, rota_pos_filtro
+from ..nos.no_completa_followup import no_completa_followup
+from ..nos.no_checa_escopo import no_checa_escopo, rota_pos_escopo
+from ..nos.no_roteador_consulta import no_roteador_consulta, rota_pos_roteador
+from ..nos.no_escreve_sql import no_escreve_sql
+from ..nos.no_valida_sql import no_valida_sql, rota_pos_validacao
+from ..nos.no_executa_sql import no_executa_sql, rota_pos_execucao
+from ..nos.no_recusa_honesta import no_recusa_honesta
+from ..nos.no_sintetiza_resposta import no_sintetiza_resposta
+from ..nos.no_finaliza_auditoria import no_finaliza_auditoria
+from ..provedores.cliente_llm import ClienteLLM
+from ..services.sql_executor import SQLExecutor
 
 logger = logging.getLogger("venergy.construtor_grafo")
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 from typing import List, Set
-from ai_agent.src.interfaces.validador_sql_interface import (
+from .validador_sql_interface import (
     ResultadoValidacaoSQL,
     ValidadorSQLInterface,
 )
