@@ -5,8 +5,7 @@ function Visao360Page() {
 
   return (
     <section>
-      <h1>Visão 360</h1>
-      <p>
+      <p className="text-muted-foreground">
         {idUc
           ? `Unidade consumidora: ${idUc}`
           : 'Nenhuma unidade consumidora selecionada.'}

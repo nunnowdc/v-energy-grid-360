@@ -1,8 +1,9 @@
 function IndicadoresPage() {
   return (
     <section>
-      <h1>Indicadores</h1>
-      <p>Principais indicadores do negócio, comparados entre períodos.</p>
+      <p className="text-muted-foreground">
+        Principais indicadores do negócio, comparados entre períodos.
+      </p>
     </section>
   )
 }
