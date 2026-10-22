@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ai_agent.src.grafo.executor_agente import executar_agente
+from ..grafo.executor_agente import executar_agente
 
 logger = logging.getLogger("venergy.api_ai")
 

@@ -7,8 +7,8 @@ import logging
 import re
 from typing import Any, Dict
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
-from ai_agent.src.provedores.cliente_llm import ClienteLLM
+from ..contratos.estado_agente import EstadoAgente
+from ..provedores.cliente_llm import ClienteLLM
 
 logger = logging.getLogger("venergy.no_checa_escopo")
 

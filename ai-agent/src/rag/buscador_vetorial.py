@@ -7,7 +7,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from ai_agent.src.contratos.modelos_rag import ChunkConhecimento, ResultadoBuscaRAG
+from ..contratos.modelos_rag import ChunkConhecimento, ResultadoBuscaRAG
 
 logger = logging.getLogger("venergy.buscador_vetorial")
 

@@ -8,8 +8,8 @@ from typing import Any, Dict, Literal
 
 from pydantic import BaseModel, Field
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
-from ai_agent.src.provedores.cliente_llm import ClienteLLM
+from ..contratos.estado_agente import EstadoAgente
+from ..provedores.cliente_llm import ClienteLLM
 
 logger = logging.getLogger("venergy.no_roteador_consulta")
 

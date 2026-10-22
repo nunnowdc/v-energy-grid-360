@@ -7,8 +7,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
-from ai_agent.src.rag.buscador_vetorial import BuscadorVetorial
+from ..contratos.estado_agente import EstadoAgente
+from ..rag.buscador_vetorial import BuscadorVetorial
 
 logger = logging.getLogger("venergy.no_recupera_contexto")
 

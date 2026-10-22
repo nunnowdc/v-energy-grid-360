@@ -6,8 +6,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
-from ai_agent.src.services.sql_executor import SQLExecutor
+from ..contratos.estado_agente import EstadoAgente
+from ..services.sql_executor import SQLExecutor
 
 logger = logging.getLogger("venergy.no_executa_sql")
 

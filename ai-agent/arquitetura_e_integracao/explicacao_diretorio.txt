@@ -1,0 +1,39 @@
+ai-agent/
+├── src/
+│   ├── contratos/                      # Schemas Pydantic (estado, entradas, saídas)
+│   │   ├── estado_agente.py            # TypedDict / BaseModel do estado do grafo
+│   │   ├── resposta_agente.py          # Contrato final de saída para Portal e Testes
+│   │   └── modelos_rag.py              # Documentos recuperados, chunks e metadados
+│   ├── interfaces/                     # Contratos desacoplados
+│   │   ├── validador_sql_interface.py  # Protocol de validação (para o time de Segurança)
+│   │   └── stub_validador_sql.py       # Stub provisório AST para você rodar agora
+│   ├── nos/                            # Um arquivo por nó do LangGraph (funções atômicas)
+│   │   ├── no_filtro_seguranca.py      # Nó 1: Anti prompt injection e jailbreak
+│   │   ├── no_completa_followup.py     # Nó 2: Reescrita autônoma com contexto anterior
+│   │   ├── no_checa_escopo.py          # Nó 3: Filtro de escopo V-Energy
+│   │   ├── no_roteador_consulta.py     # Nó 4: Roteamento (SQL, RAG ou Ambos)
+│   │   ├── no_recupera_contexto.py     # Nó 5: RAG de glossário, colunas e regras ANEEL
+│   │   ├── no_cache_parametrizado.py   # Nó 6: Cache certificado com extração de slots
+│   │   ├── no_escreve_sql.py           # Nó 7: Text-to-SQL estruturado
+│   │   ├── no_valida_sql.py            # Nó 8: Consome a interface do validador
+│   │   ├── no_executa_sql.py           # Nó 9: Executor read-only com timeout e limite
+│   │   ├── no_recusa_honesta.py        # Nó 10: Resposta clara de abstenção
+│   │   ├── no_sintetiza_resposta.py    # Nó 11: Narrativa com dados do SQL e fontes RAG
+│   │   └── no_finaliza_auditoria.py    # Nó 12: Selo de confiança e gravação de log
+│   ├── grafo/
+│   │   ├── construtor_grafo.py         # Montagem do StateGraph, arestas e compilação
+│   │   └── executor_agente.py          # Ponto de entrada (executar_agente)
+│   ├── rag/
+│   │   ├── indexador_conhecimento.py   # Carga de glossário, PRODIST e schema
+│   │   └── buscador_vetorial.py        # Busca semântica e filtros de metadados
+│   ├── memoria/
+│   │   └── gerenciador_memoria.py      # Memória de curto prazo / checkpointer
+│   ├── insights/                       # Pipeline paralelo para telas do portal
+│   │   ├── extrator_metricas_fixas.py  # Queries fixas das telas
+│   │   ├── narrador_insights.py        # LLM que narra as métricas
+│   │   └── conferente_numerico.py      # Validação rigorosa dos números do texto
+│   └── provedores/
+│       └── cliente_llm.py              # OpenRouter com fallback para 9router
+└── testes/
+    ├── unitarios/                      # Testes com FakeLLM para cada nó isolado
+    └── integracao/                     # Testes ponta a ponta com banco sintético

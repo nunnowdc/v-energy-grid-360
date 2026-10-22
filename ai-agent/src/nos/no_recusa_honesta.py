@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
+from ..contratos.estado_agente import EstadoAgente
 
 logger = logging.getLogger("venergy.no_recusa_honesta")
 
