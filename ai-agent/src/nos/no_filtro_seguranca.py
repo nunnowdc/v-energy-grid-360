@@ -24,15 +24,16 @@ _PADROES_ATAQUE = re.compile(
     <\s*/?instructions\s*> |
     IGNORE\s+ALL |
     # SQL direto no prompt
-    (DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE)\s+(TABLE|DATABASE|FROM)\s+\w+ |
+    (DROP|ALTER|TRUNCATE)\s+(TABLE|DATABASE)\s+\w+ |
+    (DELETE\s+FROM|INSERT\s+INTO|UPDATE)\s+\w+ |
     # Tentativa de sair do escopo via instrução
     act\s+as\s+(a\s+)?(different|other|new)\s+(AI|model|assistant) |
     pretend\s+(you\s+are|to\s+be) |
-    esqueça\s+(todas\s+as\s+)?suas\s+instruções |
-    ignore\s+(as\s+)?suas\s+instruções |
+    esqueça\s+(todas\s+as\s+|as\s+)?(suas\s+)?instruções(\s+anteriores)? |
+    ignore\s+(todas\s+as\s+|as\s+)?(suas\s+)?instruções(\s+anteriores)? |
     você\s+agora\s+é |
     finja\s+que\s+(você\s+é|é) |
-    ignore\s+(as\s+)?regras
+    ignore\s+(todas\s+as\s+|as\s+)?(suas\s+)?regras
     """,
     re.IGNORECASE | re.VERBOSE,
 )

@@ -55,7 +55,7 @@ def no_finaliza_auditoria(
     Falha com segurança: se o banco de auditoria não responder, o erro é logado
     mas a resposta ao usuário NÃO é bloqueada.
     """
-    audit_id = str(uuid.uuid4())
+    audit_id = state.get("audit_id") or str(uuid.uuid4())
     inicio_ts = state.get("tempo_inicio_ts", time.time())
     tempo_total_ms = (time.time() - inicio_ts) * 1000
 
