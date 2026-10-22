@@ -7,6 +7,9 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - [Vite](https://vite.dev/) (build e servidor de desenvolvimento)
 - [React Router](https://reactrouter.com/) (navegação entre telas)
+- [Tailwind CSS](https://tailwindcss.com/) v4 (estilos)
+- [shadcn/ui](https://ui.shadcn.com/) com [Base UI](https://base-ui.com/) (componentes de interface)
+- [Lucide](https://lucide.dev/) (ícones)
 
 ## Pré-requisitos
 
@@ -35,8 +38,29 @@ npm run dev     # sobe o servidor em http://localhost:5173
 O projeto segue o **Page-Component Pattern**:
 
 - **Páginas** (`src/pages/`): uma por tela do portal. Montam a tela juntando componentes.
-- **Componentes** (`src/components/`): partes reutilizáveis da interface (cards, tabelas, gráficos, menu).
-- Cada página e componente fica em sua própria pasta, com o arquivo `.tsx` e o seu arquivo de estilo.
+- **Componentes do projeto** (`src/components/`): partes da interface criadas pelo time (layout, cards de KPI, tabelas específicas).
+- **Componentes do shadcn/ui** (`src/components/ui/`): componentes base (botão, input, tabela, modal…) adicionados pelo CLI do shadcn. O código fica no projeto e pode ser editado.
+- **Utilitários** (`src/lib/`): funções auxiliares, como o `cn`, que combina classes do Tailwind.
+
+Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o tema ficam centralizados em variáveis CSS no `src/index.css`.
+
+### Imports
+
+Use o alias `@/` para importar a partir de `src/`:
+
+```tsx
+import { Button } from '@/components/ui/button'
+```
+
+### Adicionar um componente do shadcn/ui
+
+Dentro de `frontend/`:
+
+```bash
+npx shadcn@latest add <componente>
+```
+
+A lista de componentes está em https://ui.shadcn.com/docs/components.
 
 ## Telas e rotas
 
@@ -52,5 +76,4 @@ As rotas são definidas em `src/App.tsx` com o [React Router](https://reactroute
 
 ## Decisões em aberto
 
-- Abordagem de estilos (CSS Modules, Tailwind etc.)
 - Biblioteca para chamadas à API
