@@ -3,8 +3,10 @@ Executor seguro de consultas SQL com timeout, limite de linhas e suporte a Postg
 """
 from __future__ import annotations
 
+import decimal
 import logging
 import os
+import re
 import sqlite3
 import time
 from typing import Any, Dict, List, Optional
@@ -14,6 +16,14 @@ logger = logging.getLogger("venergy.sql_executor")
 
 DEFAULT_ROW_LIMIT = 50
 QUERY_TIMEOUT_SECONDS = 30.0
+
+
+def _normalizar_linha(linha: Dict[str, Any]) -> Dict[str, Any]:
+    """Converte tipos específicos de banco (como Decimal) para tipos padrão JSON/Python."""
+    return {
+        k: float(v) if isinstance(v, decimal.Decimal) else v
+        for k, v in linha.items()
+    }
 
 
 class ResultadoExecucaoSQL(BaseModel):
@@ -27,11 +37,21 @@ class ResultadoExecucaoSQL(BaseModel):
 class SQLExecutor:
     """
     Executa queries SQL em modo estritamente READ-ONLY com governança de timeout e volume.
+    Suporta PostgreSQL e SQLite sintético com schema isolado opcional.
     """
 
-    def __init__(self, db_url: Optional[str] = None, sqlite_path: Optional[str] = None):
-        self.db_url = db_url or os.getenv("DATABASE_URL")
+    def __init__(
+        self,
+        db_url: Optional[str] = None,
+        sqlite_path: Optional[str] = None,
+        schema: Optional[str] = None,
+    ):
+        self.db_url = db_url or os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
         self.sqlite_path = sqlite_path or os.getenv("SQLITE_PATH")
+        self.schema = schema or os.getenv("TEST_POSTGRES_SCHEMA")
+        self.is_postgres = bool(self.db_url and self.db_url.startswith("postgres"))
+        if self.schema and not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", self.schema):
+            raise ValueError("schema deve conter apenas letras, números e underscore, começando por letra ou underscore.")
 
     def executar(self, sql: str, limite_linhas: int = DEFAULT_ROW_LIMIT) -> ResultadoExecucaoSQL:
         inicio = time.time()
@@ -42,7 +62,7 @@ class SQLExecutor:
             sql_limpa = f"{sql_limpa} LIMIT {limite_linhas}"
 
         # 1. Se houver DATABASE_URL (PostgreSQL)
-        if self.db_url and self.db_url.startswith("postgres"):
+        if self.is_postgres:
             return self._executar_postgres(sql_limpa, inicio)
 
         # 2. Se houver caminho SQLite ou fallback para teste
@@ -63,18 +83,22 @@ class SQLExecutor:
                     tempo_execucao_ms=(time.time() - inicio) * 1000,
                 )
 
+        options = f"-c statement_timeout={int(QUERY_TIMEOUT_SECONDS * 1000)}"
+
         conn = None
         try:
             conn = psycopg2.connect(
                 self.db_url,
                 connect_timeout=int(QUERY_TIMEOUT_SECONDS),
-                options=f"-c statement_timeout={int(QUERY_TIMEOUT_SECONDS * 1000)}",
+                options=options,
             )
             conn.set_session(readonly=True, autocommit=True)
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                if self.schema:
+                    cur.execute(f'SET search_path TO "{self.schema}", public')
                 cur.execute(sql)
                 rows = cur.fetchall()
-                dados = [dict(r) for r in rows]
+                dados = [_normalizar_linha(dict(r)) for r in rows]
                 return ResultadoExecucaoSQL(
                     sucesso=True,
                     linhas=dados,
@@ -99,10 +123,17 @@ class SQLExecutor:
         conn = None
         try:
             conn = psycopg.connect(self.db_url, timeout=QUERY_TIMEOUT_SECONDS, autocommit=True)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SET statement_timeout = {int(QUERY_TIMEOUT_SECONDS * 1000)}"
+                )
+                cur.execute("SET default_transaction_read_only = on")
+                if self.schema:
+                    cur.execute(f'SET search_path TO "{self.schema}", public')
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(sql)
                 rows = cur.fetchall()
-                dados = [dict(r) for r in rows]
+                dados = [_normalizar_linha(dict(r)) for r in rows]
                 return ResultadoExecucaoSQL(
                     sucesso=True,
                     linhas=dados,
@@ -110,7 +141,8 @@ class SQLExecutor:
                     tempo_execucao_ms=(time.time() - inicio) * 1000,
                 )
         except Exception as e:
-            return ResultadoExecucaoSQL(
+                logger.error("Erro na execução SQL PostgreSQL: %s", e)
+                return ResultadoExecucaoSQL(
                 sucesso=False,
                 erro=str(e),
                 tempo_execucao_ms=(time.time() - inicio) * 1000,
@@ -127,7 +159,7 @@ class SQLExecutor:
             cursor = conn.cursor()
             cursor.execute(sql)
             rows = cursor.fetchall()
-            dados = [dict(r) for r in rows]
+            dados = [_normalizar_linha(dict(r)) for r in rows]
             conn.close()
             return ResultadoExecucaoSQL(
                 sucesso=True,

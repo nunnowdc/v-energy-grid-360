@@ -5,9 +5,12 @@ Fornece banco SQLite sintético com schema da camada Gold, mocks de LLM e valida
 from __future__ import annotations
 
 import os
+import logging
+import re
 import sqlite3
 import sys
 import types
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 import pytest
@@ -31,39 +34,39 @@ from ai_agent.src.services.sql_executor import SQLExecutor
 from ai_agent.src.interfaces.stub_validador_sql import StubValidadorSQL
 from security.sql_validator import SQLValidator
 
+logger = logging.getLogger(__name__)
+
 
 # ── 2. DDL e Carga de Dados Sintéticos (Camada Gold) ─────────────────────────
 DDL_GOLD = """
 CREATE TABLE IF NOT EXISTS dim_unidade_consumidora (
     uc_id INTEGER PRIMARY KEY,
-    codigo_uc TEXT UNIQUE NOT NULL,
-    nome_cliente TEXT NOT NULL,
-    classe TEXT NOT NULL,
-    municipio TEXT NOT NULL,
-    bairro TEXT NOT NULL,
-    fase TEXT NOT NULL,
-    status_ligacao TEXT NOT NULL
+    codigo_uc VARCHAR(50) UNIQUE NOT NULL,
+    nome_cliente VARCHAR(150) NOT NULL,
+    classe VARCHAR(50) NOT NULL,
+    municipio VARCHAR(100) NOT NULL,
+    bairro VARCHAR(100) NOT NULL,
+    fase VARCHAR(50) NOT NULL,
+    status_ligacao VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS fact_faturamento (
     id_fatura INTEGER PRIMARY KEY,
-    uc_id INTEGER NOT NULL,
+    uc_id INTEGER NOT NULL REFERENCES dim_unidade_consumidora(uc_id),
     ano INTEGER NOT NULL,
     mes INTEGER NOT NULL,
-    volume_faturado REAL NOT NULL,
-    receita_faturada REAL NOT NULL,
-    status_pagamento TEXT NOT NULL,
-    FOREIGN KEY (uc_id) REFERENCES dim_unidade_consumidora(uc_id)
+    volume_faturado NUMERIC NOT NULL,
+    receita_faturada NUMERIC NOT NULL,
+    status_pagamento VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS fact_ocorrencias (
     id_ocorrencia INTEGER PRIMARY KEY,
-    uc_id INTEGER NOT NULL,
-    tipo_interrupcao TEXT NOT NULL,
-    duracao_minutos REAL NOT NULL,
-    data_inicio TEXT NOT NULL,
-    ano INTEGER NOT NULL,
-    FOREIGN KEY (uc_id) REFERENCES dim_unidade_consumidora(uc_id)
+    uc_id INTEGER NOT NULL REFERENCES dim_unidade_consumidora(uc_id),
+    tipo_interrupcao VARCHAR(50) NOT NULL,
+    duracao_minutos NUMERIC NOT NULL,
+    data_inicio VARCHAR(50) NOT NULL,
+    ano INTEGER NOT NULL
 );
 """
 
@@ -77,7 +80,7 @@ DADOS_SINTETICOS_UCS = [
 ]
 
 DADOS_SINTETICOS_FATURAMENTO = [
-    # uc_id, ano, mes, volume_faturado, receita_faturada, status_pagamento
+    # id_fatura, uc_id, ano, mes, volume_faturado, receita_faturada, status_pagamento
     (1, 1, 2023, 1, 1200.0, 1080.0, "Pago"),
     (2, 1, 2023, 2, 1300.0, 1170.0, "Pago"),
     (3, 1, 2024, 1, 1400.0, 1260.0, "Pago"),
@@ -101,11 +104,112 @@ DADOS_SINTETICOS_OCORRENCIAS = [
 ]
 
 
+def _testar_conexao_postgres(db_url: str) -> bool:
+    """Verifica rapidamente se o PostgreSQL está acessível."""
+    conn = None
+    try:
+        import psycopg2
+        conn = psycopg2.connect(db_url, connect_timeout=2)
+        return True
+    except Exception as exc:
+        logger.warning("PostgreSQL indisponível; usando SQLite nos testes: %s", exc)
+        return False
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@pytest.fixture(scope="session")
+def postgres_test_info():
+    """
+    Sessão de testes com PostgreSQL real:
+    Cria e popula um schema temporário exclusivo desta execução.
+    O nome usa TEST_POSTGRES_SCHEMA como prefixo, nunca apaga schema preexistente.
+    Retorna dicionário indicando disponibilidade, db_url e schema.
+    """
+    db_url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+    schema_prefix = os.getenv("TEST_POSTGRES_SCHEMA", "venergy_test_gold")
+
+    if not db_url or not db_url.startswith("postgres"):
+        logger.warning("TEST_DATABASE_URL não configurada para PostgreSQL; usando SQLite nos testes.")
+        yield {"disponivel": False, "db_url": None, "schema": None}
+        return
+
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", schema_prefix):
+        raise ValueError("TEST_POSTGRES_SCHEMA deve conter apenas letras, números e underscore, começando por letra ou underscore.")
+
+    schema = f"{schema_prefix[:48]}_{uuid.uuid4().hex[:12]}"
+    if not _testar_conexao_postgres(db_url):
+        yield {"disponivel": False, "db_url": None, "schema": None}
+        return
+
+    import psycopg2
+    from psycopg2 import sql
+
+    schema_criado = False
+    conn = None
+    try:
+        conn = psycopg2.connect(db_url)
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+            schema_criado = True
+            cur.execute(
+                sql.SQL("SET search_path TO {}, public").format(sql.Identifier(schema))
+            )
+            cur.execute(DDL_GOLD)
+
+            cur.executemany(
+                "INSERT INTO dim_unidade_consumidora VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                DADOS_SINTETICOS_UCS,
+            )
+            cur.executemany(
+                "INSERT INTO fact_faturamento VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                DADOS_SINTETICOS_FATURAMENTO,
+            )
+            cur.executemany(
+                "INSERT INTO fact_ocorrencias VALUES (%s, %s, %s, %s, %s, %s)",
+                DADOS_SINTETICOS_OCORRENCIAS,
+            )
+    except Exception as exc:
+        if conn is not None:
+            conn.close()
+        if schema_criado:
+            cleanup_conn = psycopg2.connect(db_url)
+            try:
+                cleanup_conn.autocommit = True
+                with cleanup_conn.cursor() as cur:
+                    cur.execute(
+                        sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema))
+                    )
+            finally:
+                cleanup_conn.close()
+        raise RuntimeError(
+            f"Falha ao preparar schema PostgreSQL para os testes: {exc}"
+        ) from exc
+
+    finally:
+        if conn is not None and not conn.closed:
+            conn.close()
+
+    try:
+        yield {"disponivel": True, "db_url": db_url, "schema": schema}
+    finally:
+        cleanup_conn = psycopg2.connect(db_url)
+        try:
+            cleanup_conn.autocommit = True
+            with cleanup_conn.cursor() as cur:
+                cur.execute(
+                    sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema))
+                )
+        finally:
+            cleanup_conn.close()
+
+
 @pytest.fixture
 def sqlite_gold_path(tmp_path: Path) -> str:
     """
-    Cria e popula um arquivo SQLite temporário com o schema Gold e dados sintéticos.
-    Retorna o caminho em string para ser consumido pelo SQLExecutor.
+    Fallback: Cria e popula arquivo SQLite temporário com o schema Gold e dados sintéticos.
     """
     db_file = tmp_path / "v_energy_gold_test.db"
     conn = sqlite3.connect(str(db_file))
@@ -130,15 +234,29 @@ def sqlite_gold_path(tmp_path: Path) -> str:
 
 
 @pytest.fixture
-def sql_executor_teste(sqlite_gold_path: str) -> SQLExecutor:
-    """Instância de SQLExecutor apontando para o banco SQLite sintético."""
+def sql_executor_teste(postgres_test_info, sqlite_gold_path: str) -> SQLExecutor:
+    """
+    Instância de SQLExecutor conectada ao PostgreSQL real (se disponível)
+    ou com fallback transparente para SQLite sintético.
+    """
+    if postgres_test_info.get("disponivel"):
+        return SQLExecutor(
+            db_url=postgres_test_info["db_url"],
+            schema=postgres_test_info["schema"],
+        )
     return SQLExecutor(sqlite_path=sqlite_gold_path)
 
 
 @pytest.fixture
+def usando_postgres(postgres_test_info) -> bool:
+    """Indica se a execução atual dos testes está usando PostgreSQL real."""
+    return postgres_test_info["disponivel"]
+
+
+@pytest.fixture
 def validador_sql_padrao() -> SQLValidator:
-    """Instância do SQLValidator (AST sqlglot) em dialeto sqlite para testes."""
-    return SQLValidator(dialect="sqlite")
+    """Instância do SQLValidator (AST sqlglot) padronizada no dialeto postgres para testes."""
+    return SQLValidator(dialect="postgres")
 
 
 # ── 3. Fakes e Mocks de LLM ──────────────────────────────────────────────────

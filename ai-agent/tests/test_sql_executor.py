@@ -4,6 +4,11 @@ Valida execução em SQLite sintético, injeção de LIMIT, cálculo de tempo e 
 """
 from __future__ import annotations
 
+import decimal
+import sys
+import types
+from unittest.mock import MagicMock, patch
+
 import pytest
 from ai_agent.src.services.sql_executor import SQLExecutor, ResultadoExecucaoSQL
 
@@ -115,3 +120,42 @@ def test_sql_com_ponto_e_virgula_e_espacos(sql_executor_teste: SQLExecutor):
 
     assert resultado.sucesso is True
     assert len(resultado.linhas) == 2
+
+
+def test_executor_postgres_configura_timeout_readonly_e_search_path():
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    cursor.fetchall.return_value = [{"total": decimal.Decimal("12.50")}]
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+
+    psycopg2 = types.ModuleType("psycopg2")
+    psycopg2.connect = MagicMock(return_value=conn)
+    extras = types.ModuleType("psycopg2.extras")
+    extras.RealDictCursor = object()
+
+    with patch.dict(sys.modules, {"psycopg2": psycopg2, "psycopg2.extras": extras}):
+        executor = SQLExecutor(
+            db_url="postgresql://localhost/v_energy_test_db",
+            schema="VEnergy_Test_Gold",
+        )
+        resultado = executor.executar("SELECT SUM(valor) AS total FROM fatos")
+
+    psycopg2.connect.assert_called_once_with(
+        "postgresql://localhost/v_energy_test_db",
+        connect_timeout=30,
+        options="-c statement_timeout=30000",
+    )
+    conn.set_session.assert_called_once_with(readonly=True, autocommit=True)
+    cursor.execute.assert_any_call('SET search_path TO "VEnergy_Test_Gold", public')
+    cursor.execute.assert_any_call("SELECT SUM(valor) AS total FROM fatos LIMIT 50")
+    assert resultado.sucesso is True
+    assert resultado.linhas == [{"total": 12.5}]
+
+
+def test_executor_rejeita_schema_postgres_com_identificador_invalido():
+    with pytest.raises(ValueError, match="schema"):
+        SQLExecutor(
+            db_url="postgresql://localhost/v_energy_test_db",
+            schema="venergy_test; DROP SCHEMA public",
+        )

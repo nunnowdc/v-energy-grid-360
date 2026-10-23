@@ -27,9 +27,9 @@ def carregar_golden_dataset() -> List[Dict[str, Any]]:
 
 
 def _extrair_tabelas_ast(sql: str) -> set[str]:
-    """Extrai nomes de tabelas da query via AST do SQLGlot."""
+    """Extrai nomes de tabelas da query via AST do SQLGlot (dialeto PostgreSQL)."""
     try:
-        arvore = sqlglot.parse_one(sql, read="sqlite")
+        arvore = sqlglot.parse_one(sql, read="postgres")
         return {t.name.lower() for t in arvore.find_all(exp.Table) if t.name}
     except Exception:
         return set()
@@ -110,7 +110,7 @@ class LLMGoldenDataset(FakeClienteLLM):
         )
 
 
-def test_avaliacao_completa_golden_dataset(sql_executor_teste: SQLExecutor):
+def test_avaliacao_completa_golden_dataset(sql_executor_teste: SQLExecutor, postgres_test_info: dict):
     """
     Executa a avaliação automatizada ponta a ponta sobre todos os 12 casos do Golden Dataset
     e valida os thresholds de qualidade estabelecidos no requisito REQ-AI-08.
@@ -119,6 +119,11 @@ def test_avaliacao_completa_golden_dataset(sql_executor_teste: SQLExecutor):
     assert len(casos) >= 10, "Golden dataset deve conter no mínimo 10 casos canônicos."
 
     llm_avaliador = LLMGoldenDataset(casos=casos)
+    motor_ativo = (
+        f"PostgreSQL ({postgres_test_info['schema']})"
+        if postgres_test_info.get("disponivel")
+        else "SQLite (fallback)"
+    )
 
     total_casos_sql = 0
     sql_executados_sucesso = 0
@@ -181,7 +186,8 @@ def test_avaliacao_completa_golden_dataset(sql_executor_teste: SQLExecutor):
     print("\n" + "=" * 70)
     print(" [RELATORIO CONSOLIDADO DE AVALIACAO DO AGENTE (REQ-AI-08)]")
     print("=" * 70)
-    print(f" Total de Casos de Teste Avaliados: {len(casos)}")
+    print(f" Motor de Banco de Dados Ativo:              {motor_ativo}")
+    print(f" Total de Casos de Teste Avaliados:          {len(casos)}")
     print(f" 1. Taxa de Execucao Valida (Execution Rate):   {taxa_execucao:6.1f}% (meta: >= 90.0%)")
     print(f" 2. Precisao de AST (Component Match):          {taxa_component_match:6.1f}% (meta: >= 85.0%)")
     print(f" 3. Taxa de Abstencao Correta (Honesty Acc):    {taxa_abstencao:6.1f}% (meta: 100.0%)")
