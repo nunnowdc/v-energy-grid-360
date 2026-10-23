@@ -1,36 +1,19 @@
-import { NavLink, Outlet } from 'react-router'
-
-const links = [
-  { to: '/', label: 'Indicadores' },
-  { to: '/receita', label: 'Receita' },
-  { to: '/visao-360', label: 'Visão 360' },
-  { to: '/inspecoes', label: 'Fila de inspeção' },
-  { to: '/continuidade', label: 'Continuidade' },
-]
+import { Outlet } from 'react-router'
+import AppHeader from '@/components/AppHeader/AppHeader'
+import AppSidebar from '@/components/AppSidebar/AppSidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
 function Layout() {
   return (
-    <div>
-      <header>
-        <strong>V-Energy Grid 360</strong>
-      </header>
-
-      <nav>
-        <ul>
-          {links.map((link) => (
-            <li key={link.to}>
-              <NavLink to={link.to} end={link.to === '/'}>
-                {link.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <main>
-        <Outlet />
-      </main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <AppHeader />
+        <div className="flex flex-1 flex-col gap-4 p-6">
+          <Outlet />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 

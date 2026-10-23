@@ -7,6 +7,9 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - [Vite](https://vite.dev/) (build e servidor de desenvolvimento)
 - [React Router](https://reactrouter.com/) (navegação entre telas)
+- [Tailwind CSS](https://tailwindcss.com/) v4 (estilos)
+- [shadcn/ui](https://ui.shadcn.com/) com [Base UI](https://base-ui.com/) (componentes de interface)
+- [Lucide](https://lucide.dev/) (ícones)
 
 ## Pré-requisitos
 
@@ -34,9 +37,53 @@ npm run dev     # sobe o servidor em http://localhost:5173
 
 O projeto segue o **Page-Component Pattern**:
 
-- **Páginas** (`src/pages/`): uma por tela do portal. Montam a tela juntando componentes.
-- **Componentes** (`src/components/`): partes reutilizáveis da interface (cards, tabelas, gráficos, menu).
-- Cada página e componente fica em sua própria pasta, com o arquivo `.tsx` e o seu arquivo de estilo.
+- **Páginas** (`src/pages/`): uma pasta por tela do portal. Montam a tela juntando componentes.
+- **Componentes do projeto** (`src/components/`): uma pasta por componente criado pelo time (ex.: `AppHeader/`, `AppSidebar/`, `Layout/`).
+- **Componentes do shadcn/ui** (`src/components/ui/`): componentes base (botão, input, tabela, modal…) adicionados pelo CLI do shadcn. Não seguem a regra de uma pasta por componente, porque é o CLI que cria os arquivos ali.
+- **Configurações** (`src/config/`): definições usadas em mais de um lugar, como a lista de telas do menu (`navegacao.ts`).
+- **Hooks** (`src/hooks/`): hooks reutilizáveis do React.
+- **Utilitários** (`src/lib/`): funções auxiliares, como o `cn`, que combina classes do Tailwind.
+
+```
+src/
+├── components/
+│   ├── AppHeader/AppHeader.tsx
+│   ├── AppSidebar/AppSidebar.tsx
+│   ├── Layout/Layout.tsx
+│   └── ui/                  ← shadcn/ui
+├── config/navegacao.ts
+├── hooks/
+├── lib/
+└── pages/
+```
+
+### Regra geral de organização
+
+- Tudo o que o time cria fica **dividido em arquivos pequenos, cada um com uma única responsabilidade**, para facilitar o debug e a edição.
+- Cada página e cada componente tem **sua própria pasta**, com o mesmo nome do arquivo principal: `components/NomeDoComponente/NomeDoComponente.tsx`.
+- Vale mesmo para componentes usados em um só lugar: o `AppHeader`, por exemplo, só é usado pelo `Layout`, mas tem a própria pasta.
+- Arquivos específicos de um componente (tipos, testes) ficam dentro da pasta dele.
+- **Nomes:** pastas e componentes em `PascalCase`; páginas terminam em `Page` (`ReceitaPage`); configurações, hooks e utilitários em minúsculas (`navegacao.ts`, `use-mobile.ts`).
+
+Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o tema ficam centralizados em variáveis CSS no `src/index.css`.
+
+### Imports
+
+Use o alias `@/` para importar a partir de `src/`:
+
+```tsx
+import { Button } from '@/components/ui/button'
+```
+
+### Adicionar um componente do shadcn/ui
+
+Dentro de `frontend/`:
+
+```bash
+npx shadcn@latest add <componente>
+```
+
+A lista de componentes está em https://ui.shadcn.com/docs/components.
 
 ## Telas e rotas
 
@@ -48,9 +95,8 @@ O projeto segue o **Page-Component Pattern**:
 | `/inspecoes` | Fila de inspeção | Gerente de Perdas | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Gerente de Operação | DEC e FEC por alimentador ao longo do tempo |
 
-As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/). Todas as telas são renderizadas dentro de `components/Layout`, que contém o cabeçalho e o menu de navegação.
+As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`) e o cabeçalho (`AppHeader`).
 
 ## Decisões em aberto
 
-- Abordagem de estilos (CSS Modules, Tailwind etc.)
 - Biblioteca para chamadas à API

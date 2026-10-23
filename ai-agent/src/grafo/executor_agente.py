@@ -8,11 +8,11 @@ import logging
 import uuid
 from typing import Optional
 
-from ai_agent.src.contratos.resposta_agente import RespostaAgente
-from ai_agent.src.grafo.construtor_grafo import construir_grafo_fatia1
-from ai_agent.src.interfaces.validador_sql_interface import ValidadorSQLInterface
-from ai_agent.src.provedores.cliente_llm import ClienteLLM
-from ai_agent.src.services.sql_executor import SQLExecutor
+from ..contratos.resposta_agente import RespostaAgente
+from .construtor_grafo import construir_grafo_fatia1
+from ..interfaces.validador_sql_interface import ValidadorSQLInterface
+from ..provedores.cliente_llm import ClienteLLM
+from ..services.sql_executor import SQLExecutor
 
 logger = logging.getLogger("venergy.executor_agente")
 

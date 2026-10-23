@@ -9,7 +9,7 @@ import time
 import uuid
 from typing import Any, Dict, Optional
 
-from ai_agent.src.contratos.estado_agente import EstadoAgente
+from ..contratos.estado_agente import EstadoAgente
 
 logger = logging.getLogger("venergy.no_finaliza_auditoria")
 
