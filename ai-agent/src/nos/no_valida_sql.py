@@ -1,5 +1,5 @@
 """
-Nó 8: Validação de SQL via interface desacoplada (Stub agora, SQLGlot depois).
+Nó 8: Validação de SQL via interface desacoplada.
 """
 from __future__ import annotations
 

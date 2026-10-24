@@ -24,6 +24,8 @@ from ..nos.no_executa_sql import no_executa_sql, rota_pos_execucao
 from ..nos.no_recusa_honesta import no_recusa_honesta
 from ..nos.no_sintetiza_resposta import no_sintetiza_resposta
 from ..nos.no_finaliza_auditoria import no_finaliza_auditoria
+from ..nos.no_cache_parametrizado import no_cache_parametrizado
+from ..nos.no_recupera_contexto import no_recupera_contexto
 from ..provedores.cliente_llm import ClienteLLM
 from ..services.sql_executor import SQLExecutor
 
@@ -50,7 +52,7 @@ def _inicializar_estado(
         "tokens_resposta": 0,
         "passos_executados": [],
         "tempo_inicio_ts": time.time(),
-        "eh_malicioso": False,
+        "malicioso": False,
         "dentro_escopo": True,
     }
 
@@ -89,27 +91,13 @@ def construir_grafo(
                                                               └─► [recusa]     no_recusa_honesta
                                                             no_sintetiza_resposta ─► no_finaliza_auditoria ► END
 
-    Nota: Os nós marcados como "Fatia 3" ainda usam stubs/placeholders neste estágio.
+    O RAG, o cache parametrizado e a síntese seguem o fluxo de produção; o
+    validador padrão continua sendo o stub até a entrega da frente de Segurança.
     """
     _llm = llm or ClienteLLM()
     _validador = validador or StubValidadorSQL()
     _executor = executor or SQLExecutor(db_url=db_url or os.getenv("DATABASE_URL"))
     _db_url = db_url or os.getenv("DATABASE_URL")
-
-    # ── Stubs de Fatia 3 (nós ainda não implementados — roteamento direto para SQL) ──
-    def _stub_recupera_contexto(state: EstadoAgente) -> Dict[str, Any]:
-        """Placeholder do Nó 5 (RAG) — Fatia 3."""
-        return {
-            "contexto_rag": [],
-            "passos_executados": ["Nó 5 — RAG: stub (Fatia 3 pendente). Sem contexto recuperado."],
-        }
-
-    def _stub_cache_parametrizado(state: EstadoAgente) -> Dict[str, Any]:
-        """Placeholder do Nó 6 (Cache Parametrizado) — Fatia 3."""
-        return {
-            "hit_cache": False,
-            "passos_executados": ["Nó 6 — Cache: stub (Fatia 3 pendente). Cache miss forçado."],
-        }
 
     def _rota_pos_cache(state: EstadoAgente) -> str:
         """Cache hit vai direto para execução; miss vai para geração de SQL."""
@@ -127,6 +115,12 @@ def construir_grafo(
 
     def _no_roteador_consulta(s: EstadoAgente) -> Dict[str, Any]:
         return no_roteador_consulta(s, llm=_llm)
+
+    def _no_recupera_contexto(s: EstadoAgente) -> Dict[str, Any]:
+        return no_recupera_contexto(s)
+
+    def _no_cache_parametrizado(s: EstadoAgente) -> Dict[str, Any]:
+        return no_cache_parametrizado(s, db_url=_db_url)
 
     def _no_escreve_sql(s: EstadoAgente) -> Dict[str, Any]:
         return no_escreve_sql(s, llm=_llm)
@@ -154,8 +148,8 @@ def construir_grafo(
     grafo.add_node("no_completa_followup",    _no_completa_followup)
     grafo.add_node("no_checa_escopo",         _no_checa_escopo)
     grafo.add_node("no_roteador_consulta",    _no_roteador_consulta)
-    grafo.add_node("no_recupera_contexto",    _stub_recupera_contexto)   # Fatia 3
-    grafo.add_node("no_cache_parametrizado",  _stub_cache_parametrizado) # Fatia 3
+    grafo.add_node("no_recupera_contexto", _no_recupera_contexto)
+    grafo.add_node("no_cache_parametrizado", _no_cache_parametrizado)
     grafo.add_node("no_escreve_sql",          _no_escreve_sql)
     grafo.add_node("no_valida_sql",           _no_valida_sql)
     grafo.add_node("no_executa_sql",          _no_executa_sql)
@@ -199,10 +193,13 @@ def construir_grafo(
         },
     )
 
-    # Nó 5 (stub) → Nó 6 (stub)
-    grafo.add_edge("no_recupera_contexto", "no_cache_parametrizado")
+    grafo.add_conditional_edges(
+        "no_recupera_contexto",
+        lambda state: "sintetiza" if state.get("rota") == "rag" else "cache",
+        {"sintetiza": "no_sintetiza_resposta", "cache": "no_cache_parametrizado"},
+    )
 
-    # Nó 6 (stub): Cache hit/miss
+    # Nó 6: Cache hit/miss
     grafo.add_conditional_edges(
         "no_cache_parametrizado",
         _rota_pos_cache,

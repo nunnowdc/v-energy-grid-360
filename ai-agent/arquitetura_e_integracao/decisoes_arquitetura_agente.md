@@ -179,6 +179,18 @@ flowchart TD
 
 ## 4. Matriz de Riscos e Alinhamentos Pendentes
 
+## 5. Status de Implementação do Escopo de Agentes
+
+- **Fatia 1 e Fatia 2:** implementadas no grafo e disponíveis pela função
+  `executar_agente`.
+- **Fatia 3:** implementados o nó de cache parametrizado por slots, a integração
+  do nó RAG já existente e o desvio correto de perguntas RAG sem SQL.
+- **Fatia 4:** implementados o extrator de métricas fixas, narrador, conferente
+  numérico, persistência/cache de insights e integração do endpoint
+  `/ai/insights/{tela}/{entidade_id}`.
+- **Fatia 5:** o validador SQL definitivo e a avaliação automatizada permanecem
+  deliberadamente como responsabilidades das frentes de Segurança e Testes.
+
 | Risco Identificado | Impacto | Mitigação Técnica | Alinhamento Necessário |
 |---|---|---|---|
 | **Divergência de nomes de colunas na camada Gold** | Alto | O agente depende dos nomes físicos finais (`fact_faturamento`, `dim_unidade_consumidora`). | Validar o dicionário oficial com a **Engenharia de Dados** antes de indexar o RAG. |

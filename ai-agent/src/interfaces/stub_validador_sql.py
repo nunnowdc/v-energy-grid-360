@@ -40,7 +40,7 @@ class StubValidadorSQL:
             return ResultadoValidacaoSQL(
                 aprovado=False,
                 motivo_rejeicao="Consulta SQL vazia ou inválida.",
-                eh_malicioso=False,
+                malicioso=False,
             )
 
         limpo = sql.strip().rstrip(";").strip()
@@ -50,7 +50,7 @@ class StubValidadorSQL:
             return ResultadoValidacaoSQL(
                 aprovado=False,
                 motivo_rejeicao="Bloqueado por segurança: apenas consultas SELECT de leitura são permitidas.",
-                eh_malicioso=True,
+                malicioso=True,
             )
 
         # 2. Deve iniciar exclusivamente com SELECT ou WITH (para CTEs)
@@ -58,7 +58,7 @@ class StubValidadorSQL:
             return ResultadoValidacaoSQL(
                 aprovado=False,
                 motivo_rejeicao="A consulta deve iniciar estritamente com SELECT ou WITH.",
-                eh_malicioso=False,
+                malicioso=False,
             )
 
         # 3. Defesa contra múltiplos comandos empilhados
@@ -69,7 +69,7 @@ class StubValidadorSQL:
                 return ResultadoValidacaoSQL(
                     aprovado=False,
                     motivo_rejeicao="Bloqueado: execução de múltiplos comandos SQL em uma única requisição é proibida.",
-                    eh_malicioso=True,
+                    malicioso=True,
                 )
 
         # 4. Checagem simples de tabelas referenciadas (FROM / JOIN)
@@ -83,13 +83,13 @@ class StubValidadorSQL:
                 return ResultadoValidacaoSQL(
                     aprovado=False,
                     motivo_rejeicao=f"Acesso negado à tabela ou view não autorizada: '{tabela}'.",
-                    eh_malicioso=False,
+                    malicioso=False,
                     tabelas_detectadas=tabelas_encontradas,
                 )
 
         return ResultadoValidacaoSQL(
             aprovado=True,
             motivo_rejeicao=None,
-            eh_malicioso=False,
+            malicioso=False,
             tabelas_detectadas=tabelas_encontradas,
         )
