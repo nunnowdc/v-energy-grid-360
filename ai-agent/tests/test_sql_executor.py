@@ -159,3 +159,12 @@ def test_executor_rejeita_schema_postgres_com_identificador_invalido():
             db_url="postgresql://localhost/v_energy_test_db",
             schema="venergy_test; DROP SCHEMA public",
         )
+
+
+def test_sqlite_explicito_ignora_database_url_generica(monkeypatch, tmp_path):
+    monkeypatch.delenv("TEST_DATABASE_URL", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://localhost/production_db")
+
+    executor = SQLExecutor(sqlite_path=str(tmp_path / "test.db"))
+
+    assert executor.is_postgres is False

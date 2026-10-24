@@ -46,7 +46,12 @@ class SQLExecutor:
         sqlite_path: Optional[str] = None,
         schema: Optional[str] = None,
     ):
-        self.db_url = db_url or os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+        if db_url is not None:
+            self.db_url = db_url
+        elif sqlite_path is not None:
+            self.db_url = None
+        else:
+            self.db_url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
         self.sqlite_path = sqlite_path or os.getenv("SQLITE_PATH")
         self.schema = schema or os.getenv("TEST_POSTGRES_SCHEMA")
         self.is_postgres = bool(self.db_url and self.db_url.startswith("postgres"))

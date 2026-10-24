@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import types
 from unittest.mock import MagicMock, patch
@@ -9,9 +10,29 @@ import pytest
 from ai_agent.tests import conftest
 
 
+def test_database_url_herdada_fica_isolada():
+    assert "DATABASE_URL" not in os.environ
+
+
+def test_database_url_de_teste_permanece_disponivel(monkeypatch):
+    test_url = "postgresql://localhost/v_energy_test_db"
+    monkeypatch.setenv("TEST_DATABASE_URL", test_url)
+
+    assert os.environ["TEST_DATABASE_URL"] == test_url
+
+
 def test_fixture_faz_fallback_se_postgres_nao_estiver_disponivel(monkeypatch):
     monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://localhost/v_energy_test_db")
     monkeypatch.setattr(conftest, "_testar_conexao_postgres", lambda _: False)
+
+    fixture = conftest.postgres_test_info.__wrapped__()
+
+    assert next(fixture) == {"disponivel": False, "db_url": None, "schema": None}
+
+
+def test_fixture_nao_usa_database_url_generica(monkeypatch):
+    monkeypatch.delenv("TEST_DATABASE_URL", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://localhost/production_db")
 
     fixture = conftest.postgres_test_info.__wrapped__()
 

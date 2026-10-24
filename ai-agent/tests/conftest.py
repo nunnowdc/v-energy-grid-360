@@ -37,6 +37,12 @@ from security.sql_validator import SQLValidator
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture(autouse=True)
+def isolar_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Impede que testes herdem uma URL genérica de banco do ambiente local."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+
 # ── 2. DDL e Carga de Dados Sintéticos (Camada Gold) ─────────────────────────
 DDL_GOLD = """
 CREATE TABLE IF NOT EXISTS dim_unidade_consumidora (
@@ -127,7 +133,7 @@ def postgres_test_info():
     O nome usa TEST_POSTGRES_SCHEMA como prefixo, nunca apaga schema preexistente.
     Retorna dicionário indicando disponibilidade, db_url e schema.
     """
-    db_url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+    db_url = os.getenv("TEST_DATABASE_URL")
     schema_prefix = os.getenv("TEST_POSTGRES_SCHEMA", "venergy_test_gold")
 
     if not db_url or not db_url.startswith("postgres"):
