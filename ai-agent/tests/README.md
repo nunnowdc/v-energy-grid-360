@@ -2,8 +2,7 @@
 
 Este guia descreve a suíte em `ai-agent/tests`, suas fixtures e como executá-la
 com PostgreSQL local ou SQLite sintético. Os testes não iniciam nem provisionam
-bancos. Para instruções de configuração do PostgreSQL, consulte também
-[`postgres_migration_test_plan.md`](../../postgres_migration_test_plan.md).
+bancos.
 
 ## Escopo da suíte
 
