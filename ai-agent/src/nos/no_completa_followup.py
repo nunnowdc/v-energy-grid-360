@@ -26,7 +26,7 @@ REGRAS:
 EXEMPLO:
   Histórico: [Usuário: "Quantas UCs residenciais foram cortadas em Olinda no 1º semestre?"]
   Pergunta atual: "E as comerciais?"
-  Saída: "Quantas UCs comerciais foram cortadas em Olinda no 1º semestre de 2024?"
+  Saída: "Quantas UCs comerciais foram cortadas em Olinda no 1º semestre?"
 """.strip()
 
 

@@ -7,6 +7,7 @@ import logging
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
+from .no_valida_sql import MARCADOR_SQL_INDISPONIVEL
 
 logger = logging.getLogger("venergy.no_recusa_honesta")
 
@@ -54,7 +55,7 @@ def no_recusa_honesta(state: EstadoAgente) -> Dict[str, Any]:
         texto = MENSAGENS_RECUSA[rota]
         if motivo_escopo:
             texto += f" (Motivo: {motivo_escopo})"
-    elif erro and "SQL_INDISPONIVEL" in (erro or ""):
+    elif erro and MARCADOR_SQL_INDISPONIVEL in erro:
         tipo = "sem_dados"
         texto = MENSAGENS_RECUSA["sem_dados"]
     elif tentativas >= 2:

@@ -25,6 +25,7 @@ class EstadoAgente(TypedDict, total=False):
     # Identificação da Sessão e Usuário
     sessao_id: str
     user_id: Optional[str]
+    perfil: Optional[str]
     
     # Entradas do Usuário
     pergunta_original: str
@@ -51,6 +52,7 @@ class EstadoAgente(TypedDict, total=False):
     
     # Text-to-SQL e Validação
     sql_gerado: Optional[str]
+    premissas_sql: Optional[List[str]]
     tentativas_sql: int
     max_tentativas: int
     erro_validacao_ou_execucao: Optional[str]

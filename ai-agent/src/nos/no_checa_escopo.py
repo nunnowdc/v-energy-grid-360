@@ -27,8 +27,9 @@ TERMOS_NEGOCIO_VENERGY = {
     "faturamento", "receita", "consumo", "kwh", "tarifa", "bandeira",
     "conta de luz", "conta", "fatura", "pagamento", "inadimplência", "inadimplencia",
     # Rede e continuidade
-    "uc", "unidade consumidora", "alimentador", "subestação", "subestacao",
-    "dec", "fec", "ocorrência", "ocorrencia", "interrupção", "interrupcao",
+    "uc", "ucs", "unidade consumidora", "alimentador", "subestação", "subestacao",
+    "dec", "fec", "ocorrência", "ocorrencia", "ocorrências", "ocorrencias",
+    "interrupção", "interrupcao", "interrupções", "interrupcoes",
     "falta de luz", "queda de energia", "corte", "religação", "religacao",
     # Regulação
     "aneel", "prodist", "bandeira tarifária", "bandeira tarifaria",
@@ -41,14 +42,13 @@ TERMOS_NEGOCIO_VENERGY = {
 }
 
 # Termos que indicam fora de escopo (sem qualquer relação com energia elétrica da concessão)
-_TERMOS_FORA_ESCOPO = re.compile(
+_TERMOS_FORA_ESCOPO_IMEDIATO = re.compile(
     r"""
     \b(
         futebol | jogo | copa | partida | resultado\s+d[oa]\s+jogo |
-        clima | temperatura | previsão\s+do\s+tempo | chuva | seca |
         rentabilidade\s+d[oa]\s+(bolsa|ação|açao) | stock\s+market |
-        enel | cpfl | celpe\s+(fora) | cemig | coelba | energisa |  # concorrentes
-        receita\s+federal | imposto\s+de\s+renda | ir\b |
+        enel | cpfl | celpe\s+(fora) | cemig | coelba | energisa |
+        receita\s+federal | imposto\s+de\s+renda | declaração\s+de\s+ir |
         presidente | governo | eleição | eleicao | congresso |
         salário\s+mínimo | salario\s+minimo |
         (rio\s+de\s+janeiro|são\s+paulo|salvador|fortaleza|maceió|natal)\s+(?!.*(v.energy|venergy|alimentador))
@@ -56,6 +56,15 @@ _TERMOS_FORA_ESCOPO = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
+_TERMOS_FORA_ESCOPO_CLIMA = re.compile(
+    r"\b(clima|temperatura|previsão\s+do\s+tempo|chuva|seca)\b",
+    re.IGNORECASE,
+)
+
+
+def _contem_termo(texto: str, termo: str) -> bool:
+    """Verifica um termo completo, sem casar apenas parte de outra palavra."""
+    return re.search(rf"\b{re.escape(termo)}\b", texto, re.IGNORECASE) is not None
 
 SYSTEM_PROMPT_ESCOPO = """
 Você é um classificador de escopo para a distribuidora de energia V-Energy Grid 360.
@@ -87,7 +96,7 @@ def no_checa_escopo(
     pergunta_lower = pergunta.lower()
 
     # ── 1. Rejeição heurística rápida: zero custo de LLM ──
-    if _TERMOS_FORA_ESCOPO.search(pergunta_lower):
+    if _TERMOS_FORA_ESCOPO_IMEDIATO.search(pergunta_lower):
         logger.info("Nó 3 — Fora de escopo (heurística): %s", pergunta[:80])
         return {
             "dentro_escopo": False,
@@ -97,8 +106,17 @@ def no_checa_escopo(
         }
 
     # ── 2. Aprovação heurística rápida: termos-chave de negócio da V-Energy ──
-    encontrou_termo = any(t in pergunta_lower for t in TERMOS_NEGOCIO_VENERGY)
-    encontrou_municipio = any(m in pergunta_lower for m in MUNICIPIOS_CONCESSAO)
+    encontrou_termo = any(_contem_termo(pergunta_lower, t) for t in TERMOS_NEGOCIO_VENERGY)
+    encontrou_municipio = any(_contem_termo(pergunta_lower, m) for m in MUNICIPIOS_CONCESSAO)
+
+    if _TERMOS_FORA_ESCOPO_CLIMA.search(pergunta_lower) and not encontrou_termo:
+        logger.info("Nó 3 — Fora de escopo (clima sem termo de negócio): %s", pergunta[:80])
+        return {
+            "dentro_escopo": False,
+            "rota": "fora_escopo",
+            "motivo_fora_escopo": "Pergunta meteorológica sem relação com operação da V-Energy.",
+            "passos_executados": ["Nó 3 — Escopo: clima sem termo de negócio (sem custo de LLM)."],
+        }
 
     if encontrou_termo or encontrou_municipio:
         logger.debug("Nó 3 — Dentro do escopo (heurística positiva).")

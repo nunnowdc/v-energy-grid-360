@@ -6,8 +6,14 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import time
+from pathlib import Path
 from typing import Any, Dict, Optional
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    __package__ = "src.grafo"
 
 from langgraph.graph import StateGraph, START, END
 
@@ -244,3 +250,8 @@ def construir_grafo(
 
 # Mantém compat com Fatia 1
 construir_grafo_fatia1 = construir_grafo
+
+
+if __name__ == "__main__":
+    grafo, _ = construir_grafo_fatia1()
+    grafo.get_graph().draw_mermaid_png(output_file_path="theme_code_dracula.png")
