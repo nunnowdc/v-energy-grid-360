@@ -6,19 +6,21 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react'
+import type { Permissao } from '@/config/perfis'
 
 export type ItemNavegacao = {
   to: string
   label: string
   icone: LucideIcon
+  permissao: Permissao
 }
 
 export const itensNavegacao: ItemNavegacao[] = [
-  { to: '/', label: 'Indicadores', icone: LayoutDashboard },
-  { to: '/receita', label: 'Receita', icone: TrendingUp },
-  { to: '/visao-360', label: 'Visão 360', icone: UserRound },
-  { to: '/inspecoes', label: 'Fila de inspeção', icone: ClipboardList },
-  { to: '/continuidade', label: 'Continuidade', icone: Activity },
+  { to: '/', label: 'Indicadores', icone: LayoutDashboard, permissao: 'ver_indicadores' },
+  { to: '/receita', label: 'Receita', icone: TrendingUp, permissao: 'ver_receita' },
+  { to: '/visao-360', label: 'Visão 360', icone: UserRound, permissao: 'ver_visao_360' },
+  { to: '/inspecoes', label: 'Fila de inspeção', icone: ClipboardList, permissao: 'ver_fila_inspecao' },
+  { to: '/continuidade', label: 'Continuidade', icone: Activity, permissao: 'ver_continuidade' },
 ]
 
 // A raiz "/" só fica ativa no endereço exato; as demais também valem
@@ -33,4 +35,9 @@ export function estaAtivo(pathname: string, to: string) {
 
 export function buscarItemAtual(pathname: string) {
   return itensNavegacao.find((item) => estaAtivo(pathname, item.to))
+}
+
+// Telas que o usuário pode abrir, na ordem do menu
+export function itensPermitidos(permissoes: Permissao[]) {
+  return itensNavegacao.filter((item) => permissoes.includes(item.permissao))
 }

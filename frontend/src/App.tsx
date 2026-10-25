@@ -1,8 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router'
 import Layout from './components/Layout/Layout'
+import RotaInicial from './components/RotaInicial/RotaInicial'
+import RotaProtegida from './components/RotaProtegida/RotaProtegida'
 import { TooltipProvider } from './components/ui/tooltip'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
-import IndicadoresPage from './pages/Indicadores/IndicadoresPage'
 import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import ReceitaPage from './pages/Receita/ReceitaPage'
@@ -14,12 +15,20 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route index element={<IndicadoresPage />} />
-            <Route path="receita" element={<ReceitaPage />} />
-            <Route path="visao-360" element={<Visao360Page />} />
-            <Route path="visao-360/:idUc" element={<Visao360Page />} />
-            <Route path="inspecoes" element={<InspecoesPage />} />
-            <Route path="continuidade" element={<ContinuidadePage />} />
+            <Route index element={<RotaInicial />} />
+            <Route element={<RotaProtegida permissao="ver_receita" />}>
+              <Route path="receita" element={<ReceitaPage />} />
+            </Route>
+            <Route element={<RotaProtegida permissao="ver_visao_360" />}>
+              <Route path="visao-360" element={<Visao360Page />} />
+              <Route path="visao-360/:idUc" element={<Visao360Page />} />
+            </Route>
+            <Route element={<RotaProtegida permissao="ver_fila_inspecao" />}>
+              <Route path="inspecoes" element={<InspecoesPage />} />
+            </Route>
+            <Route element={<RotaProtegida permissao="ver_continuidade" />}>
+              <Route path="continuidade" element={<ContinuidadePage />} />
+            </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

@@ -50,9 +50,15 @@ src/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
 │   ├── Layout/Layout.tsx
+│   ├── RotaInicial/RotaInicial.tsx
+│   ├── RotaProtegida/RotaProtegida.tsx
 │   └── ui/                  ← shadcn/ui
-├── config/navegacao.ts
+├── config/
+│   ├── navegacao.ts         ← telas do menu
+│   └── perfis.ts            ← perfis e permissões
 ├── hooks/
+│   ├── use-mobile.ts
+│   └── use-usuario.ts       ← usuário atual (de teste até o login existir)
 ├── lib/
 └── pages/
 ```
@@ -87,15 +93,25 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 
 ## Telas e rotas
 
-| Rota | Tela | Público | Objetivo |
+| Rota | Tela | Perfis com acesso | Objetivo |
 |---|---|---|---|
-| `/` | Indicadores | Diretoria | Principais KPIs do negócio, comparados entre períodos |
-| `/receita` | Receita | Diretor Comercial | Variação de receita (efeito-preço × efeito-volume) por município, bairro e classe |
-| `/visao-360/:idUc` | Visão 360 | Atendimento | Tudo sobre uma unidade consumidora em uma única tela |
-| `/inspecoes` | Fila de inspeção | Gerente de Perdas | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
-| `/continuidade` | Continuidade | Gerente de Operação | DEC e FEC por alimentador ao longo do tempo |
+| `/` | Indicadores | Diretoria, Administrador (TI) | Principais KPIs do negócio, comparados entre períodos |
+| `/receita` | Receita | Diretoria, Administrador (TI) | Variação de receita (efeito-preço × efeito-volume) por município, bairro e classe |
+| `/visao-360/:idUc` | Visão 360 | Atendimento, Perdas, Administrador (TI) | Tudo sobre uma unidade consumidora em uma única tela |
+| `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
+| `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
 
 As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`) e o cabeçalho (`AppHeader`).
+
+## Perfis de acesso
+
+Cada usuário tem um perfil, e o perfil define as permissões (`ver_receita`, `ver_visao_360`…). O backend é a fonte da verdade. O frontend usa as mesmas permissões para esconder o que o usuário não pode usar:
+
+- Telas sem permissão **não aparecem no menu**.
+- Quem digita o endereço de uma tela sem permissão vê a tela **"Sem permissão"**.
+- O `/` leva cada perfil para a primeira tela que ele pode abrir.
+
+Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` e reinicie o `npm run dev`.
 
 ## Decisões em aberto
 
