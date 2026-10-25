@@ -50,10 +50,18 @@ src/
 ├── components/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
+│   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
+│   ├── CartaoKpi/
+│   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
+│   │   └── CartaoKpiEsqueleto.tsx
+│   ├── EstadoConsulta/EstadoConsulta.tsx  ← carregando, erro, vazio e atualizando
+│   ├── EstadoErro/EstadoErro.tsx
+│   ├── EstadoVazio/EstadoVazio.tsx
 │   ├── Layout/Layout.tsx
 │   ├── RotaInicial/RotaInicial.tsx
 │   ├── RotaProtegida/RotaProtegida.tsx
-│   └── ui/                  ← shadcn/ui
+│   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
+│   └── ui/                                ← shadcn/ui
 ├── config/
 │   ├── bandeiras.ts         ← nome e cor de cada bandeira tarifária
 │   ├── classes.ts           ← nome e cor de cada classe de consumo
@@ -67,6 +75,7 @@ src/
 │   │   ├── api-fetch.ts     ← função única para chamar o backend
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
 │   │   └── query-client.ts  ← configuração do TanStack Query
+│   ├── formatacao.ts        ← moeda, número e percentual no padrão brasileiro
 │   └── utils.ts
 └── pages/
 ```
@@ -167,3 +176,30 @@ export function useReceita(municipio: string) {
 Em desenvolvimento, o Vite repassa tudo o que começa com `/api` para o FastAPI em `http://127.0.0.1:8000` (veja `vite.config.ts`). Para as telas receberem dados, o backend precisa estar rodando, com as rotas registradas sob o prefixo `/api`.
 
 No `npm run dev`, um botão flutuante do TanStack Query aparece no canto da tela. Ele mostra cada consulta, o cache e os erros. Esse botão não vai para o build de produção.
+
+## Blocos de dados
+
+Todo bloco que mostra dados do backend tem 4 estados, tratados pelo `EstadoConsulta`:
+
+| Estado | Quando | O que aparece |
+|---|---|---|
+| Carregando | Primeira busca | Esqueleto no formato do bloco |
+| Atualizando | O filtro mudou e o novo dado ainda não chegou | Dados anteriores esmaecidos |
+| Erro | A busca falhou | Mensagem e botão "Tentar de novo", só dentro do bloco |
+| Vazio | Não há dados para os filtros | "Nenhum dado para os filtros selecionados." |
+
+Para gráficos e tabelas, use o `BlocoDados`, que já inclui o cartão com título. Os dados chegam pela função dentro do bloco, apenas quando existem:
+
+```tsx
+const receita = useReceita(filtros)
+
+<BlocoDados
+  titulo="Receita por mês"
+  consulta={receita}
+  estaVazio={(dados) => dados.meses.length === 0}
+>
+  {(dados) => <GraficoReceita meses={dados.meses} />}
+</BlocoDados>
+```
+
+Para uma linha de indicadores, use o `EstadoConsulta` direto, com `CartaoKpi` e, no carregamento, `CartaoKpiEsqueleto`. Valores e percentuais são formatados com as funções de `src/lib/formatacao.ts`.
