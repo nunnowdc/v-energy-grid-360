@@ -16,7 +16,7 @@ python -m pip install -r requirements.txt
 python -m app.main
 ```
 
-A API usa `127.0.0.1:8000` por padrão. Consulte `GET http://127.0.0.1:8000/health`,
+A API usa `127.0.0.1:8000` por padrão. Consulte `GET http://127.0.0.1:8000/api/health`,
 `http://127.0.0.1:8000/docs` e `http://127.0.0.1:8000/openapi.json`.
 
 OPCIONALMENTE, configure `APP_ENV`, `APP_HOST`, `APP_PORT` e `CORS_ORIGINS` antes de

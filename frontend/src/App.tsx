@@ -1,8 +1,12 @@
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import Layout from './components/Layout/Layout'
+import RotaInicial from './components/RotaInicial/RotaInicial'
+import RotaProtegida from './components/RotaProtegida/RotaProtegida'
 import { TooltipProvider } from './components/ui/tooltip'
+import { queryClient } from './lib/api/query-client'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
-import IndicadoresPage from './pages/Indicadores/IndicadoresPage'
 import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import ReceitaPage from './pages/Receita/ReceitaPage'
@@ -10,21 +14,32 @@ import Visao360Page from './pages/Visao360/Visao360Page'
 
 function App() {
   return (
-    <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<IndicadoresPage />} />
-            <Route path="receita" element={<ReceitaPage />} />
-            <Route path="visao-360" element={<Visao360Page />} />
-            <Route path="visao-360/:idUc" element={<Visao360Page />} />
-            <Route path="inspecoes" element={<InspecoesPage />} />
-            <Route path="continuidade" element={<ContinuidadePage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<RotaInicial />} />
+              <Route element={<RotaProtegida permissao="ver_receita" />}>
+                <Route path="receita" element={<ReceitaPage />} />
+              </Route>
+              <Route element={<RotaProtegida permissao="ver_visao_360" />}>
+                <Route path="visao-360" element={<Visao360Page />} />
+                <Route path="visao-360/:idUc" element={<Visao360Page />} />
+              </Route>
+              <Route element={<RotaProtegida permissao="ver_fila_inspecao" />}>
+                <Route path="inspecoes" element={<InspecoesPage />} />
+              </Route>
+              <Route element={<RotaProtegida permissao="ver_continuidade" />}>
+                <Route path="continuidade" element={<ContinuidadePage />} />
+              </Route>
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+      <ReactQueryDevtools />
+    </QueryClientProvider>
   )
 }
 

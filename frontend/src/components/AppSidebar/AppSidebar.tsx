@@ -12,10 +12,12 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { estaAtivo, itensNavegacao } from '@/config/navegacao'
+import { estaAtivo, itensPermitidos } from '@/config/navegacao'
+import { useUsuario } from '@/hooks/use-usuario'
 
 function AppSidebar() {
   const { pathname } = useLocation()
+  const { usuario } = useUsuario()
 
   return (
     <Sidebar collapsible="icon">
@@ -44,7 +46,7 @@ function AppSidebar() {
           <SidebarGroupLabel>Telas</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {itensNavegacao.map((item) => (
+              {itensPermitidos(usuario.permissoes).map((item) => (
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton
                     tooltip={item.label}
