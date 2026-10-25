@@ -60,11 +60,32 @@ Duas evidências independentes apontam nessa direção:
 
 Ou seja, na troca o medidor novo foi instalado **no mesmo dia** em que o antigo foi retirado. A data saiu errada porque foi lida como dia-mês. **As sobreposições não existem: são consequência do erro de leitura da data.**
 
-Status: forte evidência. A confirmação final depende da célula 9 (seção 6).
+**✅ PROVADO (célula 9):**
+
+| Teste | Resultado |
+|---|---|
+| 9a. Qual parte é o dia, por separador | Separador `-`: a 1ª parte **nunca** passa de 12 (0 casos), a 2ª passa em 761 → **mês-dia**. Separadores `/` e `.`: o contrário (730 e 734 casos com a 1ª parte > 12, nenhum com a 2ª) → **dia-mês**. |
+| 9b. Instalação do novo = retirada do antigo | No formato `99-99-9999`: **142 de 142 trocas batem lendo mês-dia**, e só 1 bate lendo dia-mês (a ordem atual do notebook). Nos outros formatos, 100% batem nas duas leituras. |
+
+**Total: 6.299 trocas**, todas com o medidor novo instalado **no mesmo dia** da retirada do antigo. As "sobreposições" da célula 8 eram 100% efeito do bug de data.
 
 ### Sobre as 1.381 datas "ambíguas"
 
 A célula 7 contou 1.381 datas em que dia e mês são ≤ 12. Isso é o esperado para datas aleatórias (cerca de 37% dos 3.728 valores fora do ISO). Nos formatos `/` e `.`, a convenção brasileira é dia-mês (ex.: `19/06/2000`, `20.04.2007`), então o risco real se concentra no formato com traço.
+
+---
+
+### Modelo × tipo: 100% coerente (célula 9c)
+
+Cada modelo pertence a um único tipo (considerando as variantes de escrita como o mesmo tipo):
+
+| Tipo | Modelos |
+|---|---|
+| ELETROMECANICO | CG-500, EM-1200, EM-1400 |
+| ELETRONICO | EL-2200, EL-3000, NX-700 |
+| SMART | IQ-900, SM-4100, SM-4500 |
+
+Isso dá uma **validação automática**: o `tipo` pode ser conferido (ou até derivado) a partir do `modelo`. As variantes `ELETRO-MECANICO` e `smart meter` aparecem espalhadas entre os modelos certos, o que confirma que são só erros de escrita.
 
 ---
 
@@ -75,7 +96,8 @@ A célula 7 contou 1.381 datas em que dia e mês são ≤ 12. Isso é o esperado
 | 1 | `dropDuplicates()` (todas as duplicatas são exatas, então qualquer critério serve) |
 | 2 | `tipo`: normalizar **sem acento e sem pontuação** antes de mapear para `ELETRONICO`, `ELETROMECANICO` e `SMART` |
 | 3 | `trim` em `modelo` |
-| 4 | `data_instalacao`: tentar ISO → `dd/MM/yyyy` → `dd.MM.yyyy` → **`MM-dd-yyyy`** (se a célula 9 confirmar) |
+| 4 | `data_instalacao`: tentar ISO → `dd/MM/yyyy` → `dd.MM.yyyy` → **`MM-dd-yyyy`** (provado na célula 9) |
+| 4a | Teste de qualidade: `tipo` coerente com o `modelo` (tabela da célula 9c) |
 | 5 | `data_retirada`: transformar `9999-12-31` em `null` |
 | 6 | `data_ultima_manutencao`: remover a coluna ou mantê-la documentada como "sem dados na fonte" |
 | 7 | Validação automática: na troca de medidor, a instalação do novo deve ser igual à retirada do antigo. Isso serve de teste de qualidade, que é diferencial no case. |
@@ -99,17 +121,25 @@ A célula 7 contou 1.381 datas em que dia e mês são ≤ 12. Isso é o esperado
 ## 6. Pendências
 
 - [ ] Célula 4: número de linhas 100% idênticas e de `id_medidor` repetidos.
-- [ ] Célula 8: número total de pares sobrepostos (os 20 exemplos sugerem que todos são do bug de data).
-- [ ] Célula 9: confirmar o formato `MM-dd-yyyy`, cruzar modelo × tipo e ver o perfil da campanha de troca.
+- [ ] Célula 8: número total de pares sobrepostos (sabemos que todos são do bug de data).
+- [x] Célula 9: `MM-dd-yyyy` provado, modelo × tipo coerente, campanha mapeada.
 
 ---
 
 ## 7. Achado para o diagnóstico de receita
 
-**Houve uma campanha de troca de medidores entre setembro de 2025 e março de 2026.**
+**Houve uma campanha de troca de medidores eletromecânicos por smart meters entre setembro de 2025 e março de 2026.**
 
-- Todas as 6.367 retiradas aconteceram nesse período (a primeira em 2025-09-05). Isso é cerca de 14% do parque.
-- O ritmo foi de ~50 trocas por dia. As datas de instalação e de retirada mais frequentes são as mesmas (`2026-03-12`, `2025-09-23`, `2025-12-19`…).
+- **6.299 trocas** (6.299 UCs, ~14% da base), num ritmo constante de **~900 por mês** (de 873 a 923), de set/2025 a mar/2026. Todo medidor retirado tem um sucessor instalado no mesmo dia.
+- **De qual tipo para qual tipo (célula 9d):**
+
+| De | Para | Trocas | % |
+|---|---|---|---|
+| **Eletromecânico** | Smart | **5.661** | **89,9%** |
+| Eletrônico | Smart | 601 | 9,5% |
+| Smart | Smart | 37 | 0,6% |
+
+- Cerca de **1/3 do parque eletromecânico** foi substituído.
 
 **Por que importa:**
 - **Volume:** medidor eletromecânico antigo costuma registrar menos que o real. Se a troca foi para eletrônico ou smart, o consumo medido dessas UCs deve **subir** depois da troca. Se cair, vale investigar.

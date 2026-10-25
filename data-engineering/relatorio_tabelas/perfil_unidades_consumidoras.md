@@ -109,11 +109,3 @@ F.when(F.col("bairro").contains("Ã"),
 Ligações por ano: cerca de 1.900 por ano entre 1998 e 2021. **De 2022 a 2026 foram só 372 no total** (56, 109, 104, 93 e 10), cerca de 0,8% da base, justamente no período das faturas.
 
 Ou seja, praticamente não entraram UCs novas no período analisado. Isso contradiz em parte a frase do Diretor Comercial ("a base de clientes cresceu") e precisa ser cruzado com o `status` das UCs (ativas/desligadas) e com as faturas por mês. É candidata a hipótese no status report.
-
-Cuidados antes de afirmar isso na apresentação:
-
--O cadastro é uma foto do momento da extração. UCs que foram desligadas e removidas do sistema não aparecem. A coluna status (ativa/desligada) ajuda a ver isso, e por isso pedi a distribuição dela.
-
--A data pode significar outra coisa. Em alguns sistemas, quando um imóvel troca de titular, a data_ligacao é atualizada. Seria uma “ligação nova” no papel sem ser um cliente novo.
-
--Dá para confirmar com outras tabelas. Podemos comparar a quantidade de UCs faturadas por mês em faturas e os chamados de assunto LIGACAO NOVA em atendimentos. Se as três fontes contarem a mesma história, a hipótese fica forte.
