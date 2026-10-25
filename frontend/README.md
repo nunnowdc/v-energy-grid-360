@@ -54,6 +54,8 @@ src/
 │   ├── RotaProtegida/RotaProtegida.tsx
 │   └── ui/                  ← shadcn/ui
 ├── config/
+│   ├── bandeiras.ts         ← nome e cor de cada bandeira tarifária
+│   ├── classes.ts           ← nome e cor de cada classe de consumo
 │   ├── navegacao.ts         ← telas do menu
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
@@ -72,6 +74,22 @@ src/
 - **Nomes:** pastas e componentes em `PascalCase`; páginas terminam em `Page` (`ReceitaPage`); configurações, hooks e utilitários em minúsculas (`navegacao.ts`, `use-mobile.ts`).
 
 Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o tema ficam centralizados em variáveis CSS no `src/index.css`.
+
+### Cores
+
+| Uso | Variável | Classe do Tailwind |
+|---|---|---|
+| Cor principal (azul-petróleo): botões, links, menu ativo | `--primary` | `bg-primary`, `text-primary` |
+| Classes de consumo (Residencial, Comercial, Industrial, Rural, Poder público) | `--chart-1` a `--chart-5` | `bg-chart-1`… |
+| Período anterior nas comparações | `--chart-anterior` | `bg-chart-anterior` |
+| Bandeiras tarifárias | `--bandeira-verde`, `--bandeira-amarela`, `--bandeira-vermelha-p1`, `--bandeira-vermelha-p2` | `bg-bandeira-verde`… |
+
+Regras:
+
+- A cor de cada classe de consumo é sempre a mesma, em qualquer tela. Use `src/config/classes.ts` em vez de escrever a cor direto.
+- As cores das bandeiras aparecem só em contexto de bandeira e sempre junto com o nome. Use `src/config/bandeiras.ts`.
+- Variação (▲/▼) não tem cor: usa seta, sinal e número em cinza-escuro.
+- Nunca use dois eixos Y no mesmo gráfico: empilhe dois gráficos que compartilham o eixo dos meses.
 
 ### Imports
 
