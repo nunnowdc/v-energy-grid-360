@@ -46,14 +46,21 @@ Uma classe (ex.: `ValidadorSQLGlotPostgres`) que implemente o método `.validar(
 2. **Instrução Única:** Proibir múltiplos statements separados por ponto e vírgula (defesa clássica contra SQL injection empilhado).
 3. **Whitelist de Tabelas da Camada Gold:**
    A AST deve inspecionar os nós do tipo `exp.Table` e permitir **exclusivamente**:
+   - `agg_continuidade_alimentador`
+   - `agg_continuidade_alimentador_anual`
+   - `agg_receita_mensal`
+   - `agg_receita_preco_volume`
    - `dim_unidade_consumidora`
+   - `dim_alimentador`
+   - `dim_competencia`
+   - `dim_geracao_distribuida`
+   - `dim_medidor`
    - `fact_leituras`
    - `fact_faturamento`
    - `fact_ocorrencias`
    - `fact_atendimentos`
-   - `fact_gd` (ou colunas de geração distribuída)
-   - `fact_inspecoes` / `fact_perdas`
-   - `dim_alimentadores`
+   - `fact_inspecoes`
+   - `fila_inspecao`
    - Views analíticas homologadas com prefixo `vw_gold_*`
 4. **Tratamento de Dialeto:**
    O parser SQLGlot deve ser configurado explicitamente para o dialeto `postgres` (`sqlglot.parse(..., read="postgres")`).

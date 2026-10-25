@@ -20,7 +20,7 @@ COLUNAS_AUDITORIA_BASE = (
     "tempo_execucao_ms", "tokens_prompt", "tokens_resposta", "erro_mensagem",
 )
 COLUNAS_AUDITORIA_OPCIONAIS = (
-    "tentativas_sql", "chamadas_llm", "eh_malicioso", "motivo_recusa",
+    "tentativas_sql", "chamadas_llm", "malicioso", "motivo_recusa",
     "ids_chunks_rag", "user_id", "perfil",
 )
 
@@ -109,7 +109,7 @@ def no_finaliza_auditoria(
         "erro_mensagem": state.get("erro_validacao_ou_execucao"),
         "tentativas_sql": state.get("tentativas_sql", 0),
         "chamadas_llm": state.get("chamadas_llm", 0),
-        "eh_malicioso": state.get("eh_malicioso", False),
+        "malicioso": state.get("malicioso", False),
         "motivo_recusa": state.get("motivo_recusa"),
         "ids_chunks_rag": json.dumps(
             [chunk.get("id") for chunk in state.get("contexto_rag", []) if chunk.get("id")],

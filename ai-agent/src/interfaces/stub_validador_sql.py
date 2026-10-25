@@ -12,12 +12,21 @@ from .validador_sql_interface import (
 )
 
 TABELAS_PERMITIDAS: Set[str] = {
+    "agg_continuidade_alimentador",
+    "agg_continuidade_alimentador_anual",
+    "agg_receita_mensal",
+    "agg_receita_preco_volume",
+    "dim_alimentador",
+    "dim_competencia",
+    "dim_geracao_distribuida",
+    "dim_medidor",
     "dim_unidade_consumidora",
     "fact_leituras",
     "fact_faturamento",
     "fact_ocorrencias",
     "fact_atendimentos",
-    "dim_alimentadores",
+    "fact_inspecoes",
+    "fila_inspecao",
     "tb_insights_tela",
     "tb_auditoria_agente",
     "tb_cache_perguntas_certificadas",

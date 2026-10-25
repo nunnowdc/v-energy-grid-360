@@ -8,25 +8,26 @@ Este guia estabelece os contratos entre o módulo de **AGENTES**, a camada de **
 
 O agente de Text-to-SQL e o RAG esperam que a camada Gold seja disponibilizada no PostgreSQL sob o schema `public` com as seguintes convenções mínimas:
 
-### Tabelas Esperadas e Granularidade
-1. **`dim_unidade_consumidora`:**
-   - Grão: 1 registro por UC.
-   - Colunas essenciais: `uc_id` (PK), `municipio`, `bairro`, `classe` (Residencial, Comercial, Industrial, Rural), `subgrupo` (B1, B2, B3, A4), `alimentador_id`, `data_conexao`, `status_ligacao`, `tem_geracao_distribuida` (booleano).
-2. **`fact_faturamento`:**
-   - Grão: 1 registro por fatura / competência da UC.
-   - Colunas essenciais: `fatura_id` (PK), `uc_id` (FK), `competencia` (ex.: '2024-03'), `ano`, `mes`, `volume_faturado_kwh`, `receita_faturada`, `valor_tarifa`, `bandeira_tarifaria` (Verde, Amarela, Vermelha 1, Vermelha 2), `valor_bandeira`, `status_pagamento` (Pago, Pendente, Atrasado), `data_vencimento`, `data_pagamento`.
-3. **`fact_leituras`:**
-   - Grão: 1 registro mensal por medidor/UC.
-   - Colunas essenciais: `leitura_id` (PK), `uc_id` (FK), `competencia`, `leitura_anterior`, `leitura_atual`, `consumo_medido_kwh`, `tipo_leitura` (Real, Estimada).
-4. **`fact_ocorrencias`:**
-   - Grão: 1 registro por evento de interrupção na rede.
-   - Colunas essenciais: `ocorrencia_id` (PK), `alimentador_id`, `uc_id` (quando individual), `data_inicio`, `data_fim`, `duracao_minutos`, `causa_interrupcao`.
-5. **`fact_atendimentos`:**
-   - Grão: 1 chamado do call center.
-   - Colunas essenciais: `chamado_id` (PK), `uc_id` (FK), `data_abertura`, `motivo_contato`, `status` (Aberto, Concluído), `nota_satisfacao`.
-6. **`dim_alimentadores`:**
-   - Grão: 1 circuito da rede de média tensão.
-   - Colunas essenciais: `alimentador_id` (PK), `subestacao`, `municipio`, `total_ucs_atendidas`.
+### Tabelas Gold e granularidade
+
+O agente usa o dicionário oficial `data-engineering/relatorio_tabelas/dicionario_dados_gold.md`.
+As tabelas de consulta mais importantes são:
+
+- **Dimensões:** `dim_unidade_consumidora`, `dim_alimentador`, `dim_competencia`,
+  `dim_geracao_distribuida` e `dim_medidor`.
+- **Fatos:** `fact_faturamento`, `fact_leituras`, `fact_ocorrencias`,
+  `fact_atendimentos` e `fact_inspecoes`.
+- **Agregações:** `agg_receita_mensal`, `agg_receita_preco_volume`,
+  `agg_continuidade_alimentador` e `agg_continuidade_alimentador_anual`.
+- **Prioridade de perdas:** `fila_inspecao`.
+
+Nomes canônicos relevantes:
+
+- A chave da UC é `id_uc`, não `uc_id`.
+- O alimentador é `alimentador`, não `alimentador_id`.
+- O consumo analítico é `consumo_kwh`, não `volume_faturado_kwh` ou `consumo_medido_kwh`.
+- O status de atendimento é `status_chamado`; ocorrências usam `causa`, `duracao_h`
+  e `data_abertura`/`data_encerramento`.
 
 ---
 
@@ -74,7 +75,7 @@ CREATE TABLE IF NOT EXISTS tb_auditoria_agente (
 CREATE TABLE IF NOT EXISTS tb_insights_tela (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tela VARCHAR(50) NOT NULL, -- 'visao_360_uc', 'diagnostico_receita'
-    entidade_id VARCHAR(100) NOT NULL, -- ex: uc_id '45892' ou 'global'
+    entidade_id VARCHAR(100) NOT NULL, -- ex: id_uc '45892' ou 'global'
     fatos_calculados_json JSONB NOT NULL,
     texto_insight TEXT NOT NULL,
     selo_validacao VARCHAR(50) NOT NULL, -- 'auditado_llm', 'template_fallback'
@@ -105,7 +106,7 @@ O módulo de IA integra-se ao FastAPI através do roteador `ai_router` montado e
   ```json
   {
     "answer": "O faturamento total de Olinda em 2024 foi de R$ 42.150.800,00.",
-    "sql": "SELECT SUM(f.receita_faturada) FROM fact_faturamento f JOIN dim_unidade_consumidora u ON f.uc_id = u.uc_id WHERE u.municipio = 'Olinda' AND f.ano = 2024;",
+    "sql": "SELECT SUM(r.receita_faturada) FROM agg_receita_mensal r WHERE r.municipio = 'Olinda' AND r.ano = 2024;",
     "audit_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     "selo_confianca": "certificada",
     "fontes": [],

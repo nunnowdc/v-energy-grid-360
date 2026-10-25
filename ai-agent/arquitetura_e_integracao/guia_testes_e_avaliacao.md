@@ -55,7 +55,7 @@ O time de testes deve versionar o arquivo de avaliação em `ai-agent/testes/gol
     "id": "TC-001",
     "pergunta": "Qual o faturamento total da classe comercial em Olinda no ano de 2023?",
     "rota_esperada": "sql",
-    "sql_esperado": "SELECT SUM(f.receita_faturada) FROM fact_faturamento f JOIN dim_unidade_consumidora u ON f.uc_id = u.uc_id WHERE u.classe = 'Comercial' AND u.municipio = 'Olinda' AND f.ano = 2023;",
+    "sql_esperado": "SELECT SUM(r.receita_faturada) FROM agg_receita_mensal r WHERE r.classe = 'COMERCIAL' AND r.municipio = 'Olinda' AND r.ano = 2023;",
     "colunas_obrigatorias": ["receita_faturada"],
     "deve_recusar": false
   },
