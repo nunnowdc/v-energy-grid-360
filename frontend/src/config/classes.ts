@@ -19,3 +19,7 @@ export const classesConsumo: Record<ClasseConsumo, InfoClasse> = {
   RURAL: { label: 'Rural', cor: 'var(--chart-4)' },
   PODER_PUBLICO: { label: 'Poder público', cor: 'var(--chart-5)' },
 }
+
+export function ehClasseConsumo(valor: unknown): valor is ClasseConsumo {
+  return typeof valor === 'string' && Object.hasOwn(classesConsumo, valor)
+}

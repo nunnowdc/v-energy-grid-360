@@ -37,3 +37,11 @@ export function formatarNumero(valor: number) {
 export function formatarPercentualComSinal(pontos: number) {
   return percentualComSinal.format(pontos / 100)
 }
+
+const mesesAbreviados = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+// Competência como vem da Gold: "2025-07" → "jul/2025"
+export function formatarCompetencia(competencia: string) {
+  const [ano, mes] = competencia.split('-')
+  return `${mesesAbreviados[Number(mes) - 1]}/${ano}`
+}

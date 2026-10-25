@@ -57,6 +57,8 @@ src/
 │   ├── EstadoConsulta/EstadoConsulta.tsx  ← carregando, erro, vazio e atualizando
 │   ├── EstadoErro/EstadoErro.tsx
 │   ├── EstadoVazio/EstadoVazio.tsx
+│   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
+│   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
 │   ├── Layout/Layout.tsx
 │   ├── RotaInicial/RotaInicial.tsx
 │   ├── RotaProtegida/RotaProtegida.tsx
@@ -68,15 +70,19 @@ src/
 │   ├── navegacao.ts         ← telas do menu
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
+│   ├── use-filtros.ts         ← filtros da tela, guardados na URL
 │   ├── use-mobile.ts
-│   └── use-usuario.ts       ← usuário atual (de teste até o login existir)
+│   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
+│   └── use-usuario.ts         ← usuário atual (de teste até o login existir)
 ├── lib/
 │   ├── api/
 │   │   ├── api-fetch.ts     ← função única para chamar o backend
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
 │   │   └── query-client.ts  ← configuração do TanStack Query
+│   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número e percentual no padrão brasileiro
 │   └── utils.ts
+├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
 └── pages/
 ```
 
@@ -203,3 +209,31 @@ const receita = useReceita(filtros)
 ```
 
 Para uma linha de indicadores, use o `EstadoConsulta` direto, com `CartaoKpi` e, no carregamento, `CartaoKpiEsqueleto`. Valores e percentuais são formatados com as funções de `src/lib/formatacao.ts`.
+
+## Filtros
+
+Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos filtros:
+
+```
+/receita?municipio=Recife&bairro=Pina&classe=RESIDENCIAL
+```
+
+| Parâmetro | Formato | Sem o parâmetro |
+|---|---|---|
+| `inicio`, `fim` | `yyyy-MM` (ex.: `2025-07`) | Últimos 12 meses **da base**, nunca da data de hoje |
+| `municipio` | Nome do município | Todos |
+| `bairro` | Nome do bairro (exige `municipio`) | Todos |
+| `classe` | `RESIDENCIAL`, `COMERCIAL`, `INDUSTRIAL`, `RURAL` ou `PODER_PUBLICO` | Todas |
+
+Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora.
+
+## Dados de exemplo (MSW)
+
+Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde com dados de exemplo **só no `npm run dev`**. Nada disso vai para o build de produção.
+
+- Ligar e desligar: `VITE_USAR_DADOS_EXEMPLO=true` ou `false` no `.env.local`, e reiniciar o `npm run dev`.
+- As respostas ficam em `src/mocks/handlers.ts`. As rotas sem exemplo seguem para o backend de verdade.
+- Quando uma rota real ficar pronta, apague o handler dela.
+- Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
+
+Rotas com exemplo hoje: `GET /api/filters/options`.
