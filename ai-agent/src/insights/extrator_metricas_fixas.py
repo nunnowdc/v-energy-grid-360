@@ -8,14 +8,14 @@ from ..services.sql_executor import SQLExecutor
 
 QUERIES = {
     "visao_360_uc": (
-        "SELECT f.competencia, f.volume_faturado_kwh, f.receita_faturada, "
+        "SELECT f.competencia, f.consumo_kwh, f.receita_faturada, "
         "f.status_pagamento FROM fact_faturamento f "
-        "WHERE f.uc_id = '{entidade_id}' ORDER BY f.competencia DESC LIMIT 2"
+        "WHERE f.id_uc = '{entidade_id}' ORDER BY f.competencia DESC LIMIT 2"
     ),
     "diagnostico_receita": (
-        "SELECT f.ano, SUM(f.receita_faturada) AS receita_total, "
-        "SUM(f.volume_faturado_kwh) AS volume_total "
-        "FROM fact_faturamento f GROUP BY f.ano ORDER BY f.ano DESC LIMIT 2"
+        "SELECT r.ano, SUM(r.receita_faturada) AS receita_total, "
+        "SUM(r.consumo_kwh) AS volume_total "
+        "FROM agg_receita_mensal r GROUP BY r.ano ORDER BY r.ano DESC LIMIT 2"
     ),
 }
 

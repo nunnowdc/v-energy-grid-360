@@ -60,10 +60,10 @@ Hoje o request em `ai_router.py` recebe `user_id` e `context`, mas não encaminh
 
 ### 3. Alinhamento rápido com Segurança
 Uma conversa curta. Levar estas perguntas:
-- [ ] `ResultadoValidacaoSQL` terá os campos `aprovado`, `motivo_rejeicao`, `eh_malicioso`, `tabelas_detectadas`? Serão necessários campos  s (colunas detectadas, comandos encontrados, motivo técnico, classificação de risco)?
+- [ ] `ResultadoValidacaoSQL` terá os campos `aprovado`, `motivo_rejeicao`, `malicioso`, `tabelas_detectadas`? Serão necessários campos  s (colunas detectadas, comandos encontrados, motivo técnico, classificação de risco)?
 - [ ] Retry: quantas tentativas, o que é erro corrigível, quando é malicioso, se ataque gera `recusa_honesta` imediata, se erro de sintaxe volta ao `no_escreve_sql`
 - [ ] Política de execução: CTEs, `WITH`, subqueries, `EXTRACT`, funções específicas do PostgreSQL, comentários SQL, múltiplas instruções com `;` no final
-- [ ] Whitelist final: `fact_gd`, `fact_inspecoes`, `fact_perdas`, views `vw_gold_*`, tabelas de controle (auditoria, cache, insights)
+- [ ] Whitelist final: `agg_continuidade_alimentador`, `agg_continuidade_alimentador_anual`, `agg_receita_mensal`, `agg_receita_preco_volume`, dimensões e fatos Gold, `fila_inspecao` e tabelas de controle (auditoria, cache, insights)
 - [ ] **[perfis]** O validador deve bloquear `SET` e `RESET` dentro do SQL gerado pelo LLM (para ninguém trocar de perfil no meio da consulta)
 
 **Pronto quando:** o contrato e a política estão escritos e os dois lados concordam.

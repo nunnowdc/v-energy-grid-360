@@ -27,7 +27,7 @@ class RequisicaoChat(BaseModel):
     message: str = Field(description="Texto da pergunta em linguagem natural.")
     context: Optional[Dict[str, Any]] = Field(
         default=None,
-        description="Contexto da tela (page, uc_id, etc.) para enriquecer a resposta."
+        description="Contexto da tela (page, id_uc, etc.) para enriquecer a resposta."
     )
     history: Optional[List[Dict[str, str]]] = Field(
         default=None,

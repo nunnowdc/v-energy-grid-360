@@ -19,14 +19,15 @@ MUNICIPIOS = {
 }
 # Este template NÃO filtra por classe: qualquer menção a classe cai no miss (ver _extrair_slots).
 CLASSES = {"residencial", "comercial", "industrial", "rural"}
-ANOS = set(range(2021, 2025))
+# A camada Gold cobre jul/2022 a jun/2026.
+ANOS = set(range(2022, 2027))
 
 _TEMPLATES_PADRAO = {
     "faturamento_por_municipio_ano": (
-        "SELECT u.municipio, f.ano, SUM(f.receita_faturada) AS receita_total "
-        "FROM fact_faturamento f JOIN dim_unidade_consumidora u ON f.uc_id = u.uc_id "
-        "WHERE u.municipio = '{municipio}' AND f.ano = {ano} "
-        "GROUP BY u.municipio, f.ano"
+        "SELECT r.municipio, r.ano, SUM(r.receita_faturada) AS receita_total "
+        "FROM agg_receita_mensal r "
+        "WHERE r.municipio = '{municipio}' AND r.ano = {ano} "
+        "GROUP BY r.municipio, r.ano"
     ),
 }
 

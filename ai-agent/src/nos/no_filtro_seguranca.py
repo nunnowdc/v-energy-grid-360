@@ -55,7 +55,7 @@ def no_filtro_seguranca(state: EstadoAgente) -> Dict[str, Any]:
         return {
             "rota": "bloqueio_seguranca",
             "motivo_fora_escopo": "Entrada excede o limite de caracteres permitido.",
-            "eh_malicioso": True,
+            "malicioso": True,
             "passos_executados": [
                 f"Nó 1 — Bloqueado: pergunta com {len(pergunta)} caracteres (máx. {MAX_COMPRIMENTO})."
             ],
@@ -67,7 +67,7 @@ def no_filtro_seguranca(state: EstadoAgente) -> Dict[str, Any]:
         return {
             "rota": "bloqueio_seguranca",
             "motivo_fora_escopo": "Padrão de manipulação de prompt detectado.",
-            "eh_malicioso": True,
+            "malicioso": True,
             "passos_executados": [
                 "Nó 1 — Bloqueado: padrão de prompt injection detectado."
             ],
@@ -75,7 +75,7 @@ def no_filtro_seguranca(state: EstadoAgente) -> Dict[str, Any]:
 
     logger.debug("Nó 1 — Pergunta aprovada no filtro de segurança.")
     return {
-        "eh_malicioso": False,
+        "malicioso": False,
         "passos_executados": ["Nó 1 — Filtro de segurança: aprovado."],
     }
 

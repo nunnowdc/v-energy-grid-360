@@ -41,7 +41,7 @@ def no_recusa_honesta(state: EstadoAgente) -> Dict[str, Any]:
     Define o texto de recusa apropriado com base na rota e contexto do estado.
     """
     rota = state.get("rota", "recusa")
-    malicioso = state.get("eh_malicioso", False)
+    malicioso = state.get("malicioso", False)
     erro = state.get("erro_validacao_ou_execucao")
     tentativas = state.get("tentativas_sql", 0)
     motivo_escopo = state.get("motivo_fora_escopo")

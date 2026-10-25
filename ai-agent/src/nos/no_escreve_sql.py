@@ -42,12 +42,24 @@ Você é um especialista em SQL para a distribuidora de energia V-Energy Grid 36
 MISSÃO: Gerar EXCLUSIVAMENTE uma consulta SQL SELECT válida para o PostgreSQL que responda à pergunta do usuário.
 
 TABELAS AUTORIZADAS (apenas estas):
-- dim_unidade_consumidora (uc_id, municipio, bairro, classe, subgrupo, alimentador_id, status_ligacao, tem_geracao_distribuida)
-- fact_faturamento (fatura_id, uc_id, competencia, ano, mes, volume_faturado_kwh, receita_faturada, valor_tarifa, bandeira_tarifaria, valor_bandeira, status_pagamento, data_vencimento, data_pagamento)
-- fact_leituras (leitura_id, uc_id, competencia, leitura_anterior, leitura_atual, consumo_medido_kwh, tipo_leitura)
-- fact_ocorrencias (ocorrencia_id, alimentador_id, uc_id, data_inicio, data_fim, duracao_minutos, causa_interrupcao)
-- fact_atendimentos (chamado_id, uc_id, data_abertura, motivo_contato, status, nota_satisfacao)
-- dim_alimentadores (alimentador_id, subestacao, municipio, total_ucs_atendidas)
+- agg_continuidade_alimentador (alimentador, competencia, total_ucs, municipio_principal, interrupcoes, horas_x_uc, dec, fec)
+- agg_continuidade_alimentador_anual (alimentador, ano, total_ucs, dec, fec, rank_dec, rank_impacto_horas_x_uc)
+- agg_receita_mensal (competencia, municipio, bairro, classe, possui_gd, receita_faturada, receita_recebida, consumo_kwh, faturas_atrasadas, preco_medio_kwh, ano, mes)
+- agg_receita_preco_volume (municipio, bairro, classe, possui_gd, receita_p0, receita_p1, kwh_p0, kwh_p1, variacao_receita, efeito_volume, efeito_preco)
+- dim_alimentador (alimentador, total_ucs, qtd_municipios, qtd_bairros, municipio_principal, regiao)
+- dim_competencia (competencia, mes_referencia, ano, mes, trimestre, bandeira_tarifaria, periodo_diagnostico)
+- dim_geracao_distribuida (id_uc, potencia_kwp, data_conexao, modalidade, energia_reestimada_kwh)
+- dim_medidor (id_medidor, id_uc, modelo, tipo, data_instalacao, data_retirada, status, medidor_atual)
+- dim_unidade_consumidora (id_uc, municipio, bairro, classe, subgrupo_tarifario, alimentador, status, possui_gd)
+- fact_faturamento (id_fatura, id_uc, competencia, ano, mes, receita_faturada, receita_recebida, bandeira_tarifaria, status_pagamento, dias_atraso, consumo_kwh, preco_medio_kwh)
+- fact_leituras (id_leitura, id_uc, id_medidor, competencia, ano, mes, leitura_anterior, leitura_atual, consumo_kwh, tipo_leitura, variacao_ano_anterior_pct)
+- fact_ocorrencias (id_ocorrencia, id_uc, alimentador, tipo, causa, data_abertura, data_encerramento, competencia, duracao_min, duracao_h, dia_critico, duracao_truncada, eh_oscilacao)
+- fact_atendimentos (protocolo, id_uc, assunto, subassunto, canal, data_abertura, data_fechamento, competencia, status_chamado, tempo_resolucao_h, nota_satisfacao)
+- fact_inspecoes (id_inspecao, id_uc, data_inspecao, resultado, tipo_irregularidade, kwh_recuperado, registro_coerente)
+- fila_inspecao (prioridade, id_uc, score, motivo_suspeita, kwh_recuperavel_estimado_ano, municipio, classe, alimentador, possui_gd)
+
+Não use nomes de colunas do sistema Silver ou do dicionário antigo, como uc_id,
+alimentador_id, volume_faturado_kwh, consumo_medido_kwh ou dim_alimentadores.
 
 REGRAS ABSOLUTAS:
 1. Retorne SOMENTE a consulta SQL pura — sem markdown, sem explicação, sem ponto e vírgula no final.
@@ -99,9 +111,8 @@ def no_escreve_sql(
         temperatura=0.0,
         resposta_mock=(
             "SELECT SUM(f.receita_faturada) AS receita_total "
-            "FROM fact_faturamento f "
-            "JOIN dim_unidade_consumidora u ON f.uc_id = u.uc_id "
-            "WHERE u.municipio = 'Recife' AND f.ano = 2024"
+            "FROM agg_receita_mensal r "
+            "WHERE r.municipio = 'Recife' AND r.ano = 2024"
         ),
     )
 

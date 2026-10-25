@@ -34,7 +34,7 @@ def no_valida_sql(
                 f"{MARCADOR_SQL_INDISPONIVEL}: O agente não encontrou dados suficientes "
                 "nas tabelas disponíveis para responder a esta pergunta."
             ),
-            "eh_malicioso": False,
+            "malicioso": False,
             "passos_executados": [
                 "Nó 8 — Validação: LLM declarou SQL_INDISPONIVEL (sem dados mapeáveis)."
             ],
@@ -46,17 +46,17 @@ def no_valida_sql(
         logger.info("Nó 8 — SQL aprovado pela validação.")
         return {
             "erro_validacao_ou_execucao": None,
-            "eh_malicioso": False,
+            "malicioso": False,
             "passos_executados": [
                 f"Nó 8 — Validação aprovada. Tabelas identificadas: {resultado.tabelas_detectadas}"
             ],
         }
 
     # SQL reprovado
-    logger.warning("Nó 8 — SQL reprovado: %s (malicioso=%s)", resultado.motivo_rejeicao, resultado.eh_malicioso)
+    logger.warning("Nó 8 — SQL reprovado: %s (malicioso=%s)", resultado.motivo_rejeicao, resultado.malicioso)
     return {
         "erro_validacao_ou_execucao": resultado.motivo_rejeicao,
-        "eh_malicioso": resultado.eh_malicioso,
+        "malicioso": resultado.malicioso,
         "passos_executados": [
             f"Nó 8 — Validação reprovada (tentativa {tentativas}): {resultado.motivo_rejeicao}"
         ],
@@ -69,7 +69,7 @@ def rota_pos_validacao(state: EstadoAgente) -> str:
     Decide entre: retry, recusa honesta ou execução.
     """
     erro = state.get("erro_validacao_ou_execucao")
-    malicioso = state.get("eh_malicioso", False)
+    malicioso = state.get("malicioso", False)
     tentativas = state.get("tentativas_sql", 0)
 
     if not erro:
