@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 settings = get_settings()
 app = FastAPI(title="V-Energy Grid 360 API")
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins)
-app.include_router(health_router)
+app.include_router(health_router, prefix="/api")
 
 
 if __name__ == "__main__":
