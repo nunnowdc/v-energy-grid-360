@@ -6,9 +6,9 @@ Este guia define o contrato técnico entre a frente de **AGENTES** e a frente de
 
 ## 1. Responsabilidades de Cada Frente
 
-| Frente | Responsabilidade |
-|---|---|
-| **Agentes** (Você) | Consome a interface do validador SQL, gerencia o ciclo de vida da query, lida com retries em caso de erro sintático e aciona abstenção honesta caso a query seja bloqueada. |
+| Frente                 | Responsabilidade                                                                                                                                                                                         |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agentes** (Você)     | Consome a interface do validador SQL, gerencia o ciclo de vida da query, lida com retries em caso de erro sintático e aciona abstenção honesta caso a query seja bloqueada.                              |
 | **Segurança** (Colega) | Fornece a implementação concreta do validador de queries (usando SQLGlot / AST), define as regras de listas de permissão (whitelist de views/tabelas Gold) e garante as permissões de banco `READ-ONLY`. |
 
 ---
@@ -24,7 +24,7 @@ from pydantic import BaseModel
 class ResultadoValidacaoSQL(BaseModel):
     aprovado: bool
     motivo_rejeicao: Optional[str] = None
-    eh_malicioso: bool = False  # True para tentativas flagrantes de injeção/DDL
+    malicioso: bool = False  # True para tentativas flagrantes de injeção/DDL
 
 class ValidadorSQLInterface(Protocol):
     def validar(self, sql: str) -> ResultadoValidacaoSQL:
@@ -35,6 +35,7 @@ class ValidadorSQLInterface(Protocol):
 ```
 
 ### O que o time de Segurança deve entregar
+
 Uma classe (ex.: `ValidadorSQLGlotPostgres`) que implemente o método `.validar(sql: str) -> ResultadoValidacaoSQL`.
 
 ---
@@ -56,9 +57,9 @@ Uma classe (ex.: `ValidadorSQLGlotPostgres`) que implemente o método `.validar(
    - Views analíticas homologadas com prefixo `vw_gold_*`
 4. **Tratamento de Dialeto:**
    O parser SQLGlot deve ser configurado explicitamente para o dialeto `postgres` (`sqlglot.parse(..., read="postgres")`).
-5. **Diferenciação de Erro vs Ataque (`eh_malicioso`):**
-   - Se for apenas um erro de digitação de coluna ou sintaxe menor: `eh_malicioso = False`. O agente tentará corrigir no laço de retry.
-   - Se houver palavras-chave destrutivas ou bypass flagrante: `eh_malicioso = True`. O agente cancelará qualquer nova tentativa e registrará o evento na auditoria.
+5. **Diferenciação de Erro vs Ataque (`malicioso`):**
+   - Se for apenas um erro de digitação de coluna ou sintaxe menor: `malicioso = False`. O agente tentará corrigir no laço de retry.
+   - Se houver palavras-chave destrutivas ou bypass flagrante: `malicioso = True`. O agente cancelará qualquer nova tentativa e registrará o evento na auditoria.
 
 ---
 

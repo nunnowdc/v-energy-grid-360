@@ -11,7 +11,7 @@ class ResultadoValidacaoSQL(BaseModel):
     """Resultado da análise estática de segurança do SQL."""
     aprovado: bool = Field(description="True se o SQL for seguro e permitido para execução.")
     motivo_rejeicao: Optional[str] = Field(default=None, description="Mensagem explicando o motivo do bloqueio.")
-    eh_malicioso: bool = Field(default=False, description="True se for tentativa de ataque deliberado (DDL, injeção).")
+    malicioso: bool = Field(default=False, description="True se for tentativa de ataque deliberado (DDL, injeção).")
     tabelas_detectadas: list[str] = Field(default_factory=list, description="Lista de tabelas identificadas na query.")
 
 

@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from ..grafo.executor_agente import executar_agente
+from ..insights.service import InsightsService
 
 logger = logging.getLogger("venergy.api_ai")
 
@@ -82,15 +83,13 @@ async def get_insight(tela: str, entidade_id: str) -> Dict[str, Any]:
     Retorna o insight pré-calculado e validado numericamente para uma tela específica do portal.
     Resposta em < 30ms via cache na tabela tb_insights_tela.
     """
-    # TODO Fatia 4: integrar com InsightsService e tb_insights_tela
-    return {
-        "tela": tela,
-        "entidade_id": entidade_id,
-        "insight_texto": "Módulo de insights proativos será integrado na Fatia 4.",
-        "metricas_destaque": {},
-        "selo": "pendente_fatia4",
-        "tempo_ms": 0.0,
-    }
+    try:
+        return InsightsService().obter(tela, entidade_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Erro ao gerar insight %s/%s: %s", tela, entidade_id, exc)
+        raise HTTPException(status_code=500, detail="Erro ao gerar insight.") from exc
 
 
 @router.get("/audit/{audit_id}", summary="Trilha de auditoria detalhada de uma resposta")

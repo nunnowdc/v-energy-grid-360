@@ -54,7 +54,7 @@ class EstadoAgente(TypedDict, total=False):
     tentativas_sql: int
     max_tentativas: int
     erro_validacao_ou_execucao: Optional[str]
-    eh_malicioso: bool
+    malicioso: bool
     
     # Execução de Dados
     dados_sql: Optional[List[Dict[str, Any]]]
