@@ -12,6 +12,7 @@ from ..interfaces.validador_sql_interface import ValidadorSQLInterface
 logger = logging.getLogger("venergy.no_valida_sql")
 
 MAX_TENTATIVAS = 2
+MARCADOR_SQL_INDISPONIVEL = "SQL_INDISPONIVEL"
 
 
 def no_valida_sql(
@@ -26,10 +27,13 @@ def no_valida_sql(
     tentativas = state.get("tentativas_sql", 0)
 
     # Caso especial: o LLM reconheceu que não tem dados para responder
-    if sql.strip().upper().startswith("SQL_INDISPONIVEL"):
+    if sql.strip().upper().startswith(MARCADOR_SQL_INDISPONIVEL):
         logger.info("Nó 8 — SQL_INDISPONIVEL declarado pelo LLM.")
         return {
-            "erro_validacao_ou_execucao": "O agente não encontrou dados suficientes nas tabelas disponíveis para responder a esta pergunta.",
+            "erro_validacao_ou_execucao": (
+                f"{MARCADOR_SQL_INDISPONIVEL}: O agente não encontrou dados suficientes "
+                "nas tabelas disponíveis para responder a esta pergunta."
+            ),
             "eh_malicioso": False,
             "passos_executados": [
                 "Nó 8 — Validação: LLM declarou SQL_INDISPONIVEL (sem dados mapeáveis)."
@@ -70,6 +74,9 @@ def rota_pos_validacao(state: EstadoAgente) -> str:
 
     if not erro:
         return "executa"
+
+    if MARCADOR_SQL_INDISPONIVEL in erro:
+        return "recusa"
 
     if malicioso or tentativas >= MAX_TENTATIVAS:
         return "recusa"

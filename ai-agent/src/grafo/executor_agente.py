@@ -5,8 +5,14 @@ Expõe a função executar_agente() consumida pelo FastAPI, pelo CLI e pelo harn
 from __future__ import annotations
 
 import logging
+import sys
 import uuid
+from pathlib import Path
 from typing import Optional
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    __package__ = "src.grafo"
 
 from ..contratos.resposta_agente import RespostaAgente
 from .construtor_grafo import construir_grafo_fatia1

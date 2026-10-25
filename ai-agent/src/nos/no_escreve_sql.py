@@ -4,12 +4,37 @@ Nó 7: Escrita de SQL Estruturado via LLM (Text-to-SQL com feedback de erro).
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
 from ..provedores.cliente_llm import ClienteLLM
 
 logger = logging.getLogger("venergy.no_escreve_sql")
+
+
+def _limpar_sql(texto: str) -> tuple[str, list[str]]:
+    """Remove apenas cercas, comentários de linha e um ponto e vírgula final."""
+    bloco = re.search(r"```[^\r\n`]*\r?\n?(.*?)```", texto, flags=re.DOTALL)
+    conteudo = bloco.group(1) if bloco else texto
+    premissas = []
+    linhas_sql = []
+
+    for linha in conteudo.splitlines():
+        linha_limpa = linha.strip()
+        if linha_limpa.startswith("--"):
+            if linha_limpa.lower().startswith("-- premissa:"):
+                premissas.append(linha_limpa[len("-- Premissa:"):].strip())
+            continue
+        linhas_sql.append(linha)
+
+    sql = "\n".join(linhas_sql).strip()
+    if sql.endswith(";"):
+        sql = sql[:-1].rstrip()
+    if sql.upper() == "SQL_INDISPONIVEL":
+        return "SQL_INDISPONIVEL", premissas
+    return sql, premissas
+
 
 SYSTEM_PROMPT_SQL = """
 Você é um especialista em SQL para a distribuidora de energia V-Energy Grid 360 (Recife-PE).
@@ -80,16 +105,22 @@ def no_escreve_sql(
         ),
     )
 
-    sql_gerado = resposta.texto.strip()
+    sql_gerado, premissas_sql = _limpar_sql(resposta.texto)
     logger.info("Nó 7 | Tentativa %d | SQL gerado: %s", tentativas, sql_gerado[:120])
 
     return {
         "sql_gerado": sql_gerado,
+        "premissas_sql": premissas_sql,
+        "hit_cache": False,
         "tentativas_sql": tentativas,
         "chamadas_llm": chamadas_llm,
         "tokens_prompt": tokens_prompt + resposta.tokens_prompt,
         "tokens_resposta": tokens_resposta + resposta.tokens_resposta,
         "passos_executados": [
-            f"Nó 7 — SQL escrito (tentativa {tentativas}): {sql_gerado[:80]}..."
+            f"Nó 7 — SQL escrito (tentativa {tentativas}): {sql_gerado[:80]}...",
+            *[
+                f"Nó 7 — Premissa SQL registrada: {premissa}"
+                for premissa in premissas_sql
+            ],
         ],
     }

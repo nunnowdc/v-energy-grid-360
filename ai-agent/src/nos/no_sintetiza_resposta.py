@@ -8,7 +8,9 @@ import logging
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
+from ..insights.conferente_numerico import conferir
 from ..provedores.cliente_llm import ClienteLLM
+from .no_recusa_honesta import MENSAGENS_RECUSA
 
 logger = logging.getLogger("venergy.no_sintetiza_resposta")
 
@@ -25,12 +27,25 @@ REGRAS ABSOLUTAS:
 6. NUNCA use dados do <CONTEXTO_RAG> como substituto de números que deveriam vir do banco.
 """.strip()
 
+SYSTEM_PROMPT_SINTESE_RAG = """
+Você é o assistente de conhecimento regulatório da V-Energy Grid 360.
+Responda SOMENTE com informações presentes em <CONTEXTO_RAG>.
+Não invente números nem informações que não estejam no contexto.
+Não mencione dados do banco.
+Inclua a fonte utilizada em um rodapé.
+Seja conciso e responda em português.
+""".strip()
+
 
 def _formatar_dados_sql(dados: list[dict]) -> str:
     if not dados:
         return "(Nenhum dado retornado pelo banco)"
     try:
-        return json.dumps(dados[:10], ensure_ascii=False, indent=2, default=str)
+        limite = 10
+        texto = json.dumps(dados[:limite], ensure_ascii=False, indent=2, default=str)
+        if len(dados) > limite:
+            texto += f"\n(Exibindo {limite} de {len(dados)} linhas; não há outras linhas disponíveis no contexto.)"
+        return texto
     except Exception:
         return str(dados[:5])
 
@@ -38,10 +53,14 @@ def _formatar_dados_sql(dados: list[dict]) -> str:
 def _formatar_contexto_rag(chunks: list[dict]) -> str:
     if not chunks:
         return "(Nenhum contexto regulatório recuperado)"
-    return "\n".join(
+    limite = 4
+    texto = "\n".join(
         f"- [{c.get('fonte', '?')}] {c.get('titulo', '')}: {c.get('conteudo', '')[:300]}"
-        for c in chunks[:4]
+        for c in chunks[:limite]
     )
+    if len(chunks) > limite:
+        texto += f"\n(Exibindo {limite} de {len(chunks)} trechos recuperados.)"
+    return texto
 
 
 def no_sintetiza_resposta(
@@ -55,6 +74,18 @@ def no_sintetiza_resposta(
     dados_sql = state.get("dados_sql") or []
     contexto_rag = state.get("contexto_rag") or []
     pergunta = state.get("pergunta_autonoma") or state.get("pergunta_original", "")
+    rota = state.get("rota")
+
+    if rota == "rag" and not contexto_rag:
+        return {
+            "texto_resposta": MENSAGENS_RECUSA["sem_dados"],
+            "fontes_citadas": [],
+            "selo_confianca": "recusa_honesta",
+            "motivo_recusa": "sem_dados",
+            "passos_executados": [
+                "Nó 11 — RAG sem contexto; recusa honesta emitida sem chamar o LLM."
+            ],
+        }
 
     dados_texto = _formatar_dados_sql(dados_sql)
     rag_texto = _formatar_contexto_rag(contexto_rag)
@@ -68,12 +99,35 @@ def no_sintetiza_resposta(
 
     resposta_mock = _gerar_resposta_mock(dados_sql, pergunta)
 
+    system_prompt = (
+        SYSTEM_PROMPT_SINTESE_RAG if rota == "rag" else SYSTEM_PROMPT_SINTESE
+    )
     resposta = llm.invoke(
         prompt=prompt,
-        system_prompt=SYSTEM_PROMPT_SINTESE,
+        system_prompt=system_prompt,
         temperatura=0.2,
         resposta_mock=resposta_mock,
     )
+
+    fatos = (
+        dados_sql + [{"pergunta": pergunta}]
+        if rota in ("sql", "ambos")
+        else contexto_rag + [{"pergunta": pergunta}]
+    )
+    resposta_texto = resposta.texto
+    passo_conferencia = "Nó 11 — Conferência numérica aprovada."
+    if not conferir(fatos, resposta_texto):
+        resposta_texto = (
+            _gerar_resposta_mock(dados_sql, pergunta)
+            if rota in ("sql", "ambos")
+            else _gerar_resposta_rag_mock(contexto_rag)
+        )
+        passo_conferencia = (
+            "Nó 11 — Conferência numérica reprovada; resposta determinística utilizada."
+        )
+    if rota in ("sql", "ambos") and not dados_sql:
+        resposta_texto = MENSAGENS_RECUSA["sem_dados"]
+        passo_conferencia = "Nó 11 — SQL sem linhas; resposta de ausência de dados emitida."
 
     # Fontes citadas: extrai as fontes do RAG que foram relevantes
     fontes = list({c.get("fonte", "") for c in contexto_rag if c.get("fonte")})
@@ -82,7 +136,7 @@ def no_sintetiza_resposta(
     hit_cache = state.get("hit_cache", False)
     if hit_cache:
         selo = "certificada"
-    elif dados_sql and len(dados_sql) > 0:
+    elif rota in ("sql", "ambos"):
         selo = "gerada_confiavel"
     else:
         selo = "documental_rag"
@@ -94,7 +148,7 @@ def no_sintetiza_resposta(
     logger.info("Nó 11 — Síntese concluída. Selo: %s | Fontes: %s", selo, fontes)
 
     return {
-        "texto_resposta": resposta.texto,
+        "texto_resposta": resposta_texto,
         "fontes_citadas": fontes,
         "selo_confianca": selo,
         "chamadas_llm": chamadas_llm,
@@ -102,6 +156,8 @@ def no_sintetiza_resposta(
         "tokens_resposta": tokens_resposta_acc,
         "passos_executados": [
             f"Nó 11 — Síntese gerada. Selo: {selo}. {len(dados_sql)} linha(s) de dados utilizadas."
+            ,
+            passo_conferencia,
         ],
     }
 
@@ -113,3 +169,12 @@ def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
     primeiros = dados[0] if dados else {}
     valores = " | ".join(f"{k}: {v}" for k, v in list(primeiros.items())[:4])
     return f"Com base nos dados disponíveis, a consulta retornou: {valores}."
+
+
+def _gerar_resposta_rag_mock(chunks: list[dict]) -> str:
+    """Fallback determinístico baseado exclusivamente no primeiro trecho recuperado."""
+    if not chunks:
+        return MENSAGENS_RECUSA["sem_dados"]
+    chunk = chunks[0]
+    fonte = chunk.get("fonte", "fonte não informada")
+    return f"{chunk.get('conteudo', '')}\n\nFonte: {fonte}"
