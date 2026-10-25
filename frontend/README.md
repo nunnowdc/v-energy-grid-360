@@ -10,6 +10,7 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [Tailwind CSS](https://tailwindcss.com/) v4 (estilos)
 - [shadcn/ui](https://ui.shadcn.com/) com [Base UI](https://base-ui.com/) (componentes de interface)
 - [Lucide](https://lucide.dev/) (ícones)
+- [TanStack Query](https://tanstack.com/query) (chamadas à API, cache e estados de carregamento)
 
 ## Pré-requisitos
 
@@ -62,6 +63,11 @@ src/
 │   ├── use-mobile.ts
 │   └── use-usuario.ts       ← usuário atual (de teste até o login existir)
 ├── lib/
+│   ├── api/
+│   │   ├── api-fetch.ts     ← função única para chamar o backend
+│   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
+│   │   └── query-client.ts  ← configuração do TanStack Query
+│   └── utils.ts
 └── pages/
 ```
 
@@ -131,6 +137,33 @@ Cada usuário tem um perfil, e o perfil define as permissões (`ver_receita`, `v
 
 Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` e reinicie o `npm run dev`.
 
-## Decisões em aberto
+## Chamadas à API
 
-- Biblioteca para chamadas à API
+Toda chamada ao backend passa pela função `apiFetch` (`src/lib/api/api-fetch.ts`):
+
+- Coloca o prefixo `/api`, envia o cookie de login e converte a resposta de JSON.
+- Em caso de erro, lança um `ErroApi` com o `status` e uma mensagem em português, pronta para mostrar na tela.
+- Desiste depois de 30 segundos.
+
+As telas não chamam o `apiFetch` direto: cada recurso tem um hook com o [TanStack Query](https://tanstack.com/query), em `src/hooks/use-<recurso>.ts`. O TanStack Query guarda o resultado em cache por filtro, cancela a busca anterior quando o filtro muda e entrega os estados `isPending`, `isFetching` e `isError` para a tela. Exemplo (ilustrativo):
+
+```ts
+// src/hooks/use-receita.ts
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { apiFetch } from '@/lib/api/api-fetch'
+
+export function useReceita(municipio: string) {
+  return useQuery({
+    // A chave inclui os filtros: cada combinação tem o próprio cache
+    queryKey: ['receita', municipio],
+    queryFn: ({ signal }) =>
+      apiFetch<RespostaReceita>(`/metrics/revenue-variance?${new URLSearchParams({ municipio })}`, { signal }),
+    // Mantém o dado anterior na tela enquanto busca o do novo filtro
+    placeholderData: keepPreviousData,
+  })
+}
+```
+
+Em desenvolvimento, o Vite repassa tudo o que começa com `/api` para o FastAPI em `http://127.0.0.1:8000` (veja `vite.config.ts`). Para as telas receberem dados, o backend precisa estar rodando, com as rotas registradas sob o prefixo `/api`.
+
+No `npm run dev`, um botão flutuante do TanStack Query aparece no canto da tela. Ele mostra cada consulta, o cache e os erros. Esse botão não vai para o build de produção.
