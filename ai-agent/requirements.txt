@@ -7,4 +7,5 @@ pgvector>=0.3.0
 python-dotenv>=1.0.0
 fastapi>=0.111.0
 uvicorn>=0.30.0
+pytest>=8.0.0
 sqlglot>=30.0
