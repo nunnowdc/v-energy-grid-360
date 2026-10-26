@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ai_agent.tests import conftest
+import conftest
 
 
 def test_database_url_herdada_fica_isolada():

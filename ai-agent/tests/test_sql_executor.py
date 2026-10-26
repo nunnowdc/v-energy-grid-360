@@ -10,7 +10,7 @@ import types
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ai_agent.src.services.sql_executor import SQLExecutor, ResultadoExecucaoSQL
+from src.services.sql_executor import SQLExecutor, ResultadoExecucaoSQL
 
 
 def test_execucao_consulta_valida(sql_executor_teste: SQLExecutor):

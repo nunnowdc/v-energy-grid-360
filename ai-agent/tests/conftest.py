@@ -29,9 +29,9 @@ if "ai_agent" not in sys.modules:
     ai_agent_mod.__file__ = str(ai_agent_dir / "__init__.py")
     sys.modules["ai_agent"] = ai_agent_mod
 
-from ai_agent.src.provedores.cliente_llm import ClienteLLM, RespostaLLM
-from ai_agent.src.services.sql_executor import SQLExecutor
-from ai_agent.src.interfaces.stub_validador_sql import StubValidadorSQL
+from src.provedores.cliente_llm import ClienteLLM, RespostaLLM
+from src.services.sql_executor import SQLExecutor
+from src.interfaces.stub_validador_sql import StubValidadorSQL
 from security.sql_validator import SQLValidator
 
 logger = logging.getLogger(__name__)
@@ -303,7 +303,7 @@ class FakeClienteLLM(ClienteLLM):
         if texto is None and self.resposta_padrao:
             texto = self.resposta_padrao
 
-        # 3. Fallback do nó
+        # 3. Fallback do nó (apenas se não forçar mock ou se resposta_mock for fornecida explicitamente)
         if texto is None and resposta_mock:
             texto = resposta_mock
 

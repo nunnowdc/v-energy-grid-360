@@ -3,9 +3,12 @@ Cliente unificado de LLM com suporte a OpenRouter (primário), 9router (fallback
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
+import sys
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 import httpx
 from pydantic import BaseModel
@@ -36,19 +39,26 @@ class ClienteLLM:
         
         # Chaves de API e URLs base
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-        self.openrouter_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1/chat/completions").strip()
+        self.openrouter_url = os.getenv(
+            "OPENROUTER_BASE_URL",
+            "https://openrouter.ai/api/v1/chat/completions",
+        ).strip()
         
         self.ninerouter_key = os.getenv("NINEROUTER_API_KEY", "").strip()
-        self.ninerouter_url = os.getenv("NINEROUTER_BASE_URL", "https://api.9router.com/v1/chat/completions").strip()
+        self.ninerouter_url = os.getenv(
+            "NINEROUTER_BASE_URL",
+            "https://api.9router.com/v1/chat/completions",
+        ).strip()
 
         # Modelos configuráveis (default para o melhor Gemini Flash disponível)
         self.modelo_primario = (
             modelo_primario
-            or os.getenv("MODELO_LLM_PRIMARIO", "google/gemini-2.5-flash-lite")
+            or os.getenv("MODELO_LLM_PRIMARIO")
         )
         self.modelo_fallback = (
             modelo_fallback
-            or os.getenv("MODELO_LLM_FALLBACK", "google/gemini-2.5-flash-lite")
+            or os.getenv("MODELO_LLM_FALLBACK")
+            or self.modelo_primario
         )
 
         # Modo Mock (ativado se explicitamente pedido ou se não houver chaves válidas)
@@ -143,11 +153,18 @@ class ClienteLLM:
             "model": modelo,
             "messages": mensagens,
             "temperature": temperatura,
+            "stream": False,
         }
 
         with httpx.Client(timeout=self.timeout) as client:
             res = client.post(url, json=payload, headers=headers)
-            res.raise_for_status()
+            if res.is_error:
+                raise RuntimeError(f"HTTP {res.status_code}: {res.text[:300]}")
+
+            tipo = res.headers.get("content-type", "")
+            if "text/event-stream" in tipo:
+                return self._parse_sse(res.text)
+
             data = res.json()
 
             escolha = data["choices"][0]["message"]["content"]
@@ -157,3 +174,76 @@ class ClienteLLM:
                 tokens_prompt=usage.get("prompt_tokens", 0),
                 tokens_resposta=usage.get("completion_tokens", 0),
             )
+
+    @staticmethod
+    def _parse_sse(corpo: str) -> RespostaLLM:
+        partes: List[str] = []
+        usage: Dict[str, Any] = {}
+
+        for linha in corpo.splitlines():
+            if not linha.startswith("data:"):
+                continue
+
+            bruto = linha[5:].strip()
+            if not bruto or bruto == "[DONE]":
+                continue
+
+            pedaco = json.loads(bruto)
+            if pedaco.get("usage"):
+                usage = pedaco["usage"]
+
+            for escolha in pedaco.get("choices", []):
+                trecho = escolha.get("delta", {}).get("content")
+                if trecho:
+                    partes.append(trecho)
+
+        return RespostaLLM(
+            texto="".join(partes).strip(),
+            tokens_prompt=usage.get("prompt_tokens", 0),
+            tokens_resposta=usage.get("completion_tokens", 0),
+        )
+
+
+def _testar_conexao_llm() -> int:
+    """Executa uma chamada real para validar provedor, chave e modelo configurados."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        print("Erro: instale a dependência python-dotenv.")
+        return 1
+
+    raiz_projeto = Path(__file__).resolve().parents[3]
+    arquivo_env = raiz_projeto / ".env"
+    load_dotenv(arquivo_env)
+
+    cliente = ClienteLLM(timeout_segundos=30.0)
+    print(f"Arquivo .env: {arquivo_env}")
+    print(f"Modelo primário: {cliente.modelo_primario}")
+    print(f"Modelo fallback: {cliente.modelo_fallback}")
+    print(f"OpenRouter configurado: {bool(cliente.openrouter_key)}")
+    print(f"9router configurado: {bool(cliente.ninerouter_key)}")
+
+    if not cliente.openrouter_key and not cliente.ninerouter_key:
+        print("Erro: nenhuma chave de provedor foi configurada.")
+        return 1
+
+    try:
+        resposta = cliente.invoke(
+            prompt="Responda apenas com: conexão funcionando.",
+            system_prompt="Você está sendo usado em um teste de conectividade.",
+            temperatura=0.0,
+        )
+    except Exception as erro:
+        print(f"Falha na chamada ao provedor: {erro}")
+        return 1
+
+    print("\nConexão com o provedor realizada com sucesso.")
+    print(f"Provedor utilizado: {resposta.provedor_utilizado}")
+    print(f"Resposta: {resposta.texto}")
+    print(f"Tokens: {resposta.tokens_prompt + resposta.tokens_resposta}")
+    print(f"Latência: {resposta.latencia_ms:.1f} ms")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_testar_conexao_llm())

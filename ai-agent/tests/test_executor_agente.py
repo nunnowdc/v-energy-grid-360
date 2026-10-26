@@ -6,11 +6,11 @@ recusa honesta, preservação de follow-up e bloqueio de injeções.
 from __future__ import annotations
 
 import pytest
-from ai_agent.src.grafo.executor_agente import executar_agente
-from ai_agent.src.contratos.resposta_agente import RespostaAgente
-from ai_agent.src.services.sql_executor import SQLExecutor
-from ai_agent.src.provedores.cliente_llm import RespostaLLM
-from ai_agent.tests.conftest import FakeClienteLLM
+from src.grafo.executor_agente import executar_agente
+from src.contratos.resposta_agente import RespostaAgente
+from src.services.sql_executor import SQLExecutor
+from src.provedores.cliente_llm import RespostaLLM
+from conftest import FakeClienteLLM
 
 
 def test_pipeline_caminho_feliz_sql(sql_executor_teste: SQLExecutor, fake_llm_factory):
