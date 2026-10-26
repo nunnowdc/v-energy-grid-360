@@ -1,8 +1,13 @@
 """Configuração local da API, sem dependências de infraestrutura."""
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import urlsplit
+
+from dotenv import dotenv_values
+
+ENV_LOCAL_PATH = Path(__file__).resolve().parents[2] / ".env.local"
 
 
 @dataclass(frozen=True)
@@ -11,19 +16,28 @@ class Settings:
     host: str
     port: int
     cors_origins: tuple[str, ...]
+    database_url: str | None = field(default=None, repr=False)
 
 
 def get_settings() -> Settings:
-    """Lê as opções simples do ambiente ao iniciar a aplicação."""
-    environment = os.getenv("APP_ENV", "local")
-    host = os.getenv("APP_HOST", "127.0.0.1")
-    port = int(os.getenv("APP_PORT", "8000"))
+    """Lê o ambiente do sistema antes das opções locais do backend."""
+    local_values = dotenv_values(ENV_LOCAL_PATH, interpolate=False)
+
+    def value(name: str, default: str) -> str:
+        if name in os.environ:
+            return os.environ[name]
+        local_value = local_values.get(name)
+        return default if local_value is None else local_value
+
+    environment = value("APP_ENV", "local")
+    host = value("APP_HOST", "127.0.0.1")
+    port = int(value("APP_PORT", "8000"))
     if not 1 <= port <= 65535:
         raise ValueError("APP_PORT deve estar entre 1 e 65535")
 
     origins = tuple(
         origin.strip()
-        for origin in os.getenv(
+        for origin in value(
             "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
         ).split(",")
         if origin.strip()
@@ -44,4 +58,18 @@ def get_settings() -> Settings:
         ):
             raise ValueError(f"Origem CORS local inválida: {origin}")
 
-    return Settings(environment, host, port, origins)
+    database_url = value("DATABASE_URL", "") or None
+    if database_url:
+        try:
+            parsed_database_url = urlsplit(database_url)
+        except ValueError:
+            raise ValueError("DATABASE_URL inválida") from None
+        if (
+            parsed_database_url.scheme != "postgresql+psycopg"
+            or not parsed_database_url.path.strip("/")
+        ):
+            raise ValueError(
+                "DATABASE_URL deve usar postgresql+psycopg e indicar o banco"
+            )
+
+    return Settings(environment, host, port, origins, database_url)
