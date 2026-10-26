@@ -1,5 +1,5 @@
-import { Zap } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
+import MarcaVEnergy from '@/components/MarcaVEnergy/MarcaVEnergy'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MOTIVO_SESSAO_EXPIRADA } from '@/lib/api/sessao'
@@ -11,13 +11,11 @@ function LoginPage() {
   const sessaoExpirada = params.get('motivo') === MOTIVO_SESSAO_EXPIRADA
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-muted/40 p-4">
+    <main className="flex min-h-svh items-center justify-center bg-canvas p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="justify-items-center text-center">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Zap className="size-5" />
-          </div>
-          <CardTitle className="text-lg">Entrar no portal</CardTitle>
+          <MarcaVEnergy className="size-10 p-[9px]" />
+          <CardTitle className="text-lg font-bold">Entrar no portal</CardTitle>
           <CardDescription>V-Energy Grid 360</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

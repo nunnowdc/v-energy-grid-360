@@ -10,6 +10,7 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [Tailwind CSS](https://tailwindcss.com/) v4 (estilos)
 - [shadcn/ui](https://ui.shadcn.com/) com [Base UI](https://base-ui.com/) (componentes de interface)
 - [Lucide](https://lucide.dev/) (ícones)
+- [IBM Plex Sans e IBM Plex Mono](https://www.ibm.com/plex/) (tipografia)
 - [TanStack Query](https://tanstack.com/query) (chamadas à API, cache e estados de carregamento)
 
 ## Pré-requisitos
@@ -53,6 +54,7 @@ src/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
+│   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
 │   ├── CartaoKpi/
 │   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
 │   │   └── CartaoKpiEsqueleto.tsx
@@ -62,14 +64,18 @@ src/
 │   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
 │   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
 │   ├── Layout/Layout.tsx
+│   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
+│   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
 │   ├── RotaInicial/RotaInicial.tsx
+│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário no rodapé do menu
 │   ├── RotaProtegida/RotaProtegida.tsx
+│   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
 ├── config/
 │   ├── bandeiras.ts         ← nome e cor de cada bandeira tarifária
 │   ├── classes.ts           ← nome e cor de cada classe de consumo
-│   ├── navegacao.ts         ← telas do menu
+│   ├── navegacao.ts         ← telas do menu (grupo, título e descrição)
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
@@ -108,6 +114,14 @@ Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o
 | Classes de consumo (Residencial, Comercial, Industrial, Rural, Poder público) | `--chart-1` a `--chart-5` | `bg-chart-1`… |
 | Período anterior nas comparações | `--chart-anterior` | `bg-chart-anterior` |
 | Bandeiras tarifárias | `--bandeira-verde`, `--bandeira-amarela`, `--bandeira-vermelha-p1`, `--bandeira-vermelha-p2` | `bg-bandeira-verde`… |
+| Fundo da área de conteúdo (cartões e cabeçalho ficam brancos sobre ele) | `--canvas` | `bg-canvas` |
+| Menu lateral escuro em petróleo | `--sidebar`, `--sidebar-foreground`, `--sidebar-muted`… | `bg-sidebar`, `text-sidebar-muted`… |
+| Marca (só na marca e no favicon) | `--marca-grade`, `--marca-energia` | `bg-marca-energia`… |
+
+### Tipografia
+
+- **IBM Plex Sans** (`font-sans`, o padrão) para textos.
+- **IBM Plex Mono** (`font-mono`) para números de KPI, variações e rótulos técnicos, como os grupos do menu e o selo da base. Os números ficam alinhados e com cara de painel técnico.
 
 Regras:
 
@@ -235,6 +249,8 @@ Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos 
 
 Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora.
 
+A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem largura fixa (definida em `FiltrosGlobais.tsx`), então escolher outro valor não muda o tamanho nem a posição dos filtros. Um valor maior que o filtro aparece cortado com "…" e inteiro ao passar o mouse. A lista de opções usa o `Select` do shadcn/ui, no visual do portal.
+
 ## Dados de exemplo (MSW)
 
 Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde com dados de exemplo **só no `npm run dev`**. Nada disso vai para o build de produção.
@@ -263,3 +279,22 @@ Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://t
 - **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas). A opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
 - **Preparação comum:** fica em `src/test/setup.ts`. Ele limpa a tela entre um teste e outro, adiciona os verificadores do jest-dom (`toBeInTheDocument`, `toBeDisabled`…) e simula o que o jsdom não tem.
 - **Antes de abrir um PR:** `npm run lint`, `npm test` e `npm run build` devem passar.
+
+## Montar uma tela
+
+Toda tela começa com o `CabecalhoPagina`. Ele mostra o título e a descrição que estão em `src/config/navegacao.ts`, com espaço à direita para os filtros:
+
+```tsx
+function ReceitaPage() {
+  return (
+    <section className="flex flex-col gap-6">
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['municipio', 'bairro', 'classe']} />} />
+      {/* KPIs, gráficos e tabelas da tela */}
+    </section>
+  )
+}
+```
+
+- **Nome e descrição da tela:** são escritos uma vez só, em `navegacao.ts`. Assim aparecem iguais no menu, na trilha do topo ("Negócio / Receita") e no título.
+- **Grupo do menu:** cada tela fica em "Negócio" ou "Operação" (campo `grupo`). Um grupo sem nenhuma tela permitida para o perfil some do menu.
+- **Fundo e cartões:** o fundo da área de conteúdo é cinza-claro (`bg-canvas`), e os blocos (`BlocoDados`, `CartaoKpi`) são cartões brancos sobre ele.

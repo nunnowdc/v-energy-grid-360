@@ -10,6 +10,15 @@ import { formatarCompetencia } from '@/lib/formatacao'
 
 export type CampoFiltro = 'periodo' | 'municipio' | 'bairro' | 'classe'
 
+// Larguras fixas: escolher outro valor não muda o tamanho nem a posição dos filtros.
+// Cabem os valores mais comuns; um valor maior é cortado com "…". No celular, cada filtro ocupa a linha toda
+const larguras: Record<CampoFiltro, string> = {
+  periodo: 'sm:w-52',
+  municipio: 'sm:w-64',
+  bairro: 'sm:w-56',
+  classe: 'sm:w-64',
+}
+
 type FiltrosGlobaisProps = {
   // Quais filtros a tela usa, na ordem em que aparecem
   campos: CampoFiltro[]
@@ -21,7 +30,7 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
   const { filtros, temFiltro, alterarFiltro, limparFiltros } = useFiltros()
 
   return (
-    <EstadoConsulta consulta={opcoes} esqueleto={<Skeleton className="h-14 w-full" />}>
+    <EstadoConsulta consulta={opcoes} esqueleto={<Skeleton className="h-9 w-full max-w-md" />}>
       {(dados) => {
         const competencias = dados.competencias.map((competencia) => ({
           valor: competencia,
@@ -31,7 +40,7 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
           dados.municipios.find((municipio) => municipio.nome === filtros.municipio)?.bairros ?? []
 
         return (
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {campos.includes('periodo') && (
               <>
                 <FiltroSelect
@@ -39,6 +48,7 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
                   valor={filtros.inicio}
                   opcoes={competencias}
                   textoVazio="12 meses até o fim"
+                  className={larguras.periodo}
                   aoMudar={(valor) => alterarFiltro('inicio', valor)}
                 />
                 <FiltroSelect
@@ -46,6 +56,7 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
                   valor={filtros.fim}
                   opcoes={competencias}
                   textoVazio="Último mês da base"
+                  className={larguras.periodo}
                   aoMudar={(valor) => alterarFiltro('fim', valor)}
                 />
               </>
@@ -56,6 +67,7 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
                 valor={filtros.municipio}
                 opcoes={dados.municipios.map(({ nome }) => ({ valor: nome, rotulo: nome }))}
                 textoVazio="Todos"
+                className={larguras.municipio}
                 aoMudar={(valor) => alterarFiltro('municipio', valor)}
               />
             )}
@@ -66,6 +78,7 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
                 opcoes={bairros.map((bairro) => ({ valor: bairro, rotulo: bairro }))}
                 textoVazio={filtros.municipio ? 'Todos' : 'Escolha um município'}
                 desabilitado={!filtros.municipio}
+                className={larguras.bairro}
                 aoMudar={(valor) => alterarFiltro('bairro', valor)}
               />
             )}
@@ -78,10 +91,11 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
                   rotulo: classesConsumo[classe].label,
                 }))}
                 textoVazio="Todas"
+                className={larguras.classe}
                 aoMudar={(valor) => alterarFiltro('classe', valor)}
               />
             )}
-            <Button variant="ghost" size="sm" disabled={!temFiltro} onClick={limparFiltros}>
+            <Button variant="ghost" className="h-9" disabled={!temFiltro} onClick={limparFiltros}>
               <X />
               Limpar filtros
             </Button>

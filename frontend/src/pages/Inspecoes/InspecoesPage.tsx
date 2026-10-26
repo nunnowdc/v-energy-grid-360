@@ -1,9 +1,9 @@
+import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
+
 function InspecoesPage() {
   return (
-    <section>
-      <p className="text-muted-foreground">
-        Unidades suspeitas priorizadas e gestão das ordens de inspeção.
-      </p>
+    <section className="flex flex-col gap-6">
+      <CabecalhoPagina />
     </section>
   )
 }

@@ -1,12 +1,10 @@
+import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
 
 function IndicadoresPage() {
   return (
-    <section className="flex flex-col gap-4">
-      <FiltrosGlobais campos={['periodo', 'municipio', 'classe']} />
-      <p className="text-muted-foreground">
-        Principais indicadores do negócio, comparados entre períodos.
-      </p>
+    <section className="flex flex-col gap-6">
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['periodo', 'municipio', 'classe']} />} />
     </section>
   )
 }

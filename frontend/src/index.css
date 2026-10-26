@@ -1,13 +1,22 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: 'IBM Plex Sans Variable', system-ui, sans-serif;
+  /* Números (KPIs, variações, tabelas) e rótulos técnicos */
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --color-canvas: var(--canvas);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-marca-grade: var(--marca-grade);
+  --color-marca-energia: var(--marca-energia);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -55,23 +64,25 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: #0f1a1e;
+  /* Fundo da área de conteúdo; cartões e cabeçalho ficam brancos sobre ele */
+  --canvas: #f4f6f7;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: #0f1a1e;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: #0f1a1e;
   /* Azul-petróleo: botões, links, menu ativo e barras de prioridade */
   --primary: #155e75;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #eef3f4;
+  --secondary-foreground: #0f1a1e;
+  --muted: #eef3f4;
+  --muted-foreground: #5b6b71;
+  --accent: #eef3f4;
+  --accent-foreground: #0f1a1e;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: #e3e8ea;
+  --input: #d3dcdf;
   --ring: #155e75;
   /* Classes de consumo: a cor acompanha a classe em todos os gráficos */
   --chart-1: #2a78d6; /* Residencial */
@@ -86,15 +97,20 @@
   --bandeira-amarela: #eda100;
   --bandeira-vermelha-p1: #e34948;
   --bandeira-vermelha-p2: #9b1c1c;
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --radius: 0.5rem;
+  /* Menu lateral escuro em petróleo, a identidade do portal */
+  --sidebar: #0b3b47;
+  --sidebar-foreground: #d3e0e3;
+  --sidebar-muted: #a9c2c8;
   --sidebar-primary: #155e75;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: color-mix(in oklch, #155e75 10%, white);
-  --sidebar-accent-foreground: #155e75;
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #155e75;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(255 255 255 / 10%);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 12%);
+  --sidebar-ring: #a9c2c8;
+  /* Marca: a grade da rede e o ponto de energia no centro (só na marca) */
+  --marca-grade: #e6eef0;
+  --marca-energia: #f2b84b;
 }
 
 
