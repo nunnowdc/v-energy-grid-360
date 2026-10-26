@@ -5,7 +5,8 @@ Indexador de Conhecimento — popula a base vetorial (tb_conhecimento_vetorial) 
   3. Regras setoriais: PRODIST Módulo 8, Bandeiras Tarifárias, Geração Distribuída
   4. Templates SQL analíticos pré-aprovados
 
-Execute uma vez no setup do ambiente:
+Execute direto no VS Code (F5 / Run Python File) ou terminal:
+  python ai_agent/src/rag/indexador_conhecimento.py
   python -m ai_agent.src.rag.indexador_conhecimento
 """
 from __future__ import annotations
@@ -14,8 +15,17 @@ import logging
 import os
 import sys
 import uuid
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
 
+# Garante que a raiz do projeto esteja no sys.path para imports absolutos funcionarem
+# quando rodado direto como script (python arquivo.py)
+ROOT = Path(__file__).resolve().parents[3]  # c:\VScode\v-energy-grid-360
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+load_dotenv()
 logger = logging.getLogger("venergy.indexador_conhecimento")
 
 # ── Conteúdo a ser indexado ───────────────────────────────────────────────────

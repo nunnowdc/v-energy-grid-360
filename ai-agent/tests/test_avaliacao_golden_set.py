@@ -11,11 +11,11 @@ import pytest
 import sqlglot
 from sqlglot import exp
 
-from ai_agent.src.grafo.executor_agente import executar_agente
-from ai_agent.src.contratos.resposta_agente import RespostaAgente
-from ai_agent.src.provedores.cliente_llm import RespostaLLM
-from ai_agent.src.services.sql_executor import SQLExecutor
-from ai_agent.tests.conftest import FakeClienteLLM
+from src.grafo.executor_agente import executar_agente
+from src.contratos.resposta_agente import RespostaAgente
+from src.provedores.cliente_llm import RespostaLLM
+from src.services.sql_executor import SQLExecutor
+from conftest import FakeClienteLLM
 
 
 GOLDEN_DATASET_PATH = Path(__file__).parent / "golden_dataset" / "golden_dataset.json"

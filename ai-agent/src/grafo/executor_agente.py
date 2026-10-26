@@ -5,6 +5,7 @@ Expõe a função executar_agente() consumida pelo FastAPI, pelo CLI e pelo harn
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -15,7 +16,7 @@ if __package__ in (None, ""):
     __package__ = "src.grafo"
 
 from ..contratos.resposta_agente import RespostaAgente
-from .construtor_grafo import construir_grafo_fatia1
+from .construtor_grafo import construir_grafo_final
 from ..interfaces.validador_sql_interface import ValidadorSQLInterface
 from ..provedores.cliente_llm import ClienteLLM
 from ..services.sql_executor import SQLExecutor
@@ -50,7 +51,7 @@ def executar_agente(
     if not sessao_id:
         sessao_id = str(uuid.uuid4())
 
-    grafo, inicializar = construir_grafo_fatia1(
+    grafo, inicializar = construir_grafo_final(
         llm=llm,
         validador=validador,
         executor=executor,
@@ -105,3 +106,51 @@ def executar_agente(
         ),
         chamadas_llm=estado_final.get("chamadas_llm", 0),
     )
+
+
+def _testar_pipeline_com_banco() -> int:
+    """Executa uma pergunta real no grafo usando a conexão configurada no .env."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        print("Erro: instale a dependência python-dotenv.")
+        return 1
+
+    raiz_projeto = Path(__file__).resolve().parents[3]
+    arquivo_env = raiz_projeto / ".env"
+    load_dotenv(arquivo_env)
+
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print(f"Erro: DATABASE_URL não encontrada em {arquivo_env}.")
+        return 1
+
+    pergunta = "Qual foi o faturamento total de Recife em 2023?."
+    print(f"Arquivo .env: {arquivo_env}")
+    print(f"Pergunta de teste: {pergunta}")
+    print("Executando o pipeline do agente...")
+
+    resposta = executar_agente(pergunta=pergunta, db_url=db_url)
+
+    print("\nResultado do pipeline:")
+    print(f"Selo de confiança: {resposta.selo_confianca}")
+    print(f"Resposta: {resposta.resposta_texto}")
+    print(f"SQL executado: {resposta.sql_gerado}")
+    print(f"Dados retornados: {resposta.dados_tabela}")
+    print(f"Passos: {resposta.passos_executados}")
+    print(f"Chamadas ao LLM: {resposta.chamadas_llm}")
+
+    if resposta.selo_confianca == "erro_bloqueado":
+        print("\nFalha: o pipeline não conseguiu concluir a execução.")
+        return 1
+
+    if not resposta.sql_gerado:
+        print("\nFalha: o pipeline não gerou nem executou SQL.")
+        return 1
+
+    print("\nPipeline concluído com sucesso.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_testar_pipeline_com_banco())

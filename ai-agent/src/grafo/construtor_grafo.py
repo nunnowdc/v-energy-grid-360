@@ -249,9 +249,9 @@ def construir_grafo(
 
 
 # Mantém compat com Fatia 1
-construir_grafo_fatia1 = construir_grafo
+construir_grafo_final = construir_grafo
 
 
 if __name__ == "__main__":
-    grafo, _ = construir_grafo_fatia1()
+    grafo, _ = construir_grafo_final()
     grafo.get_graph().draw_mermaid_png(output_file_path="theme_code_dracula.png")

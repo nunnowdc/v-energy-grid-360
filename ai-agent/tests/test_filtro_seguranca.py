@@ -5,7 +5,7 @@ Cobre bloqueio de prompt injection, overflow de contexto, SQL DDL/DML e liberaç
 from __future__ import annotations
 
 import pytest
-from ai_agent.src.nos.no_filtro_seguranca import (
+from src.nos.no_filtro_seguranca import (
     no_filtro_seguranca,
     rota_pos_filtro,
     MAX_COMPRIMENTO,
