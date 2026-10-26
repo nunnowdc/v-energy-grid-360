@@ -78,7 +78,8 @@ src/
 │   ├── api/
 │   │   ├── api-fetch.ts     ← função única para chamar o backend
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
-│   │   └── query-client.ts  ← configuração do TanStack Query
+│   │   ├── query-client.ts  ← configuração do TanStack Query
+│   │   └── sessao.ts        ← sessão expirada (401) leva ao login
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número e percentual no padrão brasileiro
 │   └── utils.ts
@@ -161,6 +162,8 @@ Toda chamada ao backend passa pela função `apiFetch` (`src/lib/api/api-fetch.t
 - Coloca o prefixo `/api`, envia o cookie de login e converte a resposta de JSON.
 - Em caso de erro, lança um `ErroApi` com o `status` e uma mensagem em português, pronta para mostrar na tela.
 - Desiste depois de 30 segundos.
+- **401** (sessão expirada): qualquer consulta ou alteração leva ao `/login` com o aviso "Sua sessão expirou. Entre novamente.". O JWT dura 15 minutos e não é renovado.
+- **429** (limite de requisições): mostra "Muitas tentativas. Aguarde um instante e tente de novo." e não tenta de novo sozinho.
 
 As telas não chamam o `apiFetch` direto: cada recurso tem um hook com o [TanStack Query](https://tanstack.com/query), em `src/hooks/use-<recurso>.ts`. O TanStack Query guarda o resultado em cache por filtro, cancela a busca anterior quando o filtro muda e entrega os estados `isPending`, `isFetching` e `isError` para a tela. Exemplo (ilustrativo):
 
