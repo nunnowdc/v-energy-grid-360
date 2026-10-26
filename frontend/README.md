@@ -33,6 +33,8 @@ npm run dev     # sobe o servidor em http://localhost:5173
 | `npm run build` | Gera a versão de produção em `dist/` |
 | `npm run preview` | Serve localmente a versão gerada pelo build |
 | `npm run lint` | Verifica o código com o ESLint |
+| `npm test` | Roda os testes automatizados uma vez |
+| `npm run test:watch` | Roda os testes de novo a cada arquivo salvo |
 
 ## Padrão de organização
 
@@ -84,7 +86,8 @@ src/
 │   ├── formatacao.ts        ← moeda, número e percentual no padrão brasileiro
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
-└── pages/
+├── pages/
+└── test/                    ← preparação dos testes e o renderizar()
 ```
 
 ### Regra geral de organização
@@ -242,3 +245,21 @@ Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde 
 - Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
 Rotas com exemplo hoje: `GET /api/filters/options`.
+
+## Testes automatizados
+
+Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://testing-library.com/docs/react-testing-library/intro/), num navegador simulado (jsdom). Rode com `npm test`.
+
+- **Onde ficam:** junto do que testam, com o mesmo nome e `.test` no fim. Exemplos: `components/EstadoConsulta/EstadoConsulta.test.tsx` e `lib/filtros-url.test.ts`.
+- **O que cobrem hoje:**
+  - menu e rotas por perfil;
+  - o `apiFetch` (mensagens de erro, servidor fora do ar, tempo esgotado, busca cancelada);
+  - a sessão expirada e as novas tentativas;
+  - os 4 estados dos blocos;
+  - a variação e o cartão de KPI;
+  - os filtros na URL;
+  - os formatos de número;
+  - os dados de exemplo.
+- **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas). A opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
+- **Preparação comum:** fica em `src/test/setup.ts`. Ele limpa a tela entre um teste e outro, adiciona os verificadores do jest-dom (`toBeInTheDocument`, `toBeDisabled`…) e simula o que o jsdom não tem.
+- **Antes de abrir um PR:** `npm run lint`, `npm test` e `npm run build` devem passar.

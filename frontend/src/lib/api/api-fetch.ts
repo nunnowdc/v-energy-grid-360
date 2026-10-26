@@ -48,11 +48,11 @@ export async function apiFetch<T>(
       signal: AbortSignal.any(sinais),
     })
   } catch (erro) {
-    if (erro instanceof DOMException && erro.name === 'TimeoutError') {
+    if (temNome(erro, 'TimeoutError')) {
       throw new ErroApi(0, 'O servidor demorou demais para responder. Tente de novo.')
     }
     // Cancelada pelo TanStack Query (ex.: o filtro mudou): não é uma falha
-    if (erro instanceof DOMException && erro.name === 'AbortError') {
+    if (temNome(erro, 'AbortError')) {
       throw erro
     }
     throw new ErroApi(0, 'Não foi possível conectar ao servidor. Verifique se a API está rodando.')
@@ -67,6 +67,12 @@ export async function apiFetch<T>(
   }
 
   return (await resposta.json()) as T
+}
+
+// Compara pelo nome, e não com instanceof DOMException: o erro de cancelamento
+// pode vir de outro contexto (ex.: nos testes) e o instanceof falharia
+function temNome(erro: unknown, nome: string) {
+  return typeof erro === 'object' && erro !== null && 'name' in erro && erro.name === nome
 }
 
 // O FastAPI responde { "detail": "texto" } nos erros que o próprio código levanta

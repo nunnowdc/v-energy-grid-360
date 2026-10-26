@@ -5,8 +5,9 @@ import { tratarSessaoExpirada } from '@/lib/api/sessao'
 // Configuração padrão de todas as consultas do portal
 export const queryClient = new QueryClient({
   // Qualquer consulta ou alteração que receber 401 leva ao login
-  queryCache: new QueryCache({ onError: tratarSessaoExpirada }),
-  mutationCache: new MutationCache({ onError: tratarSessaoExpirada }),
+  // (a função anônima evita passar a consulta como segundo argumento)
+  queryCache: new QueryCache({ onError: (erro) => tratarSessaoExpirada(erro) }),
+  mutationCache: new MutationCache({ onError: (erro) => tratarSessaoExpirada(erro) }),
   defaultOptions: {
     queries: {
       // As tabelas Gold do MVP são um retrato fixo, então
