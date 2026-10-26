@@ -21,8 +21,8 @@ def test_pipeline_caminho_feliz_sql(sql_executor_teste: SQLExecutor, fake_llm_fa
     sql_esperado = (
         "SELECT u.classe, SUM(f.receita_faturada) AS total_receita "
         "FROM fact_faturamento f "
-        "JOIN dim_unidade_consumidora u ON f.uc_id = u.uc_id "
-        "WHERE u.classe = 'Comercial' AND u.municipio = 'Olinda' AND f.ano = 2023 "
+        "JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc "
+        "WHERE u.classe = 'COMERCIAL' AND u.municipio = 'Olinda' AND f.ano = 2023 "
         "GROUP BY u.classe"
     )
     sintese_esperada = "Em 2023, o faturamento comercial em Olinda totalizou R$ 1.575,00."

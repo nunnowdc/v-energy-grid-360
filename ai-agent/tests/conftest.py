@@ -46,67 +46,80 @@ def isolar_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
 # ── 2. DDL e Carga de Dados Sintéticos (Camada Gold) ─────────────────────────
 DDL_GOLD = """
 CREATE TABLE IF NOT EXISTS dim_unidade_consumidora (
-    uc_id INTEGER PRIMARY KEY,
-    codigo_uc VARCHAR(50) UNIQUE NOT NULL,
-    nome_cliente VARCHAR(150) NOT NULL,
+    id_uc VARCHAR(30) PRIMARY KEY,
     classe VARCHAR(50) NOT NULL,
     municipio VARCHAR(100) NOT NULL,
     bairro VARCHAR(100) NOT NULL,
-    fase VARCHAR(50) NOT NULL,
-    status_ligacao VARCHAR(50) NOT NULL
+    status VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS fact_faturamento (
-    id_fatura INTEGER PRIMARY KEY,
-    uc_id INTEGER NOT NULL REFERENCES dim_unidade_consumidora(uc_id),
+    id_fatura VARCHAR(50) PRIMARY KEY,
+    id_uc VARCHAR(30) NOT NULL REFERENCES dim_unidade_consumidora(id_uc),
     ano INTEGER NOT NULL,
     mes INTEGER NOT NULL,
-    volume_faturado NUMERIC NOT NULL,
-    receita_faturada NUMERIC NOT NULL,
-    status_pagamento VARCHAR(50) NOT NULL
+    receita_faturada NUMERIC NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fact_leituras (
+    id_leitura VARCHAR(50) PRIMARY KEY,
+    id_uc VARCHAR(30) NOT NULL REFERENCES dim_unidade_consumidora(id_uc),
+    ano INTEGER NOT NULL,
+    mes INTEGER NOT NULL,
+    consumo_kwh NUMERIC NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS fact_ocorrencias (
-    id_ocorrencia INTEGER PRIMARY KEY,
-    uc_id INTEGER NOT NULL REFERENCES dim_unidade_consumidora(uc_id),
-    tipo_interrupcao VARCHAR(50) NOT NULL,
-    duracao_minutos NUMERIC NOT NULL,
-    data_inicio VARCHAR(50) NOT NULL,
-    ano INTEGER NOT NULL
+    id_ocorrencia VARCHAR(50) PRIMARY KEY,
+    id_uc VARCHAR(30) NOT NULL REFERENCES dim_unidade_consumidora(id_uc),
+    tipo VARCHAR(50) NOT NULL,
+    causa VARCHAR(100) NOT NULL,
+    competencia DATE NOT NULL,
+    duracao_h NUMERIC NOT NULL
 );
 """
 
 DADOS_SINTETICOS_UCS = [
-    (1, "UC-00101", "Empresa Alfa LTDA", "Comercial", "Recife", "Boa Viagem", "Trifásico", "Ativo"),
-    (2, "UC-00102", "Restaurante Beta", "Comercial", "Olinda", "Bairro Novo", "Bifásico", "Ativo"),
-    (3, "UC-00103", "Indústria Gama S/A", "Industrial", "Jaboatão dos Guararapes", "Prazeres", "Trifásico", "Ativo"),
-    (4, "UC-00104", "João da Silva", "Residencial", "Recife", "Boa Viagem", "Monofásico", "Ativo"),
-    (5, "UC-00105", "Maria Fernandes", "Residencial", "Olinda", "Casa Caiada", "Monofásico", "Ativo"),
-    (6, "UC-00106", "Prefeitura Municipal", "Poder Público", "Recife", "Santo Antônio", "Trifásico", "Ativo"),
+    ("UC-00101", "COMERCIAL", "Recife", "Boa Viagem", "ATIVA"),
+    ("UC-00102", "COMERCIAL", "Olinda", "Bairro Novo", "ATIVA"),
+    ("UC-00103", "INDUSTRIAL", "Jaboatão dos Guararapes", "Prazeres", "ATIVA"),
+    ("UC-00104", "RESIDENCIAL", "Recife", "Boa Viagem", "ATIVA"),
+    ("UC-00105", "RESIDENCIAL", "Olinda", "Casa Caiada", "ATIVA"),
+    ("UC-00106", "PODER_PUBLICO", "Recife", "Santo Antônio", "ATIVA"),
 ]
 
 DADOS_SINTETICOS_FATURAMENTO = [
-    # id_fatura, uc_id, ano, mes, volume_faturado, receita_faturada, status_pagamento
-    (1, 1, 2023, 1, 1200.0, 1080.0, "Pago"),
-    (2, 1, 2023, 2, 1300.0, 1170.0, "Pago"),
-    (3, 1, 2024, 1, 1400.0, 1260.0, "Pago"),
-    (4, 2, 2023, 1, 850.0, 765.0, "Pago"),
-    (5, 2, 2023, 2, 900.0, 810.0, "Pago"),
-    (6, 2, 2024, 1, 950.0, 855.0, "Pago"),
-    (7, 3, 2023, 1, 15000.0, 12000.0, "Pago"),
-    (8, 3, 2024, 1, 16000.0, 12800.0, "Pago"),
-    (9, 4, 2023, 1, 250.0, 200.0, "Pago"),
-    (10, 4, 2024, 1, 280.0, 224.0, "Pago"),
-    (11, 5, 2023, 1, 310.0, 248.0, "Pago"),
-    (12, 6, 2023, 1, 5000.0, 4500.0, "Pago"),
+    # id_fatura, id_uc, ano, mes, receita_faturada
+    ("FAT-001", "UC-00101", 2023, 1, 1080.0),
+    ("FAT-002", "UC-00101", 2023, 2, 1170.0),
+    ("FAT-003", "UC-00101", 2024, 1, 1260.0),
+    ("FAT-004", "UC-00102", 2023, 1, 765.0),
+    ("FAT-005", "UC-00102", 2023, 2, 810.0),
+    ("FAT-006", "UC-00102", 2024, 1, 855.0),
+    ("FAT-007", "UC-00103", 2023, 1, 12000.0),
+    ("FAT-008", "UC-00103", 2024, 1, 12800.0),
+    ("FAT-009", "UC-00104", 2023, 1, 200.0),
+    ("FAT-010", "UC-00104", 2024, 1, 224.0),
+    ("FAT-011", "UC-00105", 2023, 1, 248.0),
+    ("FAT-012", "UC-00106", 2023, 1, 4500.0),
+]
+
+DADOS_SINTETICOS_LEITURAS = [
+    # id_leitura, id_uc, ano, mes, consumo_kwh
+    ("LEI-001", "UC-00101", 2023, 1, 1200.0),
+    ("LEI-002", "UC-00101", 2023, 2, 1300.0),
+    ("LEI-003", "UC-00102", 2023, 1, 850.0),
+    ("LEI-004", "UC-00102", 2023, 2, 900.0),
+    ("LEI-005", "UC-00103", 2023, 1, 15000.0),
+    ("LEI-006", "UC-00104", 2023, 1, 250.0),
 ]
 
 DADOS_SINTETICOS_OCORRENCIAS = [
-    # id, uc_id, tipo, duracao, data_inicio, ano
-    (1, 1, "Acidental", 45.0, "2023-03-12 14:00:00", 2023),
-    (2, 1, "Programada", 120.0, "2023-08-05 08:00:00", 2023),
-    (3, 2, "Acidental", 90.0, "2023-05-18 10:30:00", 2023),
-    (4, 4, "Acidental", 30.0, "2024-02-10 16:15:00", 2024),
+    # id_ocorrencia, id_uc, tipo, causa, competencia, duracao_h
+    ("OCO-001", "UC-00101", "FALTA DE ENERGIA", "CLIMATICA", "2023-03-01", 0.75),
+    ("OCO-002", "UC-00101", "FALTA DE ENERGIA", "VEGETACAO", "2023-08-01", 2.0),
+    ("OCO-003", "UC-00102", "FALTA DE ENERGIA", "CLIMATICA", "2023-05-01", 1.5),
+    ("OCO-004", "UC-00104", "FALTA DE ENERGIA", "CLIMATICA", "2024-02-01", 0.5),
 ]
 
 
@@ -166,12 +179,16 @@ def postgres_test_info():
             cur.execute(DDL_GOLD)
 
             cur.executemany(
-                "INSERT INTO dim_unidade_consumidora VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO dim_unidade_consumidora VALUES (%s, %s, %s, %s, %s)",
                 DADOS_SINTETICOS_UCS,
             )
             cur.executemany(
-                "INSERT INTO fact_faturamento VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO fact_faturamento VALUES (%s, %s, %s, %s, %s)",
                 DADOS_SINTETICOS_FATURAMENTO,
+            )
+            cur.executemany(
+                "INSERT INTO fact_leituras VALUES (%s, %s, %s, %s, %s)",
+                DADOS_SINTETICOS_LEITURAS,
             )
             cur.executemany(
                 "INSERT INTO fact_ocorrencias VALUES (%s, %s, %s, %s, %s, %s)",
@@ -223,12 +240,16 @@ def sqlite_gold_path(tmp_path: Path) -> str:
     cur.executescript(DDL_GOLD)
 
     cur.executemany(
-        "INSERT INTO dim_unidade_consumidora VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO dim_unidade_consumidora VALUES (?, ?, ?, ?, ?)",
         DADOS_SINTETICOS_UCS,
     )
     cur.executemany(
-        "INSERT INTO fact_faturamento VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO fact_faturamento VALUES (?, ?, ?, ?, ?)",
         DADOS_SINTETICOS_FATURAMENTO,
+    )
+    cur.executemany(
+        "INSERT INTO fact_leituras VALUES (?, ?, ?, ?, ?)",
+        DADOS_SINTETICOS_LEITURAS,
     )
     cur.executemany(
         "INSERT INTO fact_ocorrencias VALUES (?, ?, ?, ?, ?, ?)",

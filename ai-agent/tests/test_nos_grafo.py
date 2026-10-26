@@ -132,13 +132,13 @@ def test_no_valida_sql_aprovado():
     """Query legítima com tabelas permitidas deve ser aprovada para execução."""
     validador = StubValidadorSQL()
     estado = {
-        "sql_gerado": "SELECT uc_id, receita_faturada FROM fact_faturamento WHERE ano = 2023",
+        "sql_gerado": "SELECT id_uc, receita_faturada FROM fact_faturamento WHERE ano = 2023",
         "tentativas_sql": 1,
     }
     resultado = no_valida_sql(estado, validador=validador)
 
     assert resultado["erro_validacao_ou_execucao"] is None
-    assert resultado["eh_malicioso"] is False
+    assert resultado["malicioso"] is False
     assert rota_pos_validacao({**estado, **resultado}) == "executa"
 
 
@@ -199,7 +199,7 @@ def test_no_executa_sql_falha_ativa_retry(sql_executor_teste: SQLExecutor):
 # ── Nó 10: Recusa Honesta ────────────────────────────────────────────────────
 def test_no_recusa_honesta_fora_de_escopo():
     """Emite mensagem pedagógica para perguntas fora do escopo da concessão."""
-    estado = {"rota": "fora_escopo", "eh_malicioso": False}
+    estado = {"rota": "fora_escopo", "malicioso": False}
     resultado = no_recusa_honesta(estado)
 
     assert "Região Metropolitana do Recife" in resultado["texto_resposta"]
@@ -209,7 +209,7 @@ def test_no_recusa_honesta_fora_de_escopo():
 
 def test_no_recusa_honesta_ataque_malicioso():
     """Emite recusa com selo de bloqueio para tentativas de ataque."""
-    estado = {"rota": "bloqueio_seguranca", "eh_malicioso": True}
+    estado = {"rota": "bloqueio_seguranca", "malicioso": True}
     resultado = no_recusa_honesta(estado)
 
     assert "bloqueada por segurança" in resultado["texto_resposta"].lower()
@@ -224,7 +224,8 @@ def test_no_sintetiza_resposta(fake_llm_factory):
     fake_llm = fake_llm_factory(resposta_padrao=texto_executivo)
     estado = {
         "pergunta_autonoma": "Qual o faturamento comercial em Olinda?",
-        "dados_sql": [{"classe": "Comercial", "total_receita": 1575.0}],
+        "rota": "sql",
+        "dados_sql": [{"classe": "Comercial", "ano": 2023, "total_receita": 1575.0}],
         "contexto_rag": [],
         "chamadas_llm": 0,
         "hit_cache": False,

@@ -88,6 +88,33 @@ O fluxo PostgreSQL é:
 Confirme no relatório do Golden Dataset qual motor foi usado. Uma execução
 SQLite bem-sucedida não substitui a validação de integração com PostgreSQL.
 
+### Camada Gold local carregada (opcional)
+
+O teste `test_gold_postgres_integration.py` executa o agente contra a tabela
+`agg_receita_mensal` já carregada no PostgreSQL. Diferentemente de
+`TEST_DATABASE_URL`, esta configuração **não** cria nem remove schemas ou
+tabelas: consulta diretamente o schema Gold existente. O LLM continua mockado,
+então nenhuma pergunta, resultado ou dado do banco é enviado a um provedor
+externo. Não é necessário exportar novamente os CSVs.
+
+Configure as variáveis no mesmo terminal do pytest:
+
+```powershell
+$env:AI_AGENT_GOLD_DATABASE_URL="postgresql://<usuario>:<senha>@localhost:5432/v_energy"
+$env:AI_AGENT_GOLD_SCHEMA="public"
+python -m pytest ai-agent/tests/test_gold_postgres_integration.py -v
+```
+
+Use um usuário PostgreSQL dedicado com permissão somente de leitura nas tabelas
+Gold necessárias. O executor também abre a conexão em modo read-only e aplica
+timeout. Se `AI_AGENT_GOLD_DATABASE_URL` não estiver definida, o teste é
+marcado como ignorado; se estiver configurada e houver erro de conexão, schema
+ou tabela, o teste falha explicitamente.
+
+**Não configure `TEST_DATABASE_URL` com o banco Gold carregado.** Essa variável
+é exclusiva da fixture sintética, que cria e remove um schema temporário no
+banco apontado. A execução opcional Gold usa somente `AI_AGENT_GOLD_DATABASE_URL`.
+
 ### SQLite sintético (fallback)
 
 Quando `TEST_DATABASE_URL` estiver ausente ou a conexão inicial falhar, a suíte
@@ -99,11 +126,15 @@ Remove-Item Env:TEST_DATABASE_URL -ErrorAction SilentlyContinue
 python -m pytest ai-agent/tests -v
 ```
 
-O banco sintético reproduz parte do esquema Gold usado pela suíte:
+O banco sintético reproduz as tabelas e os nomes canônicos mais usados pela suíte:
 
-- `dim_unidade_consumidora`: seis unidades consumidoras;
-- `fact_faturamento`: doze registros de faturamento;
-- `fact_ocorrencias`: quatro ocorrências de interrupção.
+- `dim_unidade_consumidora`: seis unidades consumidoras, com `id_uc`, `classe`,
+  `municipio`, `bairro` e `status`;
+- `fact_faturamento`: doze registros com `id_uc`, `ano`, `mes` e
+  `receita_faturada`;
+- `fact_leituras`: seis leituras com `id_uc`, `ano`, `mes` e `consumo_kwh`;
+- `fact_ocorrencias`: quatro ocorrências com `causa`, `competencia` e
+  `duracao_h`.
 
 Os mesmos dados permitem validar contagens, agregações, joins e limites sem
 serviço externo. SQLite é um fallback rápido, mas seu dialeto e comportamento

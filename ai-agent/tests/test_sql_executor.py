@@ -39,10 +39,10 @@ def test_filtro_e_agrupamento(sql_executor_teste: SQLExecutor):
     assert resultado.sucesso is True
     assert resultado.total_linhas == 4  # Comercial, Industrial, Poder Público, Residencial
     dados = {linha["classe"]: linha["qtd"] for linha in resultado.linhas}
-    assert dados["Comercial"] == 2
-    assert dados["Residencial"] == 2
-    assert dados["Industrial"] == 1
-    assert dados["Poder Público"] == 1
+    assert dados["COMERCIAL"] == 2
+    assert dados["RESIDENCIAL"] == 2
+    assert dados["INDUSTRIAL"] == 1
+    assert dados["PODER_PUBLICO"] == 1
 
 
 def test_injecao_automatica_de_limit(sql_executor_teste: SQLExecutor):
@@ -73,7 +73,7 @@ def test_join_dimensao_e_fato_faturamento(sql_executor_teste: SQLExecutor):
     sql = """
     SELECT u.classe, SUM(f.receita_faturada) AS total_receita
     FROM fact_faturamento f
-    JOIN dim_unidade_consumidora u ON f.uc_id = u.uc_id
+    JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc
     WHERE u.municipio = 'Olinda' AND f.ano = 2023
     GROUP BY u.classe
     """
@@ -81,25 +81,25 @@ def test_join_dimensao_e_fato_faturamento(sql_executor_teste: SQLExecutor):
 
     assert resultado.sucesso is True
     assert len(resultado.linhas) >= 1
-    linha_comercial = next(r for r in resultado.linhas if r["classe"] == "Comercial")
-    # Restaurante Beta (uc_id=2): faturas 1 (765.0) + 2 (810.0) = 1575.0
+    linha_comercial = next(r for r in resultado.linhas if r["classe"] == "COMERCIAL")
+    # UC sintética de Olinda: faturas FAT-004 (765.0) + FAT-005 (810.0).
     assert linha_comercial["total_receita"] == 1575.0
 
 
 def test_cruzamento_ocorrencias_interrupcoes(sql_executor_teste: SQLExecutor):
     """Valida cálculo de duração de interrupções na tabela fato de ocorrências."""
     sql = """
-    SELECT tipo_interrupcao, SUM(duracao_minutos) AS total_minutos
+    SELECT causa, SUM(duracao_h) AS total_horas
     FROM fact_ocorrencias
-    WHERE ano = 2023
-    GROUP BY tipo_interrupcao
+    WHERE competencia >= '2023-01-01' AND competencia < '2024-01-01'
+    GROUP BY causa
     """
     resultado = sql_executor_teste.executar(sql)
 
     assert resultado.sucesso is True
-    totais = {r["tipo_interrupcao"]: r["total_minutos"] for r in resultado.linhas}
-    assert totais["Acidental"] == 135.0  # 45 + 90
-    assert totais["Programada"] == 120.0
+    totais = {r["causa"]: r["total_horas"] for r in resultado.linhas}
+    assert totais["CLIMATICA"] == 2.25
+    assert totais["VEGETACAO"] == 2.0
 
 
 def test_erro_sintaxe_sql_capturado_graciosamente(sql_executor_teste: SQLExecutor):
@@ -115,7 +115,7 @@ def test_erro_sintaxe_sql_capturado_graciosamente(sql_executor_teste: SQLExecuto
 
 def test_sql_com_ponto_e_virgula_e_espacos(sql_executor_teste: SQLExecutor):
     """Garante que ponto e vírgula e quebras de linha são devidamente sanitizados antes do LIMIT."""
-    sql = "  SELECT uc_id, codigo_uc FROM dim_unidade_consumidora ;  \n "
+    sql = "  SELECT id_uc, municipio FROM dim_unidade_consumidora ;  \n "
     resultado = sql_executor_teste.executar(sql, limite_linhas=2)
 
     assert resultado.sucesso is True

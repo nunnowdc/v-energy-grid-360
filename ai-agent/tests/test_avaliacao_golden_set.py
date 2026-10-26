@@ -35,6 +35,29 @@ def _extrair_tabelas_ast(sql: str) -> set[str]:
         return set()
 
 
+def test_sql_esperado_do_golden_usa_tabelas_e_colunas_obrigatorias():
+    """Garante que as referências SQL declaradas pelo Golden Dataset são coerentes."""
+    for caso in carregar_golden_dataset():
+        if caso["rota_esperada"] != "sql":
+            continue
+
+        sql_esperado = caso["sql_esperado"]
+        assert sql_esperado, f"{caso['id']} precisa declarar sql_esperado."
+
+        arvore = sqlglot.parse_one(sql_esperado, read="postgres")
+        tabelas = {t.name.lower() for t in arvore.find_all(exp.Table) if t.name}
+        colunas = {c.name.lower() for c in arvore.find_all(exp.Column) if c.name}
+
+        assert set(caso["tabelas_obrigatorias"]).issubset(tabelas), (
+            f"{caso['id']} declara tabelas obrigatórias ausentes no SQL: "
+            f"{set(caso['tabelas_obrigatorias']) - tabelas}"
+        )
+        assert set(caso["colunas_obrigatorias"]).issubset(colunas), (
+            f"{caso['id']} declara colunas obrigatórias ausentes no SQL: "
+            f"{set(caso['colunas_obrigatorias']) - colunas}"
+        )
+
+
 class LLMGoldenDataset(FakeClienteLLM):
     """LLM simulador com mapeamento inteligente baseado no Golden Dataset."""
 
