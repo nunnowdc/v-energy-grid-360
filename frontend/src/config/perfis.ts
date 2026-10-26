@@ -1,4 +1,5 @@
-export type Perfil = 'diretoria' | 'atendimento' | 'perdas' | 'operacao' | 'admin_ti'
+// Mesmos valores da coluna role da tabela usuarios no backend
+export type Perfil = 'DIRETORIA' | 'ATENDIMENTO' | 'PERDAS' | 'OPERACAO' | 'ADMIN_TI'
 
 export type Permissao =
   | 'ver_indicadores'
@@ -8,21 +9,21 @@ export type Permissao =
   | 'ver_continuidade'
 
 export const nomesPerfis: Record<Perfil, string> = {
-  diretoria: 'Diretoria',
-  atendimento: 'Atendimento',
-  perdas: 'Perdas',
-  operacao: 'Operação',
-  admin_ti: 'Administrador (TI)',
+  DIRETORIA: 'Diretoria',
+  ATENDIMENTO: 'Atendimento',
+  PERDAS: 'Perdas',
+  OPERACAO: 'Operação',
+  ADMIN_TI: 'Administrador (TI)',
 }
 
 // Espelho do mapa perfil → permissões do backend, que é a fonte da verdade.
 // Só é usado pelo usuário de teste enquanto o login não existe.
 export const permissoesPorPerfil: Record<Perfil, Permissao[]> = {
-  diretoria: ['ver_indicadores', 'ver_receita', 'ver_continuidade'],
-  atendimento: ['ver_visao_360'],
-  perdas: ['ver_fila_inspecao', 'ver_visao_360'],
-  operacao: ['ver_continuidade'],
-  admin_ti: [
+  DIRETORIA: ['ver_indicadores', 'ver_receita', 'ver_continuidade'],
+  ATENDIMENTO: ['ver_visao_360'],
+  PERDAS: ['ver_fila_inspecao', 'ver_visao_360'],
+  OPERACAO: ['ver_continuidade'],
+  ADMIN_TI: [
     'ver_indicadores',
     'ver_receita',
     'ver_visao_360',

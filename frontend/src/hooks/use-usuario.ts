@@ -14,9 +14,9 @@ export type Usuario = {
 
 // Usuário de teste enquanto o login não existe. Para testar outro perfil,
 // defina VITE_PERFIL_TESTE no frontend/.env.local (veja o .env.example)
-const perfilTeste: Perfil = ehPerfil(import.meta.env.VITE_PERFIL_TESTE)
-  ? import.meta.env.VITE_PERFIL_TESTE
-  : 'admin_ti'
+// Aceita minúsculas (ex.: "diretoria") para não quebrar .env.local antigos
+const perfilDoEnv = String(import.meta.env.VITE_PERFIL_TESTE ?? '').toUpperCase()
+const perfilTeste: Perfil = ehPerfil(perfilDoEnv) ? perfilDoEnv : 'ADMIN_TI'
 
 const usuarioTeste: Usuario = {
   nome: `Teste ${nomesPerfis[perfilTeste]}`,

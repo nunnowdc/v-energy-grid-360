@@ -7,14 +7,17 @@ const TEMPO_LIMITE_MS = 30_000
 
 const MENSAGEM_GENERICA = 'Algo deu errado no servidor. Tente de novo em instantes.'
 
-// 401 e 403 sempre usam a mensagem do portal; nos demais status,
-// o texto do backend tem prioridade quando existe
 const mensagensPorStatus: Record<number, string> = {
   401: 'Sua sessão expirou. Entre novamente.',
   403: 'Você não tem permissão para acessar estes dados.',
   404: 'Não encontramos o que você procurou.',
   422: 'Os dados enviados são inválidos.',
+  429: 'Muitas tentativas. Aguarde um instante e tente de novo.',
 }
+
+// Nestes status a mensagem é sempre a do portal (o texto padrão do backend
+// vem em inglês); nos demais, o texto do backend tem prioridade quando existe
+const statusComMensagemFixa = [401, 403, 429]
 
 type OpcoesApiFetch = Omit<RequestInit, 'body' | 'headers'> & {
   corpo?: unknown
@@ -45,11 +48,11 @@ export async function apiFetch<T>(
       signal: AbortSignal.any(sinais),
     })
   } catch (erro) {
-    if (erro instanceof DOMException && erro.name === 'TimeoutError') {
+    if (temNome(erro, 'TimeoutError')) {
       throw new ErroApi(0, 'O servidor demorou demais para responder. Tente de novo.')
     }
     // Cancelada pelo TanStack Query (ex.: o filtro mudou): não é uma falha
-    if (erro instanceof DOMException && erro.name === 'AbortError') {
+    if (temNome(erro, 'AbortError')) {
       throw erro
     }
     throw new ErroApi(0, 'Não foi possível conectar ao servidor. Verifique se a API está rodando.')
@@ -66,11 +69,17 @@ export async function apiFetch<T>(
   return (await resposta.json()) as T
 }
 
+// Compara pelo nome, e não com instanceof DOMException: o erro de cancelamento
+// pode vir de outro contexto (ex.: nos testes) e o instanceof falharia
+function temNome(erro: unknown, nome: string) {
+  return typeof erro === 'object' && erro !== null && 'name' in erro && erro.name === nome
+}
+
 // O FastAPI responde { "detail": "texto" } nos erros que o próprio código levanta
 async function lerMensagemErro(resposta: Response) {
   const padrao = mensagensPorStatus[resposta.status] ?? MENSAGEM_GENERICA
 
-  if (resposta.status === 401 || resposta.status === 403) {
+  if (statusComMensagemFixa.includes(resposta.status)) {
     return padrao
   }
 

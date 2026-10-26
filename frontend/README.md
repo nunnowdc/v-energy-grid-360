@@ -33,6 +33,8 @@ npm run dev     # sobe o servidor em http://localhost:5173
 | `npm run build` | Gera a versão de produção em `dist/` |
 | `npm run preview` | Serve localmente a versão gerada pelo build |
 | `npm run lint` | Verifica o código com o ESLint |
+| `npm test` | Roda os testes automatizados uma vez |
+| `npm run test:watch` | Roda os testes de novo a cada arquivo salvo |
 
 ## Padrão de organização
 
@@ -78,12 +80,14 @@ src/
 │   ├── api/
 │   │   ├── api-fetch.ts     ← função única para chamar o backend
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
-│   │   └── query-client.ts  ← configuração do TanStack Query
+│   │   ├── query-client.ts  ← configuração do TanStack Query
+│   │   └── sessao.ts        ← sessão expirada (401) leva ao login
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número e percentual no padrão brasileiro
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
-└── pages/
+├── pages/
+└── test/                    ← preparação dos testes e o renderizar()
 ```
 
 ### Regra geral de organização
@@ -150,7 +154,9 @@ Cada usuário tem um perfil, e o perfil define as permissões (`ver_receita`, `v
 - Quem digita o endereço de uma tela sem permissão vê a tela **"Sem permissão"**.
 - O `/` leva cada perfil para a primeira tela que ele pode abrir.
 
-Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` e reinicie o `npm run dev`.
+Os perfis usam os mesmos nomes da coluna `role` do backend: `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI` (`src/config/perfis.ts`).
+
+Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` (ex.: `VITE_PERFIL_TESTE=DIRETORIA`) e reinicie o `npm run dev`.
 
 ## Chamadas à API
 
@@ -159,6 +165,8 @@ Toda chamada ao backend passa pela função `apiFetch` (`src/lib/api/api-fetch.t
 - Coloca o prefixo `/api`, envia o cookie de login e converte a resposta de JSON.
 - Em caso de erro, lança um `ErroApi` com o `status` e uma mensagem em português, pronta para mostrar na tela.
 - Desiste depois de 30 segundos.
+- **401** (sessão expirada): qualquer consulta ou alteração leva ao `/login` com o aviso "Sua sessão expirou. Entre novamente.". O JWT dura 15 minutos e não é renovado.
+- **429** (limite de requisições): mostra "Muitas tentativas. Aguarde um instante e tente de novo." e não tenta de novo sozinho.
 
 As telas não chamam o `apiFetch` direto: cada recurso tem um hook com o [TanStack Query](https://tanstack.com/query), em `src/hooks/use-<recurso>.ts`. O TanStack Query guarda o resultado em cache por filtro, cancela a busca anterior quando o filtro muda e entrega os estados `isPending`, `isFetching` e `isError` para a tela. Exemplo (ilustrativo):
 
@@ -237,3 +245,21 @@ Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde 
 - Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
 Rotas com exemplo hoje: `GET /api/filters/options`.
+
+## Testes automatizados
+
+Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://testing-library.com/docs/react-testing-library/intro/), num navegador simulado (jsdom). Rode com `npm test`.
+
+- **Onde ficam:** junto do que testam, com o mesmo nome e `.test` no fim. Exemplos: `components/EstadoConsulta/EstadoConsulta.test.tsx` e `lib/filtros-url.test.ts`.
+- **O que cobrem hoje:**
+  - menu e rotas por perfil;
+  - o `apiFetch` (mensagens de erro, servidor fora do ar, tempo esgotado, busca cancelada);
+  - a sessão expirada e as novas tentativas;
+  - os 4 estados dos blocos;
+  - a variação e o cartão de KPI;
+  - os filtros na URL;
+  - os formatos de número;
+  - os dados de exemplo.
+- **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas). A opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
+- **Preparação comum:** fica em `src/test/setup.ts`. Ele limpa a tela entre um teste e outro, adiciona os verificadores do jest-dom (`toBeInTheDocument`, `toBeDisabled`…) e simula o que o jsdom não tem.
+- **Antes de abrir um PR:** `npm run lint`, `npm test` e `npm run build` devem passar.

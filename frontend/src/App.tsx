@@ -8,6 +8,7 @@ import { TooltipProvider } from './components/ui/tooltip'
 import { queryClient } from './lib/api/query-client'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
 import InspecoesPage from './pages/Inspecoes/InspecoesPage'
+import LoginPage from './pages/Login/LoginPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import ReceitaPage from './pages/Receita/ReceitaPage'
 import Visao360Page from './pages/Visao360/Visao360Page'
@@ -18,6 +19,8 @@ function App() {
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
+            {/* O login fica fora do Layout: sem menu nem cabeçalho */}
+            <Route path="login" element={<LoginPage />} />
             <Route element={<Layout />}>
               <Route index element={<RotaInicial />} />
               <Route element={<RotaProtegida permissao="ver_receita" />}>
