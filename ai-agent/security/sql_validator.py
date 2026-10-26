@@ -25,21 +25,32 @@ from sqlglot.optimizer.scope import traverse_scope
 
 # --------------------------------------------------------------------------
 # Configuração padrão.
-# Fonte das tabelas: ai-agent/arquitetura_e_integracao/guia_seguranca_agente.md
-# (seção 3, item 3). Conferir contra a Gold final quando ela estiver pronta.
+# Fonte das tabelas: guia_seguranca_agente.md (seção 3, item 3), conferido
+# contra data-engineering/relatorio_tabelas/dicionario_dados_gold.md (as 15
+# tabelas da camada Gold). Se a Gold ganhar tabelas novas, incluir aqui.
 # --------------------------------------------------------------------------
 
 DEFAULT_ALLOWED_TABLES = frozenset(
     {
+        # agregados
+        "agg_continuidade_alimentador",
+        "agg_continuidade_alimentador_anual",
+        "agg_receita_mensal",
+        "agg_receita_preco_volume",
+        # dimensões
+        "dim_alimentador",
+        "dim_competencia",
+        "dim_geracao_distribuida",
+        "dim_medidor",
         "dim_unidade_consumidora",
-        "fact_leituras",
-        "fact_faturamento",
-        "fact_ocorrencias",
+        # fatos
         "fact_atendimentos",
-        "fact_gd",
+        "fact_faturamento",
         "fact_inspecoes",
-        "fact_perdas",
-        "dim_alimentadores",
+        "fact_leituras",
+        "fact_ocorrencias",
+        # fila de perdas
+        "fila_inspecao",
     }
 )
 
@@ -70,19 +81,25 @@ DEFAULT_BLOCKED_FUNCTIONS = frozenset(
 )
 
 # Colunas que o agente não pode consultar.
-# Dado pessoal de dim_unidade_consumidora, conforme
-# data-engineering/relatorio_tabelas/perfil_unidades_consumidoras.md (camada
-# Silver; conferir contra a Gold). Latitude/longitude entram por localizarem
-# o cliente. Também há nomes genéricos e pseudo-colunas de usuário do banco
+# Dado que identifica a pessoa (LGPD "ALTO" no dicionario_dados_gold.md), em
+# dim_unidade_consumidora e fila_inspecao. Latitude/longitude ficam livres: o
+# dicionário as classifica como BAIXO (2 casas decimais, ~1 km). Colunas ALTO de
+# comportamento (status_pagamento, dias_atraso, resultado da inspeção...) também
+# ficam livres, porque as perguntas de negócio dependem delas; elas pedem política
+# por perfil (ver decisoes_acoplamento_dev_genai_dados.md), não bloqueio por nome.
+# Também há nomes genéricos (fonte Silver) e pseudo-colunas de usuário do banco
 # (ex.: `SELECT user` no Postgres).
 DEFAULT_BLOCKED_COLUMNS = frozenset(
     {
-        "cpf_cnpj", "nome_titular", "logradouro", "numero", "cep",
-        "latitude", "longitude",
-        "cpf", "cnpj", "email", "telefone", "nome_cliente", "endereco",
+        "nome_titular", "cpf_cnpj_mascarado", "logradouro", "numero", "cep",
+        "cpf_cnpj", "cpf", "cnpj", "email", "telefone", "nome_cliente", "endereco",
         "user", "current_role", "session_user", "current_user",
     }
 )
+
+# Tabelas com colunas pessoais: `SELECT *` (ou `t.*`) nelas devolveria todas as
+# colunas, inclusive as bloqueadas, então o agente precisa listar as colunas.
+DEFAULT_STAR_BLOCKED_TABLES = frozenset({"dim_unidade_consumidora", "fila_inspecao"})
 
 
 def _node_types(*names: str) -> tuple[type, ...]:
@@ -127,6 +144,7 @@ class SQLValidator:
         allowed_schemas: frozenset[str] = DEFAULT_ALLOWED_SCHEMAS,
         blocked_functions: frozenset[str] = DEFAULT_BLOCKED_FUNCTIONS,
         blocked_columns: frozenset[str] = DEFAULT_BLOCKED_COLUMNS,
+        star_blocked_tables: frozenset[str] = DEFAULT_STAR_BLOCKED_TABLES,
         allowed_extra_functions: frozenset[str] = frozenset(),
         max_rows: int = 1000,
         max_length: int = 4000,
@@ -138,6 +156,7 @@ class SQLValidator:
         self.allowed_schemas = frozenset(s.lower() for s in allowed_schemas)
         self.blocked_functions = frozenset(f.lower() for f in blocked_functions)
         self.blocked_columns = frozenset(c.lower() for c in blocked_columns)
+        self.star_blocked_tables = frozenset(t.lower() for t in star_blocked_tables)
         self.allowed_extra_functions = frozenset(f.lower() for f in allowed_extra_functions)
         self.max_rows = max_rows
         self.max_length = max_length
@@ -204,6 +223,16 @@ class SQLValidator:
         for col in root.find_all(exp.Column):
             if col.name.lower() in self.blocked_columns:
                 return _block("COLUMN_NOT_ALLOWED", f"Coluna não permitida: {col.name.lower()}.", tables)
+
+        # 6b) `SELECT *` em tabela com coluna pessoal exporia as colunas bloqueadas.
+        if any(t in self.star_blocked_tables for t in tables):
+            for star in root.find_all(exp.Star):
+                if star.find_ancestor(exp.Count) is None:  # COUNT(*) é seguro
+                    return _block(
+                        "STAR_NOT_ALLOWED",
+                        "Liste as colunas: SELECT * não é permitido em tabela com dado pessoal.",
+                        tables,
+                    )
 
         # 7) Limite de complexidade (proteção simples contra produto cartesiano).
         if len(list(root.find_all(exp.Join))) > self.max_joins:
