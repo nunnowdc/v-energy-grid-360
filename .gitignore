@@ -13,6 +13,7 @@ data/*
 .env.*
 !.env.example
 !.env.test.example
+backend/.env.local
 
 # Python
 __pycache__/
