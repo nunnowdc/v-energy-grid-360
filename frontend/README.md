@@ -150,7 +150,9 @@ Cada usuário tem um perfil, e o perfil define as permissões (`ver_receita`, `v
 - Quem digita o endereço de uma tela sem permissão vê a tela **"Sem permissão"**.
 - O `/` leva cada perfil para a primeira tela que ele pode abrir.
 
-Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` e reinicie o `npm run dev`.
+Os perfis usam os mesmos nomes da coluna `role` do backend: `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI` (`src/config/perfis.ts`).
+
+Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` (ex.: `VITE_PERFIL_TESTE=DIRETORIA`) e reinicie o `npm run dev`.
 
 ## Chamadas à API
 
