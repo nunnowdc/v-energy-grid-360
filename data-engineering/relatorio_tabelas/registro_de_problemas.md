@@ -113,13 +113,13 @@ O detalhe de cada tabela fica no `perfil_<tabela>.md` correspondente.
 | ID | Problema | Gravidade | Status | Evidência e observação |
 |---|---|---|---|---|
 | S-GD-01 | `data_conexao` com um único formato e sem verificação de GD × UC | Baixa | ⚪ | Nos dados, a data está sempre em ISO e as 3.510 GDs pertencem a UCs reais. Não causa erro hoje; manter o teste no `03_qualidade`. |
-| S-GD-02 | **`potencia_kwp` em W em vez de kW** | Alta | 🔴 | 35 valores entre 4.706 e 8.994 "kWp" (devem ser 4,7–9,0 kWp). Sem nenhum valor entre 75 e 1.000. Infla o kWp somado em ~13×. Correção: dividir por 1000 quando > 1000, com flag. |
+| S-GD-02 | **`potencia_kwp` em W em vez de kW** | Alta | ✅ (nova Silver) | 35 valores entre 4.706 e 8.994 "kWp" divididos por 1000 quando > 1000 com a flag `potencia_corrigida_unidade = true` em `02_silver_geracao_distribuida.py`. |
 | S-GD-03 | Potência com vírgula decimal | Baixa | ✅ | 316 linhas (entre aspas no CSV). O notebook atual já trata com `regexp_replace`. |
-| S-GD-04 | **Energia injetada "fabricada" como kWp × 110 exato** | Média | 🔴 | Praticamente todas as GDs de mai–jun/2026 (~101) e casos isolados de 2024. É uma estimativa padrão, não uma medição: a razão real da base é ~34. Superestima a injeção de jun/2026 em ~75 mil kWh/mês (~6,5%). Tratamento: flag `energia_estimada` e reestimativa (ou exclusão) no diagnóstico. |
-| S-GD-05 | 2 GDs comerciais (AUTOCONSUMO REMOTO) com razão fisicamente impossível (168 e 328 kWh/kWp) | Baixa | 🔴 | UC104176 e UC112709. A escala da potência provavelmente está errada, mas não dá para comprovar. Tratamento: quarentena (`POTENCIA_INCONSISTENTE`). **Diverge do `perfil_geracao_distribuida_Adryan.md`**, que afirma que todas as 35 caem na faixa normal depois do ÷1000. |
-| S-GD-06 | **GD conectada antes da ligação da UC** | Baixa | 🔴 | 5 UCs (UC106046, UC100259, UC102507, UC110560, UC119180), achado do Adryan. Ex.: GD em 2024-04-12, UC ligada em 2025-07-29. **Todas têm energia = kWp × 110 exato**, o mesmo padrão de "energia estimada" do S-GD-04. Isso reforça a leitura de que "× 110" é preenchido quando a UC não tem histórico. Tratamento: quarentena `GD_ANTES_DA_LIGACAO`. |
-| S-INS-01 | **Qualquer `resultado` sem "CONFIRMADA" vira `SEM_IRREGULARIDADE`**, inclusive vazio e pendente | Alta | 🔴 (lógica) / 🟡 (volume) | Distorce a taxa de acerto das inspeções, que é a base da fila de perdas. |
-| S-INS-02 | `data` das inspeções com o mesmo risco de ambiguidade entre dia e mês do S-MED-01 | Média | 🟡 | — |
+| S-GD-04 | **Energia injetada "fabricada" como kWp × 110 exato** | Média | ✅ (nova Silver) | Identificada em mai–jun/2026 (~101) e tratada com a flag booleana `energia_estimada = true` em `02_silver_geracao_distribuida.py` para permitir expurgo ou reestimativa no diagnóstico. |
+| S-GD-05 | 2 GDs comerciais (AUTOCONSUMO REMOTO) com razão fisicamente impossível (168 e 328 kWh/kWp) | Baixa | ✅ (nova Silver) | UC104176 e UC112709 enviadas para quarentena `POTENCIA_INCONSISTENTE` por excederem o limite físico de 150 kWh/kWp·mês em `02_silver_geracao_distribuida.py`. |
+| S-GD-06 | **GD conectada antes da ligação da UC** | Baixa | ✅ (nova Silver) | 5 UCs enviadas para quarentena `GD_ANTES_DA_LIGACAO` em `02_silver_geracao_distribuida.py`. |
+| S-INS-01 | **Qualquer `resultado` sem "CONFIRMADA" vira `SEM_IRREGULARIDADE`**, inclusive vazio e pendente | Alta | ✅ (nova Silver) | Tratado em `02_silver_inspecoes.py`: normalização canônica explícita com flag `resultado_declarado_nada_consta = true` e validação cruzada contra `tipo_irregularidade` e `kwh_recuperado` (incoerências vão para quarentena). |
+| S-INS-02 | `data` das inspeções com o mesmo risco de ambiguidade entre dia e mês do S-MED-01 | Média | ✅ (nova Silver) | Prioriza `MM-dd-yyyy` comprovado no traço curto e sinaliza as 11 datas de meses e dias <= 12 com flag `data_ambigua = true` em `02_silver_inspecoes.py`. |
 | S-OCO-01 | `duracao_min` só remove o texto `" min"`; qualquer outro formato vira null | Baixa | ⚪ Refutado | Só existem 2 formatos: número (163.800) e `"N min"` (16.200). O código atual resolve, e a duração bate 100% com `encerramento − abertura`. |
 | S-OCO-02 | `data_abertura` e `data_encerramento` com um único formato | Baixa | ⚪ Refutado | O formato é sempre ISO com hora. Não há datas inválidas, e o encerramento é sempre posterior à abertura. |
 | S-OCO-03 | **`causa` sem informação em 4 formas** (`null`, `-`, `N/A`, `NULL`) | Média | 🔴 | 5.400 (3%). O notebook atual só aplica `upper`, então `-`, `N/A` e `NULL` viram 3 "causas" no portal e na IA. Tratamento: `NAO INFORMADA`, separado da categoria válida `NAO IDENTIFICADA`. |
@@ -137,15 +137,15 @@ O detalhe de cada tabela fica no `perfil_<tabela>.md` correspondente.
 | ID | Problema | Gravidade | Status | Evidência e observação |
 |---|---|---|---|---|
 | G-01 | DEC/FEC com `coalesce(total_consumidores, 1)` | Baixa | ⚪ Sem efeito hoje | Todos os alimentadores das ocorrências existem no cadastro (100% coerentes com a UC). A fórmula do colega está correta para o grão. É frágil se aparecer um alimentador novo; trocar por um teste que falha se `total_consumidores` vier nulo. |
-| G-02 | `dim_alimentadores` usa `F.first("municipio")` | Média | 🔴 | O resultado não é determinístico: um alimentador que atende 2 municípios pode mudar de município a cada execução. |
-| G-03 | **Medidores não estão na Gold** | Alta | 🔴 | A visão 360 da UC, pedida pelo case, exige o medidor instalado. |
+| G-02 | `dim_alimentadores` usa `F.first("municipio")` | Média | ✅ (nova Gold) | Resolvido de forma determinística em `04_gold_dimensoes.py` via contagem de UCs por município e desempate alfabético. |
+| G-03 | **Medidores não estão na Gold** | Alta | ✅ (nova Gold) | Implementada a dimensão `dim_medidor` e atributos na `dim_unidade_consumidora` (medidor atual e última troca) em `04_gold_dimensoes.py`. |
 | G-04 | **`agg_receita_mensal` não decompõe preço × volume** | Alta | 🔴 | É a pergunta central do Diretor Comercial. |
 | G-05 | `agg_receita_mensal` cruza com leituras por `mes_referencia` sem garantir que o formato é o mesmo nas duas tabelas | Alta | 🟡 | Se o formato divergir, o join não encontra nada e o volume fica zero. Se houver leituras duplicadas, o volume sai inflado. |
 | G-06 | O volume vem das leituras (consumo medido) e não do kWh faturado | Média | ⚪ | **É a única opção:** as faturas não têm kWh (S-FAT-07). Documentar no dicionário que, com GD, o consumo medido é diferente do faturado. |
 | G-07 | `receita_recebida` considera só `status == "PAGA"` | — | ⚪ Refutado | Só existem PAGA e EM ABERTO. A regra está correta. |
-| G-08 | `possui_gd` é calculado sem verificar se o `id_uc` da GD é válido | Baixa | 🟡 | — |
+| G-08 | `possui_gd` é calculado sem verificar se o `id_uc` da GD é válido | Baixa | ✅ (nova Gold) | `dim_unidade_consumidora` em `04_gold_dimensoes.py` faz join exclusivo com `dim_geracao_distribuida` (saneada, 3.503 UCs válidas). |
 | G-09 | `fact_atendimentos` herda o array do `historico` | Alta | 🔴 | Mesma causa do S-ATE-01. |
-| G-10 | **Fila de inspeção (perdas) não existe** | Alta | 🔴 | É uma user story obrigatória do case. |
+| G-10 | **Fila de inspeção (perdas) não existe** | Alta | ✅ (nova Gold) | Implementada a tabela analítica `fila_inspecao` em `05_gold_perdas.py` com score de fraude (0-100), explicabilidade LGPD e kWh recuperável anual. |
 
 ---
 

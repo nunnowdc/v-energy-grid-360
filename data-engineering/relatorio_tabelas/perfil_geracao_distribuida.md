@@ -133,4 +133,9 @@ Fechadas com o `perfil_geracao_distribuida_Adryan.md`:
 3. Ele não identificou o padrão "× 110" nas ~101 GDs de mai–jun/2026; as 5 UCs que ele achou são parte dele.
 4. Ele supõe que "as UCs com consumo negativo devem ser majoritariamente geradoras", mas o `perfil_leituras.md` mostra que só 7% dos negativos são de UCs com GD.
 - [x] Célula 13: unidade W validada, "× 110" identificado, salto de mai–jun/2026 explicado, sem polo de penetração.
+- [x] **Tratamento da potência em Watts (S-GD-02):** Dividir por 1.000 quando `potencia_kwp > 1000`, marcando com a flag `potencia_corrigida_unidade = true` (35 casos tratados).
+- [x] **Quarentena de potências/razões impossíveis (S-GD-05):** Casos onde `kwh_por_kwp_mes > 150` (UC104176 e UC112709) são direcionados para `silver_geracao_distribuida_quarentena` com o motivo `POTENCIA_INCONSISTENTE`.
+- [x] **Identificação de energia estimada (S-GD-04):** Aplicação da flag `energia_estimada = true` quando `abs(energia - kWp * 110) < 0.05` para permitir ajuste ou expurgo no diagnóstico de receita.
+- [x] **Quarentena de conexão pré-ligação (S-GD-06):** As 5 UCs conectadas antes da ligação cadastral são direcionadas para quarentena com `GD_ANTES_DA_LIGACAO`.
+- [x] **Implementação na Silver:** Implementado no notebook [`02_silver_geracao_distribuida.py`](../02_silver_geracao_distribuida.py).
 - [ ] Contagem exata de linhas com energia = kWp × 110.
