@@ -15,7 +15,7 @@ function BlocoDados<T>({ titulo, descricao, acao, className, ...estado }: BlocoD
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>{titulo}</CardTitle>
+        <CardTitle className="text-[15px] font-semibold">{titulo}</CardTitle>
         {descricao && <CardDescription>{descricao}</CardDescription>}
         {acao && <CardAction>{acao}</CardAction>}
       </CardHeader>

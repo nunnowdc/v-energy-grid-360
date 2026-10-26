@@ -1,3 +1,4 @@
+import MiniTendencia from '@/components/MiniTendencia/MiniTendencia'
 import Variacao from '@/components/Variacao/Variacao'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 
@@ -9,20 +10,27 @@ type CartaoKpiProps = {
   variacao?: number
   complementoVariacao?: string
   detalhe?: string
+  // Valores do período para a minitendência (ex.: os 12 meses)
+  tendencia?: number[]
 }
 
-function CartaoKpi({ titulo, valor, variacao, complementoVariacao, detalhe }: CartaoKpiProps) {
+function CartaoKpi({ titulo, valor, variacao, complementoVariacao, detalhe, tendencia }: CartaoKpiProps) {
   return (
     <Card size="sm">
       <CardHeader>
-        <CardDescription>{titulo}</CardDescription>
+        <CardDescription className="text-[13px] font-medium">{titulo}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-1">
-        <span className="text-2xl font-semibold tabular-nums">{valor}</span>
-        {variacao !== undefined && (
-          <Variacao percentual={variacao} complemento={complementoVariacao} />
-        )}
-        {detalhe && <span className="text-xs text-muted-foreground">{detalhe}</span>}
+      <CardContent className="flex flex-col gap-2">
+        <span className="font-mono text-[28px] leading-none font-semibold tracking-tight">{valor}</span>
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            {variacao !== undefined && (
+              <Variacao percentual={variacao} complemento={complementoVariacao} />
+            )}
+            {detalhe && <span className="text-xs text-muted-foreground">{detalhe}</span>}
+          </div>
+          {tendencia && tendencia.length > 0 && <MiniTendencia valores={tendencia} />}
+        </div>
       </CardContent>
     </Card>
   )

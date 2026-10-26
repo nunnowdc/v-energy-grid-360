@@ -29,14 +29,28 @@ function abrir(url: string, campos: CampoFiltro[]) {
 }
 
 const urlAtual = () => screen.getByTestId('url').textContent
-const campo = (rotulo: string) => screen.getByLabelText(rotulo) as HTMLSelectElement
-const textos = (select: HTMLSelectElement) => [...select.options].map((opcao) => opcao.text)
-const escolher = (rotulo: string, valor: string) =>
-  fireEvent.change(campo(rotulo), { target: { value: valor } })
+// Cada filtro é um botão com o rótulo e o valor escolhido, ex.: "Município: Todos"
+const campo = (rotulo: string) => screen.getByRole('combobox', { name: new RegExp(`^${rotulo}:`) })
+const valorDe = (rotulo: string) => campo(rotulo).getAttribute('aria-label')?.slice(`${rotulo}: `.length)
+const abrirLista = (rotulo: string) => fireEvent.click(campo(rotulo))
+const fecharLista = () => fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+const textos = (rotulo: string) => {
+  abrirLista(rotulo)
+  const lista = screen.getAllByRole('option').map((opcao) => opcao.textContent)
+  fecharLista()
+  return lista
+}
+// Como um clique de verdade: aperta e solta o botão do mouse em cima da opção
+const escolher = (rotulo: string, opcao: string) => {
+  abrirLista(rotulo)
+  const item = screen.getByRole('option', { name: opcao })
+  fireEvent.pointerDown(item, { pointerType: 'mouse' })
+  fireEvent.click(item)
+}
 
 test('mostra só os campos pedidos pela tela', () => {
   abrir('/receita', ['municipio', 'bairro', 'classe'])
-  expect(screen.queryByLabelText('De')).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: /^De:/ })).not.toBeInTheDocument()
   expect(campo('Município')).toBeInTheDocument()
   expect(campo('Classe de consumo')).toBeInTheDocument()
 })
@@ -44,20 +58,29 @@ test('mostra só os campos pedidos pela tela', () => {
 test('o bairro depende do município, e trocar o município limpa o bairro', () => {
   abrir('/receita', ['municipio', 'bairro', 'classe'])
   expect(campo('Bairro')).toBeDisabled()
-  expect(textos(campo('Bairro'))[0]).toBe('Escolha um município')
+  expect(valorDe('Bairro')).toBe('Escolha um município')
 
   escolher('Município', 'Recife')
   expect(urlAtual()).toBe('?municipio=Recife')
   expect(campo('Bairro')).toBeEnabled()
-  expect(textos(campo('Bairro'))).toEqual(['Todos', 'Boa Viagem', 'Casa Forte', 'Ibura', 'Pina'])
+  expect(textos('Bairro')).toEqual(['Todos', 'Boa Viagem', 'Casa Forte', 'Ibura', 'Pina'])
 
   escolher('Bairro', 'Pina')
-  escolher('Classe de consumo', 'PODER_PUBLICO')
+  escolher('Classe de consumo', 'Poder público')
   expect(urlAtual()).toBe('?municipio=Recife&bairro=Pina&classe=PODER_PUBLICO')
-  expect(textos(campo('Classe de consumo'))).toContain('Poder público')
+  expect(valorDe('Classe de consumo')).toBe('Poder público')
 
   escolher('Município', 'Olinda')
   expect(urlAtual()).toBe('?municipio=Olinda&classe=PODER_PUBLICO')
+})
+
+test('escolher a opção vazia tira o filtro da URL', () => {
+  abrir('/receita?classe=RURAL', ['municipio', 'classe'])
+  expect(valorDe('Classe de consumo')).toBe('Rural')
+
+  escolher('Classe de consumo', 'Todas')
+  expect(urlAtual()).toBe('')
+  expect(valorDe('Classe de consumo')).toBe('Todas')
 })
 
 test('"Limpar filtros" só ativa quando há filtro e limpa a URL', () => {
@@ -72,13 +95,13 @@ test('"Limpar filtros" só ativa quando há filtro e limpa a URL', () => {
 
 test('período com os meses da base e valores inválidos da URL ignorados', () => {
   abrir('/?inicio=2025-07&classe=INVENTADA&municipio=Narnia', ['periodo', 'municipio', 'classe'])
-  expect(campo('De')).toHaveValue('2025-07')
-  expect(textos(campo('De'))[1]).toBe('jul/2022')
-  expect(textos(campo('Até'))[0]).toBe('Último mês da base')
-  expect(campo('Classe de consumo')).toHaveValue('')
-  expect(campo('Município')).toHaveValue('')
+  expect(valorDe('De')).toBe('jul/2025')
+  expect(textos('De')[1]).toBe('jul/2022')
+  expect(valorDe('Até')).toBe('Último mês da base')
+  expect(valorDe('Classe de consumo')).toBe('Todas')
+  expect(valorDe('Município')).toBe('Todos')
   expect(JSON.parse(screen.getByTestId('filtros').textContent!)).toEqual({ inicio: '2025-07' })
 
-  escolher('Até', '2024-01')
+  escolher('Até', 'jan/2024')
   expect(urlAtual()).toContain('inicio=2024-01')
 })

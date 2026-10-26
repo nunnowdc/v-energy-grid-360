@@ -13,7 +13,7 @@ function SemPermissaoPage() {
   return (
     <section className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
       <Lock className="size-10 text-muted-foreground" />
-      <h2 className="text-lg font-semibold">Você não tem acesso a esta tela</h2>
+      <h1 className="text-xl font-bold tracking-tight">Você não tem acesso a esta tela</h1>
       <p className="max-w-md text-sm text-muted-foreground">
         O seu perfil ({nomesPerfis[usuario.perfil]}) não inclui a tela {tela}.
         Se precisar de acesso, fale com a equipe de TI.

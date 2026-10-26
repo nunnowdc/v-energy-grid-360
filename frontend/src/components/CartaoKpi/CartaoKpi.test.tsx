@@ -23,3 +23,9 @@ test('sem variação, não mostra seta', () => {
   const { container } = render(<CartaoKpi titulo="UCs ativas" valor="45.000" />)
   expect(container.textContent).not.toMatch(/[▲▼▬]/)
 })
+
+test('com tendência, desenha uma barrinha por valor, escondida do leitor de tela', () => {
+  const { container } = render(<CartaoKpi titulo="Receita" valor="R$ 1" tendencia={[1, 2, 3, 4]} />)
+  const tendencia = container.querySelector('[aria-hidden="true"].flex')
+  expect(tendencia?.children).toHaveLength(4)
+})
