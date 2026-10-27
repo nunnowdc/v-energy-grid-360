@@ -23,10 +23,10 @@ function Variacao({ percentual, complemento }: VariacaoProps) {
   const seta = escolherSeta(Math.round(percentual * 10) / 10)
 
   return (
-    <span className="font-mono text-[13px] text-foreground/75">
+    <span className="tabular-nums text-[13px] text-foreground/75">
       <span aria-hidden="true">{seta} </span>
       {formatarPercentualComSinal(percentual)}
-      {complemento && <span className="font-sans text-muted-foreground"> {complemento}</span>}
+      {complemento && <span className="text-muted-foreground"> {complemento}</span>}
     </span>
   )
 }

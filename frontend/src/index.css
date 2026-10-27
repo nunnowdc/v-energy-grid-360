@@ -1,18 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/ibm-plex-sans";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
-@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'IBM Plex Sans Variable', system-ui, sans-serif;
-  /* Números (KPIs, variações, tabelas) e rótulos técnicos */
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  /* O portal não usa fonte mono: números ficam na fonte do texto com a classe
+     tabular-nums (dígitos de mesma largura, alinhados em coluna). Componentes do
+     shadcn que pedem font-mono também ficam na fonte do texto */
+  --font-mono: var(--font-sans);
   --color-canvas: var(--canvas);
   --color-sidebar-muted: var(--sidebar-muted);
   --color-marca-grade: var(--marca-grade);

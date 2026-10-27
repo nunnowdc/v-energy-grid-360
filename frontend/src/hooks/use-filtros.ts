@@ -19,7 +19,7 @@ export function useFiltros() {
 
   // replace: trocar filtro não cria uma entrada nova no "Voltar" do navegador
   function alterarFiltro(nome: NomeFiltro, valor?: string) {
-    setParams((atual) => aplicarFiltro(atual, nome, valor), { replace: true })
+    setParams((atual) => aplicarFiltro(atual, nome, valor, opcoes), { replace: true })
   }
 
   function limparFiltros() {
