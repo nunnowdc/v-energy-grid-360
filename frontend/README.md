@@ -12,6 +12,7 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [Lucide](https://lucide.dev/) (ícones)
 - [IBM Plex Sans e IBM Plex Mono](https://www.ibm.com/plex/) (tipografia)
 - [TanStack Query](https://tanstack.com/query) (chamadas à API, cache e estados de carregamento)
+- [Recharts](https://recharts.org/) pelo componente `chart` do shadcn/ui (gráficos)
 
 ## Pré-requisitos
 
@@ -54,33 +55,44 @@ src/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
+│   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
 │   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
 │   ├── CartaoKpi/
 │   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
 │   │   └── CartaoKpiEsqueleto.tsx
+│   ├── ConsumoDozeMeses/ConsumoDozeMeses.tsx ← gráfico de consumo da UC (12 meses)
 │   ├── EstadoConsulta/EstadoConsulta.tsx  ← carregando, erro, vazio e atualizando
 │   ├── EstadoErro/EstadoErro.tsx
 │   ├── EstadoVazio/EstadoVazio.tsx
+│   ├── FaturasEmAberto/FaturasEmAberto.tsx ← faturas pendentes e atrasadas da UC
 │   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
 │   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
+│   ├── HistoricosUc/HistoricosUc.tsx      ← abas de faturas, leituras, interrupções e chamados
 │   ├── Layout/Layout.tsx
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
+│   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
+│   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
 │   ├── RotaInicial/RotaInicial.tsx
 │   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário no rodapé do menu
 │   ├── RotaProtegida/RotaProtegida.tsx
+│   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
+│   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
 ├── config/
 │   ├── bandeiras.ts         ← nome e cor de cada bandeira tarifária
+│   ├── causas.ts            ← nome de cada causa de interrupção
 │   ├── classes.ts           ← nome e cor de cada classe de consumo
+│   ├── codigos.ts           ← categorias da Gold como texto de tela (com acento)
 │   ├── navegacao.ts         ← telas do menu (grupo, título e descrição)
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
 │   ├── use-mobile.ts
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
+│   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
 │   └── use-usuario.ts         ← usuário atual (de teste até o login existir)
 ├── lib/
 │   ├── api/
@@ -89,7 +101,7 @@ src/
 │   │   ├── query-client.ts  ← configuração do TanStack Query
 │   │   └── sessao.ts        ← sessão expirada (401) leva ao login
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
-│   ├── formatacao.ts        ← moeda, número e percentual no padrão brasileiro
+│   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
 ├── pages/
@@ -129,6 +141,9 @@ Regras:
 - As cores das bandeiras aparecem só em contexto de bandeira e sempre junto com o nome. Use `src/config/bandeiras.ts`.
 - Variação (▲/▼) não tem cor: usa seta, sinal e número em cinza-escuro.
 - Nunca use dois eixos Y no mesmo gráfico: empilhe dois gráficos que compartilham o eixo dos meses.
+- Dois períodos no mesmo gráfico: o atual em petróleo (`--primary`) e o anterior em cinza (`--chart-anterior`), sempre com legenda e tooltip com os valores.
+- Status (ex.: fatura atrasada) aparece com ícone e texto, nunca só com cor.
+- Categorias da Gold vêm em maiúsculas e sem acento (ex.: `DANO ELETRICO`). Mostre com `textoDoCodigo()` de `src/config/codigos.ts`, que devolve "Dano elétrico". Palavra nova sem acento entra na lista desse arquivo.
 
 ### Imports
 
@@ -275,6 +290,8 @@ Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde 
 - Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
 Rotas com exemplo hoje: `GET /api/filters/options`.
+
+A Visão 360 já usa a rota real `GET /api/uc/{id}/360`, então precisa do backend e da Gold no banco local (veja `backend/README.md`). Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 
 ## Testes automatizados
 

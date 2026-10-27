@@ -45,3 +45,25 @@ export function formatarCompetencia(competencia: string) {
   const [ano, mes] = competencia.split('-')
   return `${mesesAbreviados[Number(mes) - 1]}/${ano}`
 }
+
+// Data como vem da API, sem fuso: "2026-06-21" → "21/06/2026"
+export function formatarData(data: string) {
+  const [ano, mes, dia] = data.slice(0, 10).split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+// Data e hora como vêm da API: "2026-06-12T05:49:00" → "12/06/2026 05:49"
+export function formatarDataHora(dataHora: string) {
+  return `${formatarData(dataHora)} ${dataHora.slice(11, 16)}`
+}
+
+// 203 → "203 kWh"
+export function formatarKwh(valor: number) {
+  return `${formatarNumero(valor)} kWh`
+}
+
+// Competência curta para eixos de gráfico: "2025-07" → "jul/25"
+export function formatarCompetenciaCurta(competencia: string) {
+  const [ano, mes] = competencia.split('-')
+  return `${mesesAbreviados[Number(mes) - 1]}/${ano.slice(2)}`
+}

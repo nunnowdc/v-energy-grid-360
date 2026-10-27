@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest'
 import {
   formatarCompetencia,
+  formatarCompetenciaCurta,
+  formatarData,
+  formatarDataHora,
+  formatarKwh,
   formatarMoeda,
   formatarMoedaCompacta,
   formatarNumero,
@@ -28,4 +32,14 @@ test('percentual com sinal, recebendo pontos (8 = 8%)', () => {
 test('competência', () => {
   expect(formatarCompetencia('2025-07')).toBe('jul/2025')
   expect(formatarCompetencia('2022-12')).toBe('dez/2022')
+})
+
+test('datas sem depender do fuso do computador', () => {
+  expect(formatarData('2026-06-21')).toBe('21/06/2026')
+  expect(formatarDataHora('2026-06-12T05:49:00')).toBe('12/06/2026 05:49')
+})
+
+test('kWh e competência curta', () => {
+  expect(formatarKwh(1203.5)).toBe('1.203,5 kWh')
+  expect(formatarCompetenciaCurta('2025-07')).toBe('jul/25')
 })
