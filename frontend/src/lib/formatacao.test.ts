@@ -8,6 +8,7 @@ import {
   formatarKwh,
   formatarMoeda,
   formatarMoedaCompacta,
+  formatarMoedaCompactaComSinal,
   formatarNumero,
   formatarPercentualComSinal,
   formatarPeriodo,
@@ -54,4 +55,9 @@ test('energia na unidade que deixa o número curto', () => {
 
 test('período entre duas competências', () => {
   expect(formatarPeriodo('2025-07', '2026-06')).toBe('jul/2025 – jun/2026')
+})
+
+test('diferença em reais sempre com sinal', () => {
+  expect(semEspacoFixo(formatarMoedaCompactaComSinal(22_500_000))).toBe('+R$ 22,5 mi')
+  expect(semEspacoFixo(formatarMoedaCompactaComSinal(-4_100_000))).toBe('-R$ 4,1 mi')
 })

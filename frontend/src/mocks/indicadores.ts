@@ -36,7 +36,8 @@ function ruido(...chaves: number[]) {
   return 1 + ((semente % 41) - 20) / 1000
 }
 
-function linhaDoMes(indice: number, municipio: string, classe: ClasseConsumo): LinhaMes {
+// Um mês de um município e classe. O exemplo da Receita parte dela para os totais baterem
+export function linhaDoMes(indice: number, municipio: string, classe: ClasseConsumo): LinhaMes {
   const mes = Number(competencias[indice].slice(5))
   const anos = indice / 12
   // Mais calor (e mais consumo) de dezembro a março

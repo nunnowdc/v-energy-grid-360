@@ -39,3 +39,28 @@ test('período fora de 3, 6 ou 12 meses responde 422', async () => {
   const resposta = await buscar('/api/metrics/general?inicio=2026-02&fim=2026-06')
   expect(resposta!.status).toBe(422)
 })
+
+test('o exemplo de /api/metrics/revenue-variance usa os períodos fixos e fecha a conta', async () => {
+  const resposta = await buscar('/api/metrics/revenue-variance')
+  const corpo = await resposta!.json()
+
+  expect(corpo.periodo_p0).toEqual({ inicio: '2022-07', fim: '2023-06' })
+  expect(corpo.periodo_p1).toEqual({ inicio: '2025-07', fim: '2026-06' })
+  const { receita_p0, receita_p1, efeito_volume, efeito_preco } = corpo.total
+  expect(efeito_volume + efeito_preco).toBeCloseTo(receita_p1 - receita_p0)
+  expect(corpo.detalhamento.nivel).toBe('municipio')
+  expect(corpo.por_gd).toHaveLength(2)
+})
+
+test('cada filtro desce um nível no detalhamento', async () => {
+  const doMunicipio = await (await buscar('/api/metrics/revenue-variance?municipio=Olinda'))!.json()
+  expect(doMunicipio.detalhamento.nivel).toBe('bairro')
+  expect(doMunicipio.detalhamento.linhas.map((linha: { nome: string }) => linha.nome)).toEqual([
+    'Bairro Novo',
+    'Casa Caiada',
+    'Rio Doce',
+  ])
+
+  const doBairro = await (await buscar('/api/metrics/revenue-variance?municipio=Olinda&bairro=Rio+Doce'))!.json()
+  expect(doBairro.detalhamento.nivel).toBe('classe')
+})

@@ -83,3 +83,16 @@ export function formatarEnergia(kwh: number) {
 export function formatarPeriodo(inicio: string, fim: string) {
   return `${formatarCompetencia(inicio)} – ${formatarCompetencia(fim)}`
 }
+
+const moedaCompactaComSinal = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+  signDisplay: 'exceptZero',
+})
+
+// Diferença em reais, sempre com sinal: 22500000 → "+R$ 22,5 mi"
+export function formatarMoedaCompactaComSinal(valor: number) {
+  return moedaCompactaComSinal.format(valor)
+}

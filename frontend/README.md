@@ -61,6 +61,7 @@ src/
 │   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
 │   │   └── CartaoKpiEsqueleto.tsx
 │   ├── ConsumoDozeMeses/ConsumoDozeMeses.tsx ← gráfico de consumo da UC (12 meses)
+│   ├── DetalheReceita/DetalheReceita.tsx  ← onde está a variação, descendo município › bairro › classe
 │   ├── EstadoConsulta/EstadoConsulta.tsx  ← carregando, erro, vazio e atualizando
 │   ├── EstadoErro/EstadoErro.tsx
 │   ├── EstadoVazio/EstadoVazio.tsx
@@ -72,6 +73,7 @@ src/
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
+│   ├── PonteReceita/PonteReceita.tsx      ← cascata: receita base, efeitos e receita comparada
 │   ├── ReceitaConsumoMensal/ReceitaConsumoMensal.tsx ← receita e consumo por mês, atual × anterior
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
 │   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
@@ -81,6 +83,7 @@ src/
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
 │   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
+│   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
 ├── config/
@@ -95,6 +98,7 @@ src/
 │   ├── use-indicadores.ts     ← KPIs da tela Indicadores (GET /api/metrics/general)
 │   ├── use-mobile.ts
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
+│   ├── use-receita.ts         ← efeito preço e volume (GET /api/metrics/revenue-variance)
 │   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
 │   └── use-usuario.ts         ← usuário atual (de teste até o login existir)
 ├── lib/
@@ -293,7 +297,13 @@ Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde 
 - Quando uma rota real ficar pronta, apague o handler dela.
 - Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
-Rotas com exemplo hoje: `GET /api/filters/options` e `GET /api/metrics/general` (Indicadores, números inventados em `src/mocks/indicadores.ts`). O formato de `/metrics/general` é uma **proposta** ao backend e está descrito em `src/hooks/use-indicadores.ts`.
+Rotas com exemplo hoje (números inventados):
+
+| Rota | Tela | Exemplo | Formato (proposta ao backend) |
+|---|---|---|---|
+| `GET /api/filters/options` | Todas | `src/mocks/opcoes-filtros.ts` | `src/hooks/use-opcoes-filtros.ts` |
+| `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
+| `GET /api/metrics/revenue-variance` | Receita | `src/mocks/receita.ts` | `src/hooks/use-receita.ts` |
 
 A Visão 360 já usa a rota real `GET /api/uc/{id}/360`, então precisa do backend e da Gold no banco local (veja `backend/README.md`). Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 
