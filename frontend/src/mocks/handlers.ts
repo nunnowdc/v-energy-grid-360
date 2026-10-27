@@ -1,5 +1,6 @@
 import { delay, http, HttpResponse } from 'msw'
 import type { MudancaOrdem } from '@/hooks/use-ordens-inspecao'
+import { gerarContinuidade } from '@/mocks/continuidade'
 import { gerarIndicadores } from '@/mocks/indicadores'
 import { buscarFila, gerarOrdens, listarOrdens, mudarOrdem } from '@/mocks/inspecoes'
 import { opcoesAtuais } from '@/mocks/opcoes-atuais'
@@ -70,5 +71,22 @@ export const handlers = [
     return 'erro' in resultado
       ? HttpResponse.json({ detail: resultado.erro }, { status: resultado.status })
       : HttpResponse.json(resultado.ordem)
+  }),
+
+  http.get('/api/network/continuity', async ({ request }) => {
+    const params = new URL(request.url).searchParams
+    await demora(600)
+    const continuidade = gerarContinuidade(
+      await opcoesAtuais(),
+      params.get('inicio'),
+      params.get('fim'),
+      params.get('municipio'),
+      params.get('alimentador'),
+      params.get('causa'),
+    )
+    if (!continuidade) {
+      return HttpResponse.json({ detail: 'Use os últimos 3, 6 ou 12 meses da base.' }, { status: 422 })
+    }
+    return HttpResponse.json(continuidade)
   }),
 ]

@@ -7,7 +7,7 @@ import IndicadoresPage from '@/pages/Indicadores/IndicadoresPage'
 import { renderizar } from '@/test/renderizar'
 
 // O gráfico precisa medir a tela, o que o jsdom não faz
-vi.mock('@/components/ReceitaConsumoMensal/ReceitaConsumoMensal', () => ({ default: () => null }))
+vi.mock('@/components/GraficosMensais/GraficosMensais', () => ({ default: () => null }))
 
 const resumo = (periodo: Partial<ResumoIndicadores>): ResumoIndicadores => ({
   inicio: '2026-04',

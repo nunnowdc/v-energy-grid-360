@@ -1,15 +1,8 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import Variacao from '@/components/Variacao/Variacao'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
-import type { IndicadoresGerais, MesIndicadores } from '@/hooks/use-indicadores'
 import { variacaoPercentual } from '@/lib/comparacao'
-import {
-  formatarCompetencia,
-  formatarCompetenciaCurta,
-  formatarEnergia,
-  formatarMoedaCompacta,
-  formatarPeriodo,
-} from '@/lib/formatacao'
+import { formatarCompetencia, formatarCompetenciaCurta, formatarPeriodo } from '@/lib/formatacao'
 import { cn } from '@/lib/utils'
 
 // Período escolhido em petróleo e o anterior em cinza (decisão de design para dois períodos)
@@ -18,7 +11,15 @@ const configuracao = {
   anterior: { label: 'Período anterior', color: 'var(--chart-anterior)' },
 } satisfies ChartConfig
 
-type Medida = 'receita_faturada' | 'consumo_kwh'
+// Um mês com as medidas numéricas, ex.: { mes_referencia, receita_faturada, consumo_kwh }
+type Mes = { mes_referencia: string }
+
+export type MedidaMensal<T extends Mes> = {
+  chave: { [C in keyof T]: T[C] extends number ? C : never }[keyof T]
+  // Com a unidade, ex.: "Receita faturada (R$)"
+  titulo: string
+  formatar: (valor: number) => string
+}
 
 // Um ponto do eixo: o mês do período escolhido e o mês na mesma posição do anterior
 type PontoMes = {
@@ -28,12 +29,12 @@ type PontoMes = {
   anterior?: number
 }
 
-function pontos(mensal: IndicadoresGerais['mensal'], medida: Medida): PontoMes[] {
-  return mensal.atual.map((mes, indice) => ({
+function pontos<T extends Mes>(atual: T[], anterior: T[], chave: MedidaMensal<T>['chave']): PontoMes[] {
+  return atual.map((mes, indice) => ({
     mes: mes.mes_referencia,
-    mesAnterior: mensal.anterior[indice]?.mes_referencia,
-    atual: mes[medida],
-    anterior: mensal.anterior[indice]?.[medida],
+    mesAnterior: anterior[indice]?.mes_referencia,
+    atual: mes[chave] as number,
+    anterior: anterior[indice]?.[chave] as number | undefined,
   }))
 }
 
@@ -72,16 +73,17 @@ type GraficoMedidaProps = {
   titulo: string
   dados: PontoMes[]
   formatar: (valor: number) => string
+  sincronia: string
   // Só o gráfico de baixo mostra os meses: os dois dividem o mesmo eixo
   mostrarMeses?: boolean
 }
 
-function GraficoMedida({ titulo, dados, formatar, mostrarMeses }: GraficoMedidaProps) {
+function GraficoMedida({ titulo, dados, formatar, sincronia, mostrarMeses }: GraficoMedidaProps) {
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-[13px] font-medium text-muted-foreground">{titulo}</h3>
       <ChartContainer config={configuracao} className={cn('aspect-auto w-full', mostrarMeses ? 'h-44' : 'h-36')}>
-        <LineChart data={dados} syncId="indicadores-por-mes" margin={{ top: 6, left: 4, right: 12 }}>
+        <LineChart data={dados} syncId={sincronia} margin={{ top: 6, left: 4, right: 12 }}>
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="mes"
@@ -106,35 +108,40 @@ function GraficoMedida({ titulo, dados, formatar, mostrarMeses }: GraficoMedidaP
   )
 }
 
-function textoPeriodo(meses: MesIndicadores[]) {
+function textoPeriodo(meses: Mes[]) {
   return meses.length > 0 ? formatarPeriodo(meses[0].mes_referencia, meses.at(-1)!.mes_referencia) : ''
 }
 
-type ReceitaConsumoMensalProps = {
-  mensal: IndicadoresGerais['mensal']
+type GraficosMensaisProps<T extends Mes> = {
+  atual: T[]
+  // Mesmo tamanho e mesma ordem: o 1º mês do atual se compara ao 1º do anterior
+  anterior: T[]
+  // De cima para baixo, ex.: receita em cima e consumo embaixo
+  medidas: [MedidaMensal<T>, MedidaMensal<T>]
+  // Liga a dica dos dois gráficos (cada tela usa o seu)
+  sincronia: string
 }
 
-// Receita em cima e consumo embaixo, dividindo o eixo dos meses (nunca dois eixos Y
-// no mesmo gráfico). O período anterior aparece em cinza na mesma posição
-function ReceitaConsumoMensal({ mensal }: ReceitaConsumoMensalProps) {
+// Duas medidas empilhadas que dividem o eixo dos meses (nunca dois eixos Y no
+// mesmo gráfico). O período anterior aparece em cinza na mesma posição
+function GraficosMensais<T extends Mes>({ atual, anterior, medidas, sincronia }: GraficosMensaisProps<T>) {
   const legenda = [
-    { chave: 'atual' as const, texto: textoPeriodo(mensal.atual) },
-    { chave: 'anterior' as const, texto: textoPeriodo(mensal.anterior) },
+    { chave: 'atual' as const, texto: textoPeriodo(atual) },
+    { chave: 'anterior' as const, texto: textoPeriodo(anterior) },
   ]
 
   return (
     <div className="flex flex-col gap-4">
-      <GraficoMedida
-        titulo="Receita faturada (R$)"
-        dados={pontos(mensal, 'receita_faturada')}
-        formatar={formatarMoedaCompacta}
-      />
-      <GraficoMedida
-        titulo="Consumo medido (kWh)"
-        dados={pontos(mensal, 'consumo_kwh')}
-        formatar={formatarEnergia}
-        mostrarMeses
-      />
+      {medidas.map((medida, indice) => (
+        <GraficoMedida
+          key={String(medida.chave)}
+          titulo={medida.titulo}
+          dados={pontos(atual, anterior, medida.chave)}
+          formatar={medida.formatar}
+          sincronia={sincronia}
+          mostrarMeses={indice === medidas.length - 1}
+        />
+      ))}
       <ul className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
         {legenda.map(({ chave, texto }) => (
           <li key={chave} className="flex items-center gap-1.5">
@@ -147,4 +154,4 @@ function ReceitaConsumoMensal({ mensal }: ReceitaConsumoMensalProps) {
   )
 }
 
-export default ReceitaConsumoMensal
+export default GraficosMensais

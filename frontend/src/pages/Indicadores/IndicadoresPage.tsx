@@ -4,7 +4,7 @@ import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
 import CartaoKpiEsqueleto from '@/components/CartaoKpi/CartaoKpiEsqueleto'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
-import ReceitaConsumoMensal from '@/components/ReceitaConsumoMensal/ReceitaConsumoMensal'
+import GraficosMensais from '@/components/GraficosMensais/GraficosMensais'
 import ReceitaPorClasse from '@/components/ReceitaPorClasse/ReceitaPorClasse'
 import { useFiltros } from '@/hooks/use-filtros'
 import { useIndicadores, type IndicadoresGerais } from '@/hooks/use-indicadores'
@@ -114,7 +114,17 @@ function IndicadoresPage() {
           estaVazio={semFaturas}
           mensagemVazio={mensagemVazio}
         >
-          {(dados) => <ReceitaConsumoMensal mensal={dados.mensal} />}
+          {(dados) => (
+            <GraficosMensais
+              atual={dados.mensal.atual}
+              anterior={dados.mensal.anterior}
+              medidas={[
+                { chave: 'receita_faturada', titulo: 'Receita faturada (R$)', formatar: formatarMoedaCompacta },
+                { chave: 'consumo_kwh', titulo: 'Consumo medido (kWh)', formatar: formatarEnergia },
+              ]}
+              sincronia="indicadores-por-mes"
+            />
+          )}
         </BlocoDados>
         <BlocoDados
           titulo="Receita por classe de consumo"

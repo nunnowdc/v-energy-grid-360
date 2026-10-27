@@ -69,14 +69,16 @@ src/
 │   ├── FilaSuspeitas/FilaSuspeitas.tsx    ← fila de UCs suspeitas com motivos, energia e score
 │   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
 │   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
+│   ├── GraficosMensais/GraficosMensais.tsx ← duas medidas por mês empilhadas, atual × anterior
 │   ├── HistoricosUc/HistoricosUc.tsx      ← abas de faturas, leituras, interrupções e chamados
 │   ├── Layout/Layout.tsx
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
 │   ├── OrdensInspecao/OrdensInspecao.tsx  ← ordens geradas: enviar para campo, concluir, cancelar
+│   ├── OcorrenciasPorCausa/OcorrenciasPorCausa.tsx ← barras das ocorrências por causa
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
 │   ├── PonteReceita/PonteReceita.tsx      ← cascata: receita base, efeitos e receita comparada
-│   ├── ReceitaConsumoMensal/ReceitaConsumoMensal.tsx ← receita e consumo por mês, atual × anterior
+│   ├── RankingAlimentadores/RankingAlimentadores.tsx ← piores alimentadores em DEC
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
 │   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
 │   ├── RotaInicial/RotaInicial.tsx
@@ -98,6 +100,7 @@ src/
 │   ├── navegacao.ts         ← telas do menu (grupo, título e descrição)
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
+│   ├── use-continuidade.ts    ← DEC, FEC e ocorrências (GET /api/network/continuity)
 │   ├── use-fila-inspecao.ts   ← fila de UCs suspeitas (GET /api/inspections/queue)
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
 │   ├── use-indicadores.ts     ← KPIs da tela Indicadores (GET /api/metrics/general)
@@ -309,6 +312,7 @@ Rotas com exemplo hoje (números inventados):
 |---|---|---|---|
 | `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
 | `GET /api/metrics/revenue-variance` | Receita | `src/mocks/receita.ts` | `src/hooks/use-receita.ts` |
+| `GET /api/network/continuity` | Continuidade | `src/mocks/continuidade.ts` | `src/hooks/use-continuidade.ts` |
 | `GET /api/inspections/queue` | Fila de inspeção | `src/mocks/inspecoes.ts` | `src/hooks/use-fila-inspecao.ts` |
 | `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}` | Fila de inspeção (ordens) | `src/mocks/inspecoes.ts` (ordens só na memória: somem ao recarregar) | `src/hooks/use-ordens-inspecao.ts` |
 
@@ -316,7 +320,7 @@ Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
 
 Rotas que já são reais e precisam do backend com a Gold no banco local (veja `backend/README.md`):
 
-- `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros e classes que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 
 ## Testes automatizados
