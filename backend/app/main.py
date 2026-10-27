@@ -2,6 +2,7 @@
 
 from app.controllers.filters import router as filters_router
 from app.controllers.health import router as health_router
+from app.controllers.metrics import router as metrics_router
 from app.controllers.uc import router as uc_router
 from app.core.config import get_settings
 from fastapi import FastAPI
@@ -17,6 +18,7 @@ app = FastAPI(
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins)
 app.include_router(health_router, prefix="/api")
 app.include_router(filters_router, prefix="/api")
+app.include_router(metrics_router, prefix="/api")
 app.include_router(uc_router, prefix="/api")
 
 
