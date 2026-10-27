@@ -44,7 +44,7 @@ function ou<T>(valor: T | null, formatar: (valor: T) => ReactNode) {
   return valor === null ? <span className="text-muted-foreground">—</span> : formatar(valor)
 }
 
-const numeroDireita = 'text-right font-mono'
+const numeroDireita = 'text-right tabular-nums'
 
 function TabelaFaturas({ itens }: { itens: Uc360['historicos']['faturas']['itens'] }) {
   return (
@@ -105,7 +105,7 @@ function TabelaLeituras({ itens }: { itens: Uc360['historicos']['leituras']['ite
             <TableCell className={numeroDireita}>
               {ou(leitura.consumo_kwh, formatarKwh)}
               {leitura.consumo_imputado && (
-                <span className="block font-sans text-xs text-muted-foreground">estimado na troca de medidor</span>
+                <span className="block text-xs text-muted-foreground">estimado na troca de medidor</span>
               )}
             </TableCell>
             <TableCell className="text-right">
@@ -150,7 +150,7 @@ function TabelaInterrupcoes({ itens }: { itens: Uc360['historicos']['interrupcoe
             </TableCell>
             <TableCell>{ou(interrupcao.tipo, textoDoCodigo)}</TableCell>
             <TableCell>{ou(interrupcao.causa, rotuloCausa)}</TableCell>
-            <TableCell className="font-mono">{ou(interrupcao.alimentador, (codigo) => codigo)}</TableCell>
+            <TableCell className="tabular-nums">{ou(interrupcao.alimentador, (codigo) => codigo)}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -174,7 +174,7 @@ function TabelaChamados({ itens }: { itens: Uc360['historicos']['chamados']['ite
       <TableBody>
         {itens.map((chamado) => (
           <TableRow key={chamado.protocolo}>
-            <TableCell className="font-mono">{chamado.protocolo}</TableCell>
+            <TableCell className="tabular-nums">{chamado.protocolo}</TableCell>
             <TableCell>{ou(chamado.data_abertura, formatarDataHora)}</TableCell>
             <TableCell>
               {ou(chamado.assunto, textoDoCodigo)}
@@ -220,7 +220,7 @@ function HistoricosUc({ historicos, aoMudarPagina, atualizando }: HistoricosUcPr
             {abas.map(({ valor, rotulo }) => (
               <TabsTrigger key={valor} value={valor} className="px-3">
                 {rotulo}
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="tabular-nums text-xs text-muted-foreground">
                   {formatarNumero(historicos[valor].total)}
                 </span>
               </TabsTrigger>

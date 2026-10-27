@@ -23,7 +23,7 @@ function ReceitaPorClasse({ classes }: ReceitaPorClasseProps) {
           <li key={linha.classe} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-3 text-[13px]">
               <span className="font-medium">{label}</span>
-              <span className="font-mono font-semibold">{formatarMoedaCompacta(linha.receita_faturada)}</span>
+              <span className="tabular-nums font-semibold">{formatarMoedaCompacta(linha.receita_faturada)}</span>
             </div>
             <div aria-hidden="true" className="h-2.5 rounded-r-[4px] bg-muted">
               <div

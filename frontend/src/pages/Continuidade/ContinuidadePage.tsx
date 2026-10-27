@@ -107,7 +107,7 @@ function ContinuidadePage() {
           {(dados) =>
             dados.serie && (
               <div className="flex flex-col gap-3">
-                <p className="font-mono text-[13px] font-semibold">{dados.serie.alimentador}</p>
+                <p className="tabular-nums text-[13px] font-semibold">{dados.serie.alimentador}</p>
                 <GraficosMensais
                   atual={dados.serie.atual}
                   anterior={dados.serie.anterior}

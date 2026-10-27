@@ -14,7 +14,7 @@ function SeloBase() {
   return (
     <span
       title="Período coberto pela base de dados"
-      className="inline-flex items-center gap-2 rounded-full border bg-muted px-3 py-1 font-mono text-xs text-foreground/80 uppercase"
+      className="inline-flex items-center gap-2 rounded-full border bg-muted px-3 py-1 tabular-nums text-xs text-foreground/80 uppercase"
     >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
       Base {formatarCompetencia(primeira)} – {formatarCompetencia(ultima)}

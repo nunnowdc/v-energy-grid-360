@@ -56,7 +56,7 @@ function Dica({ ponto, formatar }: { ponto: PontoMes; formatar: (valor: number) 
                 <span className="size-2.5 rounded-[2px]" style={{ background: configuracao[chave].color }} />
                 {formatarCompetencia(mes)}
               </span>
-              <span className="font-mono font-medium text-foreground">{formatar(valor)}</span>
+              <span className="tabular-nums font-medium text-foreground">{formatar(valor)}</span>
             </div>
           ),
       )}

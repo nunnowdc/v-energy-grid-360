@@ -61,7 +61,7 @@ function ConsumoDozeMeses({ meses, className }: ConsumoDozeMesesProps) {
                         <span className="text-muted-foreground">
                           {configuracao[nome as keyof typeof configuracao].label}
                         </span>
-                        <span className="font-mono font-medium text-foreground">
+                        <span className="tabular-nums font-medium text-foreground">
                           {valor === null || valor === undefined ? '—' : formatarKwh(Number(valor))}
                         </span>
                       </div>

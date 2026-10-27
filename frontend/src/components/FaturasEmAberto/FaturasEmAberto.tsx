@@ -28,7 +28,7 @@ function FaturasEmAberto({ dados, className }: FaturasEmAbertoProps) {
         ) : (
           <>
             <div className="flex items-baseline gap-2">
-              <span className="font-mono text-[28px] leading-none font-semibold tracking-tight">
+              <span className="tabular-nums text-[28px] leading-none font-semibold tracking-tight">
                 {resumo.valor_total === null ? '—' : formatarMoeda(resumo.valor_total)}
               </span>
               <span className="text-muted-foreground">
@@ -46,7 +46,7 @@ function FaturasEmAberto({ dados, className }: FaturasEmAbertoProps) {
                     </span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-mono">
+                    <span className="tabular-nums">
                       {fatura.receita_faturada === null ? '—' : formatarMoeda(fatura.receita_faturada)}
                     </span>
                     <StatusPagamento status={fatura.status_pagamento} />

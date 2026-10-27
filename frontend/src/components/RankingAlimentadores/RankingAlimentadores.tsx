@@ -46,15 +46,15 @@ function RankingAlimentadores({ ranking, escolhido, aoEscolher }: RankingAliment
                 key={linha.alimentador}
                 data-state={linha.alimentador === escolhido ? 'selected' : undefined}
               >
-                <TableCell className="text-right font-mono text-muted-foreground">{indice + 1}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">{indice + 1}</TableCell>
                 <TableCell>
                   {linha.alimentador === escolhido ? (
-                    <span className="font-mono font-semibold">{linha.alimentador}</span>
+                    <span className="tabular-nums font-semibold">{linha.alimentador}</span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => aoEscolher(linha.alimentador)}
-                      className="inline-flex cursor-pointer items-center gap-0.5 font-mono text-primary hover:underline"
+                      className="inline-flex cursor-pointer items-center gap-0.5 tabular-nums text-primary hover:underline"
                     >
                       {linha.alimentador}
                       <ChevronRight aria-hidden="true" className="size-3.5" />
@@ -62,18 +62,18 @@ function RankingAlimentadores({ ranking, escolhido, aoEscolher }: RankingAliment
                   )}
                 </TableCell>
                 <TableCell>{linha.municipio_principal}</TableCell>
-                <TableCell className="text-right font-mono">
+                <TableCell className="text-right tabular-nums">
                   {linha.alimentador_pequeno && (
-                    <span className="mr-1.5 inline-flex items-center gap-1 font-sans text-xs text-muted-foreground">
+                    <span className="mr-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <TriangleAlert aria-hidden="true" className="size-3.5" />
                       Menos de 100 UCs
                     </span>
                   )}
                   {formatarNumero(linha.total_ucs)}
                 </TableCell>
-                <TableCell className="text-right font-mono font-semibold">{formatarNumero(linha.dec)}</TableCell>
-                <TableCell className="text-right font-mono">{formatarNumero(linha.fec)}</TableCell>
-                <TableCell className="text-right font-mono text-muted-foreground">
+                <TableCell className="text-right tabular-nums font-semibold">{formatarNumero(linha.dec)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatarNumero(linha.fec)}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
                   {formatarNumero(linha.dec_sem_dia_critico)}
                 </TableCell>
                 <TableCell className="text-right">

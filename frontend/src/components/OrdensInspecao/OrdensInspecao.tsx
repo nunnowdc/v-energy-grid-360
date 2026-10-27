@@ -49,9 +49,9 @@ function OrdensInspecao({ ordens }: OrdensInspecaoProps) {
         <TableBody>
           {ordens.map((ordem) => (
             <TableRow key={ordem.id_ordem}>
-              <TableCell className="font-mono">{ordem.id_ordem}</TableCell>
+              <TableCell className="tabular-nums">{ordem.id_ordem}</TableCell>
               <TableCell>
-                <Link to={`/visao-360/${ordem.id_uc}`} className="font-mono text-primary hover:underline">
+                <Link to={`/visao-360/${ordem.id_uc}`} className="tabular-nums text-primary hover:underline">
                   {ordem.id_uc}
                 </Link>
               </TableCell>
