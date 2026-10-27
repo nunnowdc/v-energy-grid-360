@@ -1,18 +1,13 @@
 import { ehClasseConsumo, type ClasseConsumo } from '@/config/classes'
+import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import type { DecomposicaoReceita, NivelDetalhe, VariacaoReceita } from '@/hooks/use-receita'
 import { linhaDoMes } from '@/mocks/indicadores'
-import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 
-// DADOS DE EXEMPLO para GET /api/metrics/revenue-variance. Não vêm da base real:
-// partem dos mesmos números inventados dos Indicadores, divididos por bairro e por
-// UCs com e sem geração própria. Como na base, as UCs com geração própria passam
-// a medir bem menos consumo e puxam o efeito volume para baixo
-
-const { competencias, municipios, classes } = opcoesFiltrosExemplo
-
-// Primeiro ano da base e últimos 12 meses (períodos fixos da Gold)
-const MESES_P0 = competencias.slice(0, 12)
-const MESES_P1 = competencias.slice(-12)
+// DADOS DE EXEMPLO para GET /api/metrics/revenue-variance. Os números não vêm da
+// base real: partem dos mesmos números inventados dos Indicadores, divididos pelos
+// bairros das opções dos filtros e por UCs com e sem geração própria. Como na base,
+// as UCs com geração própria passam a medir bem menos consumo e puxam o efeito
+// volume para baixo
 
 // Parte das UCs com geração própria na receita e no consumo, em cada período
 const PARTE_GD = {
@@ -37,10 +32,10 @@ function sorteio(texto: string) {
   return ((semente % 201) - 100) / 100
 }
 
-function somarMeses(meses: string[], municipio: string, classe: ClasseConsumo): Valores {
-  return meses.reduce(
-    (total, mes) => {
-      const linha = linhaDoMes(competencias.indexOf(mes), municipio, classe)
+function somarMeses(opcoes: OpcoesFiltros, indices: number[], municipio: string, classe: ClasseConsumo): Valores {
+  return indices.reduce(
+    (total, indice) => {
+      const linha = linhaDoMes(opcoes, indice, municipio, classe)
       return {
         receita: total.receita + linha.receita_faturada,
         kwh: total.kwh + linha.consumo_kwh,
@@ -69,23 +64,44 @@ function partes(valores: Valores, peso: number, gd: boolean, parte: { receita: n
   }
 }
 
-const linhas: Linha[] = municipios.flatMap(({ nome: municipio, bairros }) => {
-  const pesos = pesosBairros(bairros)
-  return classes.flatMap((classe) => {
-    const p0 = somarMeses(MESES_P0, municipio, classe)
-    const p1 = somarMeses(MESES_P1, municipio, classe)
-    return bairros.flatMap((bairro, indice) =>
-      [false, true].map((possui_gd) => ({
-        municipio,
-        bairro,
-        classe,
-        possui_gd,
-        p0: partes(p0, pesos.p0[indice], possui_gd, PARTE_GD.p0),
-        p1: partes(p1, pesos.p1[indice], possui_gd, PARTE_GD.p1),
-      })),
-    )
+// Primeiro ano da base e últimos 12 meses (períodos fixos da Gold), como posições
+function periodos({ competencias }: OpcoesFiltros) {
+  const p0 = Array.from({ length: 12 }, (_, posicao) => posicao)
+  return { p0, p1: p0.map((posicao) => competencias.length - 12 + posicao) }
+}
+
+// As linhas só mudam se as opções mudarem: monta uma vez por opções
+const linhasPorOpcoes = new WeakMap<OpcoesFiltros, Linha[]>()
+
+function montarLinhas(opcoes: OpcoesFiltros): Linha[] {
+  const { p0: mesesP0, p1: mesesP1 } = periodos(opcoes)
+  return opcoes.municipios.flatMap(({ nome: municipio, bairros }) => {
+    const pesos = pesosBairros(bairros)
+    return opcoes.classes.flatMap((classe) => {
+      const p0 = somarMeses(opcoes, mesesP0, municipio, classe)
+      const p1 = somarMeses(opcoes, mesesP1, municipio, classe)
+      return bairros.flatMap((bairro, indice) =>
+        [false, true].map((possui_gd) => ({
+          municipio,
+          bairro,
+          classe,
+          possui_gd,
+          p0: partes(p0, pesos.p0[indice], possui_gd, PARTE_GD.p0),
+          p1: partes(p1, pesos.p1[indice], possui_gd, PARTE_GD.p1),
+        })),
+      )
+    })
   })
-})
+}
+
+function linhasDe(opcoes: OpcoesFiltros) {
+  let linhas = linhasPorOpcoes.get(opcoes)
+  if (!linhas) {
+    linhas = montarLinhas(opcoes)
+    linhasPorOpcoes.set(opcoes, linhas)
+  }
+  return linhas
+}
 
 const preco = (valores: Valores) => (valores.kwh > 0 ? valores.receita / valores.kwh : null)
 
@@ -129,11 +145,12 @@ function agrupar(grupo: Linha[], chave: (linha: Linha) => string) {
 }
 
 export function gerarReceita(
+  opcoes: OpcoesFiltros,
   municipio?: string | null,
   bairro?: string | null,
   classe?: string | null,
 ): VariacaoReceita {
-  const recorte = linhas.filter(
+  const recorte = linhasDe(opcoes).filter(
     (linha) =>
       (!municipio || linha.municipio === municipio) &&
       (!bairro || linha.bairro === bairro) &&
@@ -141,9 +158,10 @@ export function gerarReceita(
   )
   const nivel: NivelDetalhe = !municipio ? 'municipio' : !bairro ? 'bairro' : 'classe'
 
+  const { competencias } = opcoes
   return {
-    periodo_p0: { inicio: MESES_P0[0], fim: MESES_P0.at(-1)! },
-    periodo_p1: { inicio: MESES_P1[0], fim: MESES_P1.at(-1)! },
+    periodo_p0: { inicio: competencias[0], fim: competencias[11] },
+    periodo_p1: { inicio: competencias.at(-12)!, fim: competencias.at(-1)! },
     total: decompor(recorte),
     por_gd: [false, true].map((possui_gd) => ({
       possui_gd,

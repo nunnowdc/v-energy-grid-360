@@ -307,7 +307,6 @@ Rotas com exemplo hoje (números inventados):
 
 | Rota | Tela | Exemplo | Formato (proposta ao backend) |
 |---|---|---|---|
-| `GET /api/filters/options` | Todas | `src/mocks/opcoes-filtros.ts` | `src/hooks/use-opcoes-filtros.ts` |
 | `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
 | `GET /api/metrics/revenue-variance` | Receita | `src/mocks/receita.ts` | `src/hooks/use-receita.ts` |
 | `GET /api/inspections/queue` | Fila de inspeção | `src/mocks/inspecoes.ts` | `src/hooks/use-fila-inspecao.ts` |
@@ -315,7 +314,10 @@ Rotas com exemplo hoje (números inventados):
 
 Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
 
-A Visão 360 já usa a rota real `GET /api/uc/{id}/360`, então precisa do backend e da Gold no banco local (veja `backend/README.md`). Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
+Rotas que já são reais e precisam do backend com a Gold no banco local (veja `backend/README.md`):
+
+- `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros e classes que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 
 ## Testes automatizados
 

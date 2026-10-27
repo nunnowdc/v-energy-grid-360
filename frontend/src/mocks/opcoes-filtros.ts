@@ -1,6 +1,6 @@
 import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 
-// DADOS DE EXEMPLO para desenvolver sem o backend. Não vêm da base real:
+// DADOS DE EXEMPLO para os testes e para quando o backend não responde. Não vêm da base real:
 // são só alguns municípios e bairros públicos da Região Metropolitana do Recife
 // e códigos de alimentador inventados
 

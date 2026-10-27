@@ -2,7 +2,7 @@ import { delay, http, HttpResponse } from 'msw'
 import type { MudancaOrdem } from '@/hooks/use-ordens-inspecao'
 import { gerarIndicadores } from '@/mocks/indicadores'
 import { buscarFila, gerarOrdens, listarOrdens, mudarOrdem } from '@/mocks/inspecoes'
-import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
+import { opcoesAtuais } from '@/mocks/opcoes-atuais'
 import { gerarReceita } from '@/mocks/receita'
 
 // Simula a demora da rede para dar para ver o carregamento (nos testes, sem demora)
@@ -11,15 +11,11 @@ const demora = (ms: number) => delay(import.meta.env.MODE === 'test' ? 0 : ms)
 // Respostas de exemplo para as rotas que o backend ainda não tem.
 // Quando a rota real existir, apague o handler dela daqui
 export const handlers = [
-  http.get('/api/filters/options', async () => {
-    await demora(400)
-    return HttpResponse.json(opcoesFiltrosExemplo)
-  }),
-
   http.get('/api/metrics/general', async ({ request }) => {
     const params = new URL(request.url).searchParams
     await demora(600)
     const indicadores = gerarIndicadores(
+      await opcoesAtuais(),
       params.get('inicio'),
       params.get('fim'),
       params.get('municipio'),
@@ -34,7 +30,9 @@ export const handlers = [
   http.get('/api/metrics/revenue-variance', async ({ request }) => {
     const params = new URL(request.url).searchParams
     await demora(600)
-    return HttpResponse.json(gerarReceita(params.get('municipio'), params.get('bairro'), params.get('classe')))
+    return HttpResponse.json(
+      gerarReceita(await opcoesAtuais(), params.get('municipio'), params.get('bairro'), params.get('classe')),
+    )
   }),
 
   http.get('/api/inspections/queue', async ({ request }) => {
@@ -42,7 +40,7 @@ export const handlers = [
     await demora(500)
     const filtros = { municipio: params.get('municipio'), bairro: params.get('bairro'), classe: params.get('classe') }
     return HttpResponse.json(
-      buscarFila(filtros, Number(params.get('pagina') ?? 1), Number(params.get('limite') ?? 20)),
+      buscarFila(await opcoesAtuais(), filtros, Number(params.get('pagina') ?? 1), Number(params.get('limite') ?? 20)),
     )
   }),
 
@@ -54,7 +52,7 @@ export const handlers = [
   http.post('/api/inspections/order', async ({ request }) => {
     const { ids_uc } = (await request.json()) as { ids_uc: string[] }
     await demora(500)
-    return HttpResponse.json({ ordens: gerarOrdens(ids_uc) }, { status: 201 })
+    return HttpResponse.json({ ordens: gerarOrdens(await opcoesAtuais(), ids_uc) }, { status: 201 })
   }),
 
   http.patch('/api/inspections/:idOrdem', async ({ params, request }) => {

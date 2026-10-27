@@ -18,16 +18,6 @@ beforeEach(() => {
   limparOrdens()
 })
 
-test('o exemplo de /api/filters/options cobre os 48 meses da base', async () => {
-  const resposta = await buscar('/api/filters/options')
-  const corpo = await resposta!.json()
-
-  expect(corpo.competencias).toHaveLength(48)
-  expect(corpo.competencias[0]).toBe('2022-07')
-  expect(corpo.competencias.at(-1)).toBe('2026-06')
-  expect(Object.keys(corpo)).toEqual(['competencias', 'municipios', 'classes', 'alimentadores', 'causas'])
-})
-
 test('o exemplo de /api/metrics/general compara com o período anterior de mesmo tamanho', async () => {
   const resposta = await buscar('/api/metrics/general?inicio=2025-07&fim=2026-06')
   const corpo = await resposta!.json()

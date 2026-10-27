@@ -1,19 +1,23 @@
 import { ehClasseConsumo, type ClasseConsumo } from '@/config/classes'
 import type { IndicadoresGerais, MesIndicadores, ResumoIndicadores } from '@/hooks/use-indicadores'
+import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { mesesPeriodo } from '@/lib/filtros-url'
-import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 
-// DADOS DE EXEMPLO para GET /api/metrics/general. Não vêm da base real:
-// são números inventados, com verão mais caro, receita subindo e consumo caindo
+// DADOS DE EXEMPLO para GET /api/metrics/general. Os números não vêm da base real:
+// são inventados, com verão mais caro, receita subindo e consumo caindo.
+// Os municípios e classes são os das opções dos filtros (src/mocks/opcoes-atuais.ts)
 
-const { competencias, municipios, classes } = opcoesFiltrosExemplo
+// Parte de cada município no total (soma 1): quanto mais bairros, maior
+const pesosPorOpcoes = new WeakMap<OpcoesFiltros, Map<string, number>>()
 
-// Parte de cada município no total (soma 1)
-const pesoMunicipio: Record<string, number> = {
-  'Jaboatão dos Guararapes': 0.26,
-  Olinda: 0.16,
-  Paulista: 0.13,
-  Recife: 0.45,
+function pesoMunicipio(opcoes: OpcoesFiltros, municipio: string) {
+  let pesos = pesosPorOpcoes.get(opcoes)
+  if (!pesos) {
+    const total = opcoes.municipios.reduce((soma, { bairros }) => soma + bairros.length + 3, 0)
+    pesos = new Map(opcoes.municipios.map(({ nome, bairros }) => [nome, (bairros.length + 3) / total]))
+    pesosPorOpcoes.set(opcoes, pesos)
+  }
+  return pesos.get(municipio) ?? 0
 }
 
 // Parte de cada classe na receita, no consumo e nas UCs, e quanto receita e
@@ -37,14 +41,15 @@ function ruido(...chaves: number[]) {
 }
 
 // Um mês de um município e classe. O exemplo da Receita parte dela para os totais baterem
-export function linhaDoMes(indice: number, municipio: string, classe: ClasseConsumo): LinhaMes {
+export function linhaDoMes(opcoes: OpcoesFiltros, indice: number, municipio: string, classe: ClasseConsumo): LinhaMes {
+  const { competencias } = opcoes
   const mes = Number(competencias[indice].slice(5))
   const anos = indice / 12
   // Mais calor (e mais consumo) de dezembro a março
   const sazonal = 1 + 0.08 * Math.cos(((mes - 1.5) / 12) * 2 * Math.PI)
-  const peso = pesoMunicipio[municipio] * ruido(indice, municipio.length, classe.length)
+  const peso = pesoMunicipio(opcoes, municipio) * ruido(indice, municipio.length, classe.length)
   const perfil = perfilClasse[classe]
-  const ucs = Math.round(41_800 * (1 + 0.006 * anos) * pesoMunicipio[municipio] * perfil.ucs)
+  const ucs = Math.round(41_800 * (1 + 0.006 * anos) * pesoMunicipio(opcoes, municipio) * perfil.ucs)
   // As faturas dos últimos meses ainda estão vencendo
   const taxaAtraso = indice >= competencias.length - 2 ? 0.045 : 0.03
 
@@ -58,19 +63,23 @@ export function linhaDoMes(indice: number, municipio: string, classe: ClasseCons
   }
 }
 
-function somar(linhas: LinhaMes[]): LinhaMes {
-  return linhas.reduce((total, linha) => ({
-    mes_referencia: total.mes_referencia,
-    receita_faturada: total.receita_faturada + linha.receita_faturada,
-    consumo_kwh: total.consumo_kwh + linha.consumo_kwh,
-    ucs_faturadas: total.ucs_faturadas + linha.ucs_faturadas,
-    faturas: total.faturas + linha.faturas,
-    faturas_atrasadas: total.faturas_atrasadas + linha.faturas_atrasadas,
-  }))
+function somar(linhas: LinhaMes[], mes_referencia: string): LinhaMes {
+  const zero = { mes_referencia, receita_faturada: 0, consumo_kwh: 0, ucs_faturadas: 0, faturas: 0, faturas_atrasadas: 0 }
+  return linhas.reduce(
+    (total, linha) => ({
+      mes_referencia,
+      receita_faturada: total.receita_faturada + linha.receita_faturada,
+      consumo_kwh: total.consumo_kwh + linha.consumo_kwh,
+      ucs_faturadas: total.ucs_faturadas + linha.ucs_faturadas,
+      faturas: total.faturas + linha.faturas,
+      faturas_atrasadas: total.faturas_atrasadas + linha.faturas_atrasadas,
+    }),
+    zero,
+  )
 }
 
 function resumir(meses: LinhaMes[]): ResumoIndicadores {
-  const total = somar(meses)
+  const total = somar(meses, '')
   return {
     inicio: meses[0].mes_referencia,
     fim: meses.at(-1)!.mes_referencia,
@@ -91,11 +100,13 @@ const paraMes = ({ mes_referencia, receita_faturada, consumo_kwh }: LinhaMes): M
 
 // Devolve undefined quando o período não é um dos aceitos (o backend responde 422)
 export function gerarIndicadores(
+  opcoes: OpcoesFiltros,
   inicio: string | null,
   fim: string | null,
   municipio?: string | null,
   classe?: string | null,
 ): IndicadoresGerais | undefined {
+  const { competencias, municipios, classes } = opcoes
   const primeiro = competencias.indexOf(inicio ?? '')
   const ultimo = competencias.indexOf(fim ?? '')
   const tamanho = ultimo - primeiro + 1
@@ -107,7 +118,10 @@ export function gerarIndicadores(
   const classesEscolhidas = classes.filter((item) => !ehClasseConsumo(classe) || item === classe)
 
   const mesDoRecorte = (indice: number, classesDoMes = classesEscolhidas) =>
-    somar(nomesMunicipios.flatMap((nome) => classesDoMes.map((item) => linhaDoMes(indice, nome, item))))
+    somar(
+      nomesMunicipios.flatMap((nome) => classesDoMes.map((item) => linhaDoMes(opcoes, indice, nome, item))),
+      competencias[indice],
+    )
   const indicesAtual = Array.from({ length: tamanho }, (_, posicao) => primeiro + posicao)
   const indicesAnterior = indicesAtual.map((indice) => indice - tamanho)
   const atual = indicesAtual.map((indice) => mesDoRecorte(indice))

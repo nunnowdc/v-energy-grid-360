@@ -14,11 +14,23 @@ export type OpcoesFiltros = {
   causas: string[]
 }
 
+// Ordem alfabética do português ("Água Fria" junto do A, e não depois do Z)
+const ordemAlfabetica = new Intl.Collator('pt-BR').compare
+
+function ordenar(opcoes: OpcoesFiltros): OpcoesFiltros {
+  return {
+    ...opcoes,
+    municipios: opcoes.municipios
+      .map(({ nome, bairros }) => ({ nome, bairros: [...bairros].sort(ordemAlfabetica) }))
+      .sort((a, b) => ordemAlfabetica(a.nome, b.nome)),
+  }
+}
+
 // As opções só mudam quando o pipeline roda: busca uma vez e guarda
 export function useOpcoesFiltros() {
   return useQuery({
     queryKey: ['filtros', 'opcoes'],
-    queryFn: ({ signal }) => apiFetch<OpcoesFiltros>('/filters/options', { signal }),
+    queryFn: async ({ signal }) => ordenar(await apiFetch<OpcoesFiltros>('/filters/options', { signal })),
     staleTime: Infinity,
   })
 }
