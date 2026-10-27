@@ -18,7 +18,7 @@ function Motivos({ motivoSuspeita }: { motivoSuspeita: string }) {
         <li key={texto} className="rounded-md border bg-muted/50 px-1.5 py-0.5 text-xs whitespace-nowrap">
           {texto}
           {pontos !== undefined && (
-            <span className="ml-1 font-mono text-muted-foreground">
+            <span className="ml-1 tabular-nums text-muted-foreground">
               {pontos > 0 ? '+' : ''}
               {pontos}
             </span>
@@ -35,7 +35,7 @@ function Score({ valor }: { valor: number }) {
       <div aria-hidden="true" className="h-2 w-16 rounded-r-[4px] bg-muted">
         <div className="h-full rounded-r-[4px] bg-primary" style={{ width: `${valor}%` }} />
       </div>
-      <span className="w-7 text-right font-mono font-semibold">{valor}</span>
+      <span className="w-7 text-right tabular-nums font-semibold">{valor}</span>
     </div>
   )
 }
@@ -51,7 +51,7 @@ function FilaSuspeitas({ itens, selecionadas, aoMarcar }: FilaSuspeitasProps) {
           <TableHead className="text-right">#</TableHead>
           <TableHead>UC</TableHead>
           <TableHead>Bairro · município</TableHead>
-          <TableHead>Motivos da suspeita</TableHead>
+          <TableHead className="pl-6">Motivos da suspeita</TableHead>
           <TableHead className="text-right">Energia a recuperar</TableHead>
           <TableHead className="text-right">Score</TableHead>
         </TableRow>
@@ -63,7 +63,8 @@ function FilaSuspeitas({ itens, selecionadas, aoMarcar }: FilaSuspeitasProps) {
               {item.ordem_aberta ? (
                 <StatusOrdem status={item.ordem_aberta.status} />
               ) : (
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                // A área de clique é a célula toda, não só a caixinha
+                <label className="-m-2 flex cursor-pointer p-2">
                   <input
                     type="checkbox"
                     className="size-4 cursor-pointer accent-primary"
@@ -71,23 +72,27 @@ function FilaSuspeitas({ itens, selecionadas, aoMarcar }: FilaSuspeitasProps) {
                     onChange={(evento) => aoMarcar(item.id_uc, evento.target.checked)}
                     aria-label={`Selecionar ${item.id_uc}`}
                   />
-                  Gerar
                 </label>
               )}
             </TableCell>
-            <TableCell className="text-right font-mono text-muted-foreground">{item.prioridade}</TableCell>
+            <TableCell className="text-right tabular-nums text-muted-foreground">{item.prioridade}</TableCell>
             <TableCell>
-              <Link to={`/visao-360/${item.id_uc}`} className="font-mono text-primary hover:underline">
+              <Link to={`/visao-360/${item.id_uc}`} className="tabular-nums text-primary hover:underline">
                 {item.id_uc}
               </Link>
             </TableCell>
-            <TableCell className="whitespace-nowrap">
-              {item.bairro} <span className="text-muted-foreground">· {item.municipio}</span>
+            <TableCell className="whitespace-normal">
+              {item.bairro}
+              <span className="block text-xs text-muted-foreground">{item.municipio}</span>
             </TableCell>
-            <TableCell className="min-w-64 whitespace-normal">
-              <Motivos motivoSuspeita={item.motivo_suspeita} />
+            {/* Largura fixa para duas ou três etiquetas por linha: assim a coluna não
+                engole o espaço que sobra, e ele se divide entre as outras colunas */}
+            <TableCell className="pl-6 whitespace-normal">
+              <div className="w-[26rem]">
+                <Motivos motivoSuspeita={item.motivo_suspeita} />
+              </div>
             </TableCell>
-            <TableCell className="text-right font-mono whitespace-nowrap">
+            <TableCell className="text-right tabular-nums whitespace-nowrap">
               {item.kwh_recuperavel_estimado_ano === 0 ? (
                 <span className="text-muted-foreground">—</span>
               ) : (
