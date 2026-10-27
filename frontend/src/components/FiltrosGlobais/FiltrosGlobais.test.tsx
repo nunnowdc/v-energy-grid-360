@@ -93,15 +93,31 @@ test('"Limpar filtros" só ativa quando há filtro e limpa a URL', () => {
   expect(limpar).toBeDisabled()
 })
 
-test('período com os meses da base e valores inválidos da URL ignorados', () => {
-  abrir('/?inicio=2025-07&classe=INVENTADA&municipio=Narnia', ['periodo', 'municipio', 'classe'])
-  expect(valorDe('De')).toBe('jul/2025')
-  expect(textos('De')[1]).toBe('jul/2022')
-  expect(valorDe('Até')).toBe('Último mês da base')
+test('período: últimos 12 meses por padrão, e valores inválidos da URL ignorados', () => {
+  abrir('/?meses=5&classe=INVENTADA&municipio=Narnia', ['periodo', 'municipio', 'classe'])
+  expect(valorDe('Período')).toBe('Últimos 12 meses')
+  expect(textos('Período')).toEqual(['Últimos 12 meses', 'Últimos 6 meses', 'Últimos 3 meses'])
   expect(valorDe('Classe de consumo')).toBe('Todas')
   expect(valorDe('Município')).toBe('Todos')
-  expect(JSON.parse(screen.getByTestId('filtros').textContent!)).toEqual({ inicio: '2025-07' })
+  expect(JSON.parse(screen.getByTestId('filtros').textContent!)).toEqual({})
 
-  escolher('Até', 'jan/2024')
-  expect(urlAtual()).toContain('inicio=2024-01')
+  escolher('Período', 'Últimos 3 meses')
+  expect(urlAtual()).toContain('meses=3')
+})
+
+test('alimentador depende do município, e causa aparece com o nome amigável', () => {
+  abrir('/continuidade?alimentador=ALM-JAB-002', ['periodo', 'municipio', 'alimentador', 'causa'])
+  expect(textos('Alimentador')).toHaveLength(9)
+
+  // ALM-JAB-002 também atende Recife: continua escolhido
+  escolher('Município', 'Recife')
+  expect(urlAtual()).toBe('?alimentador=ALM-JAB-002&municipio=Recife')
+  expect(textos('Alimentador')).toEqual(['Todos', 'ALM-JAB-002', 'ALM-REC-001', 'ALM-REC-002', 'ALM-REC-003'])
+
+  // Olinda não é atendida por ele: sai da URL
+  escolher('Município', 'Olinda')
+  expect(urlAtual()).toBe('?municipio=Olinda')
+
+  escolher('Causa', 'Falha de equipamento')
+  expect(urlAtual()).toBe('?municipio=Olinda&causa=FALHA+DE+EQUIPAMENTO')
 })

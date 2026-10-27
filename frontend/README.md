@@ -237,17 +237,31 @@ Para uma linha de indicadores, use o `EstadoConsulta` direto, com `CartaoKpi` e,
 Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos filtros:
 
 ```
-/receita?municipio=Recife&bairro=Pina&classe=RESIDENCIAL
+/continuidade?meses=6&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
 ```
 
 | Parâmetro | Formato | Sem o parâmetro |
 |---|---|---|
-| `inicio`, `fim` | `yyyy-MM` (ex.: `2025-07`) | Últimos 12 meses **da base**, nunca da data de hoje |
+| `meses` | `3`, `6` ou `12`: os últimos meses **da base**, nunca da data de hoje | Últimos 12 meses |
 | `municipio` | Nome do município | Todos |
 | `bairro` | Nome do bairro (exige `municipio`) | Todos |
 | `classe` | `RESIDENCIAL`, `COMERCIAL`, `INDUSTRIAL`, `RURAL` ou `PODER_PUBLICO` | Todas |
+| `alimentador` | Código do alimentador (ex.: `ALM-REC-001`) | Todos |
+| `causa` | Código da causa na Gold (ex.: `VEGETACAO`); o nome na tela vem de `src/config/causas.ts` | Todas |
 
-Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora.
+Filtros de cada tela, combinados com o backend em `docs/backend/impl_filtros.md`:
+
+| Tela | Filtros |
+|---|---|
+| Indicadores | Período, município, classe |
+| Receita | Município, bairro, classe (os períodos são fixos e aparecem só como texto) |
+| Fila de inspeção | Município, bairro, classe |
+| Continuidade | Período, município, alimentador, causa |
+| Visão 360 | Nenhum: a tela recebe o ID da UC |
+
+Para a API, o período vira `inicio` e `fim` (`yyyy-MM`) com `janelaDoPeriodo()` de `src/lib/filtros-url.ts`; o backend calcula sozinho a janela de comparação, com o mesmo tamanho. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
+
+Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora. Cada filtro aceita um valor só.
 
 A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem largura fixa (definida em `FiltrosGlobais.tsx`), então escolher outro valor não muda o tamanho nem a posição dos filtros. Um valor maior que o filtro aparece cortado com "…" e inteiro ao passar o mouse. A lista de opções usa o `Select` do shadcn/ui, no visual do portal.
 

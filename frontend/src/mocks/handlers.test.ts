@@ -10,4 +10,5 @@ test('o exemplo de /api/filters/options cobre os 48 meses da base', async () => 
   expect(corpo.competencias).toHaveLength(48)
   expect(corpo.competencias[0]).toBe('2022-07')
   expect(corpo.competencias.at(-1)).toBe('2026-06')
+  expect(Object.keys(corpo)).toEqual(['competencias', 'municipios', 'classes', 'alimentadores', 'causas'])
 })
