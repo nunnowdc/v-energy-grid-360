@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react'
 import Variacao from '@/components/Variacao/Variacao'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { DecomposicaoReceita } from '@/hooks/use-receita'
+import type { DecomposicaoCompleta } from '@/hooks/use-receita'
 import { variacaoPercentual } from '@/lib/comparacao'
 import { formatarMoedaCompacta, formatarMoedaCompactaComSinal } from '@/lib/formatacao'
 
 type LinhaDecomposicao = {
   chave: string
   rotulo: ReactNode
-  dados: DecomposicaoReceita
+  dados: DecomposicaoCompleta
 }
 
 type TabelaDecomposicaoProps = {
@@ -17,7 +17,7 @@ type TabelaDecomposicaoProps = {
   linhas: LinhaDecomposicao[]
 }
 
-const numero = 'text-right font-mono'
+const numero = 'text-right tabular-nums'
 
 function variacaoOuTraco(atual: number, anterior: number) {
   const variacao = variacaoPercentual(atual, anterior)

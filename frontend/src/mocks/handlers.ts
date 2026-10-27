@@ -4,7 +4,6 @@ import { gerarContinuidade } from '@/mocks/continuidade'
 import { gerarIndicadores } from '@/mocks/indicadores'
 import { buscarFila, gerarOrdens, listarOrdens, mudarOrdem } from '@/mocks/inspecoes'
 import { opcoesAtuais } from '@/mocks/opcoes-atuais'
-import { gerarReceita } from '@/mocks/receita'
 
 // Simula a demora da rede para dar para ver o carregamento (nos testes, sem demora)
 const demora = (ms: number) => delay(import.meta.env.MODE === 'test' ? 0 : ms)
@@ -26,14 +25,6 @@ export const handlers = [
       return HttpResponse.json({ detail: 'Use os últimos 3, 6 ou 12 meses da base.' }, { status: 422 })
     }
     return HttpResponse.json(indicadores)
-  }),
-
-  http.get('/api/metrics/revenue-variance', async ({ request }) => {
-    const params = new URL(request.url).searchParams
-    await demora(600)
-    return HttpResponse.json(
-      gerarReceita(await opcoesAtuais(), params.get('municipio'), params.get('bairro'), params.get('classe')),
-    )
   }),
 
   http.get('/api/inspections/queue', async ({ request }) => {

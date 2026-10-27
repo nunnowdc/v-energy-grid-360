@@ -1,3 +1,4 @@
+import { Lightbulb } from 'lucide-react'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -8,7 +9,7 @@ import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
 import PonteReceita from '@/components/PonteReceita/PonteReceita'
 import Variacao from '@/components/Variacao/Variacao'
 import { useFiltros } from '@/hooks/use-filtros'
-import { useReceita, type VariacaoReceita } from '@/hooks/use-receita'
+import { temDados, useReceita, type DecomposicaoCompleta, type VariacaoReceita } from '@/hooks/use-receita'
 import { variacaoPercentual } from '@/lib/comparacao'
 import {
   formatarMoeda,
@@ -19,13 +20,14 @@ import {
   formatarPeriodo,
 } from '@/lib/formatacao'
 
-const semReceita = (dados: VariacaoReceita) => dados.total.receita_p0 === 0 && dados.total.receita_p1 === 0
+// Recorte sem nenhuma linha na Gold (ex.: bairro sem UC da classe escolhida)
+const semReceita = (dados: VariacaoReceita) => !temDados(dados.total)
 const MENSAGEM_VAZIO = 'Nenhuma receita para esses filtros.'
 
 const precoPorKwh = (preco: number | null) => (preco === null ? '—' : `${formatarMoeda(preco)}/kWh`)
 
-function Kpis({ dados }: { dados: VariacaoReceita }) {
-  const { total, periodo_p0, periodo_p1 } = dados
+function Kpis({ dados, total }: { dados: VariacaoReceita; total: DecomposicaoCompleta }) {
+  const { periodo_p0, periodo_p1 } = dados
   const variacaoConsumo = variacaoPercentual(total.kwh_p1, total.kwh_p0)
 
   return (
@@ -73,59 +75,83 @@ function KpisEsqueleto() {
   )
 }
 
-// Quanto do efeito volume vem das UCs com geração própria, quando os dois
-// apontam para o mesmo lado (senão o percentual não faz sentido)
-function parteDaGd({ total, por_gd }: VariacaoReceita) {
-  const comGd = por_gd.find((grupo) => grupo.possui_gd)
-  if (!comGd || total.efeito_volume === 0) {
+type Grupo = VariacaoReceita['por_gd'][number]
+
+// Valor em reais que não quebra linha no meio ("-R$ 8,1 mi")
+const valor = (reais: number) => (
+  <span className="tabular-nums whitespace-nowrap">{formatarMoedaCompactaComSinal(reais)}</span>
+)
+
+// Frase sobre quem puxou o efeito volume, quando os dois grupos têm dados
+function fraseDoVolume(total: DecomposicaoCompleta, comGd?: Grupo, semGd?: Grupo) {
+  if (!comGd || !semGd || !temDados(comGd) || !temDados(semGd) || total.efeito_volume === 0) {
     return undefined
   }
+  // A queda vem só das UCs com geração própria: nas demais, o volume cresceu
+  if (total.efeito_volume < 0 && comGd.efeito_volume < 0 && semGd.efeito_volume >= 0) {
+    return (
+      <>
+        A queda de volume vem das UCs com geração própria ({valor(comGd.efeito_volume)}). Nas demais, o volume
+        cresceu ({valor(semGd.efeito_volume)}).
+      </>
+    )
+  }
   const parte = (comGd.efeito_volume / total.efeito_volume) * 100
-  return parte >= 0 && parte <= 100 ? parte : undefined
+  return parte >= 0 && parte <= 100
+    ? `${formatarNumero(parte)}% do efeito volume vem das UCs com geração própria.`
+    : undefined
 }
 
-function GeracaoPropria({ dados }: { dados: VariacaoReceita }) {
-  const parte = parteDaGd(dados)
-  // Com geração própria primeiro
-  const grupos = [...dados.por_gd].sort((a, b) => Number(b.possui_gd) - Number(a.possui_gd))
+function Grupo({ grupo }: { grupo: Grupo }) {
+  const nome = grupo.possui_gd ? 'Com geração própria' : 'Sem geração própria'
+
+  if (!temDados(grupo)) {
+    return (
+      <div className="flex flex-col gap-1 rounded-md border border-dashed bg-card p-3">
+        <dt className="text-[13px] font-semibold">{nome}</dt>
+        <dd className="text-xs text-muted-foreground">Nenhuma UC neste recorte.</dd>
+      </div>
+    )
+  }
+
+  const variacaoConsumo = variacaoPercentual(grupo.kwh_p1, grupo.kwh_p0)
+  return (
+    <div className="flex flex-col gap-2 rounded-md border bg-card p-3">
+      <dt className="text-[13px] font-semibold">
+        {nome}
+        <span className="font-normal text-muted-foreground">
+          {' '}
+          · {formatarNumero(grupo.ucs_p1)} {grupo.ucs_p1 === 1 ? 'UC' : 'UCs'}
+        </span>
+      </dt>
+      <dd className="grid grid-cols-3 gap-2 text-xs">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground">Consumo medido</span>
+          {variacaoConsumo === undefined ? '—' : <Variacao percentual={variacaoConsumo} />}
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground">Efeito volume</span>
+          <span className="text-[13px]">{valor(grupo.efeito_volume)}</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground">Efeito preço</span>
+          <span className="text-[13px]">{valor(grupo.efeito_preco)}</span>
+        </div>
+      </dd>
+    </div>
+  )
+}
+
+function GeracaoPropria({ dados, total }: { dados: VariacaoReceita; total: DecomposicaoCompleta }) {
+  const comGd = dados.por_gd.find((grupo) => grupo.possui_gd)
+  const semGd = dados.por_gd.find((grupo) => !grupo.possui_gd)
+  const frase = fraseDoVolume(total, comGd, semGd)
 
   return (
     <div className="flex flex-col gap-4">
-      {parte !== undefined && (
-        <p className="text-sm">
-          <span className="font-mono font-semibold">{formatarNumero(parte)}%</span> do efeito volume vem das UCs com
-          geração própria.
-        </p>
-      )}
+      {frase && <p className="text-[15px] leading-relaxed font-medium">{frase}</p>}
       <dl className="flex flex-col gap-3">
-        {grupos.map((grupo) => {
-          const variacaoConsumo = variacaoPercentual(grupo.kwh_p1, grupo.kwh_p0)
-          return (
-            <div key={String(grupo.possui_gd)} className="flex flex-col gap-2 rounded-md border p-3">
-              <dt className="text-[13px] font-semibold">
-                {grupo.possui_gd ? 'Com geração própria' : 'Sem geração própria'}
-                <span className="font-normal text-muted-foreground">
-                  {' '}
-                  · {formatarNumero(grupo.ucs_p1)} UCs
-                </span>
-              </dt>
-              <dd className="grid grid-cols-3 gap-2 text-xs">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted-foreground">Consumo medido</span>
-                  {variacaoConsumo === undefined ? '—' : <Variacao percentual={variacaoConsumo} />}
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted-foreground">Efeito volume</span>
-                  <span className="font-mono text-[13px] whitespace-nowrap">{formatarMoedaCompactaComSinal(grupo.efeito_volume)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted-foreground">Efeito preço</span>
-                  <span className="font-mono text-[13px] whitespace-nowrap">{formatarMoedaCompactaComSinal(grupo.efeito_preco)}</span>
-                </div>
-              </dd>
-            </div>
-          )
-        })}
+        {[comGd, semGd].map((grupo) => grupo && <Grupo key={String(grupo.possui_gd)} grupo={grupo} />)}
       </dl>
     </div>
   )
@@ -165,7 +191,7 @@ function ReceitaPage() {
         mensagemVazio={MENSAGEM_VAZIO}
         esqueleto={<KpisEsqueleto />}
       >
-        {(dados) => <Kpis dados={dados} />}
+        {(dados) => temDados(dados.total) && <Kpis dados={dados} total={dados.total} />}
       </EstadoConsulta>
 
       <div className="grid gap-4 xl:grid-cols-5">
@@ -177,17 +203,25 @@ function ReceitaPage() {
           estaVazio={semReceita}
           mensagemVazio={MENSAGEM_VAZIO}
         >
-          {(dados) => <PonteReceita total={dados.total} />}
+          {(dados) => temDados(dados.total) && <PonteReceita total={dados.total} />}
         </BlocoDados>
+        {/* Bloco de destaque: fundo petróleo claro para se diferenciar dos blocos comuns.
+            Não usa o visual dos insights de IA, que é outro */}
         <BlocoDados
-          className="xl:col-span-2"
+          className="bg-primary/5 ring-primary/25 xl:col-span-2"
+          acao={
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <Lightbulb aria-hidden="true" className="size-3.5" />
+              Destaque
+            </span>
+          }
           titulo="Com e sem geração própria"
           descricao="UCs com painel solar medem menos consumo da distribuidora"
           consulta={consulta}
           estaVazio={semReceita}
           mensagemVazio={MENSAGEM_VAZIO}
         >
-          {(dados) => <GeracaoPropria dados={dados} />}
+          {(dados) => temDados(dados.total) && <GeracaoPropria dados={dados} total={dados.total} />}
         </BlocoDados>
       </div>
 

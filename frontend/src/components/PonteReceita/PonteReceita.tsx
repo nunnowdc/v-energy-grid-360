@@ -1,6 +1,6 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from 'recharts'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
-import type { DecomposicaoReceita } from '@/hooks/use-receita'
+import type { DecomposicaoCompleta } from '@/hooks/use-receita'
 import { formatarMoedaCompacta } from '@/lib/formatacao'
 
 // O eixo já mostra que é R$: o rótulo da barra fica curto ("171,5 mi", "+21,8 mi")
@@ -27,7 +27,7 @@ type Degrau = {
   tipo: keyof typeof configuracao
 }
 
-function degraus({ receita_p0, receita_p1, efeito_volume, efeito_preco }: DecomposicaoReceita): Degrau[] {
+function degraus({ receita_p0, receita_p1, efeito_volume, efeito_preco }: DecomposicaoCompleta): Degrau[] {
   const depoisDoVolume = receita_p0 + efeito_volume
   const efeito = (nome: string, de: number, valor: number): Degrau => ({
     nome,
@@ -67,7 +67,7 @@ function RotuloEixo({ x = 0, y = 0, payload }: PropsRotuloEixo) {
 }
 
 type PonteReceitaProps = {
-  total: DecomposicaoReceita
+  total: DecomposicaoCompleta
 }
 
 // Cascata da receita: parte da receita base, soma o efeito volume e o efeito preço
