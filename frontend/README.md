@@ -66,12 +66,14 @@ src/
 │   ├── EstadoErro/EstadoErro.tsx
 │   ├── EstadoVazio/EstadoVazio.tsx
 │   ├── FaturasEmAberto/FaturasEmAberto.tsx ← faturas pendentes e atrasadas da UC
+│   ├── FilaSuspeitas/FilaSuspeitas.tsx    ← fila de UCs suspeitas com motivos, energia e score
 │   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
 │   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
 │   ├── HistoricosUc/HistoricosUc.tsx      ← abas de faturas, leituras, interrupções e chamados
 │   ├── Layout/Layout.tsx
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
+│   ├── OrdensInspecao/OrdensInspecao.tsx  ← ordens geradas: enviar para campo, concluir, cancelar
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
 │   ├── PonteReceita/PonteReceita.tsx      ← cascata: receita base, efeitos e receita comparada
 │   ├── ReceitaConsumoMensal/ReceitaConsumoMensal.tsx ← receita e consumo por mês, atual × anterior
@@ -83,6 +85,7 @@ src/
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
 │   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
+│   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
 │   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
@@ -91,13 +94,16 @@ src/
 │   ├── causas.ts            ← nome de cada causa de interrupção
 │   ├── classes.ts           ← nome e cor de cada classe de consumo
 │   ├── codigos.ts           ← categorias da Gold como texto de tela (com acento)
+│   ├── motivos.ts           ← motivos da fila de inspeção como texto de tela
 │   ├── navegacao.ts         ← telas do menu (grupo, título e descrição)
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
+│   ├── use-fila-inspecao.ts   ← fila de UCs suspeitas (GET /api/inspections/queue)
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
 │   ├── use-indicadores.ts     ← KPIs da tela Indicadores (GET /api/metrics/general)
 │   ├── use-mobile.ts
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
+│   ├── use-ordens-inspecao.ts ← listar, gerar, mudar e cancelar ordens de inspeção
 │   ├── use-receita.ts         ← efeito preço e volume (GET /api/metrics/revenue-variance)
 │   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
 │   └── use-usuario.ts         ← usuário atual (de teste até o login existir)
@@ -304,6 +310,10 @@ Rotas com exemplo hoje (números inventados):
 | `GET /api/filters/options` | Todas | `src/mocks/opcoes-filtros.ts` | `src/hooks/use-opcoes-filtros.ts` |
 | `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
 | `GET /api/metrics/revenue-variance` | Receita | `src/mocks/receita.ts` | `src/hooks/use-receita.ts` |
+| `GET /api/inspections/queue` | Fila de inspeção | `src/mocks/inspecoes.ts` | `src/hooks/use-fila-inspecao.ts` |
+| `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}` | Fila de inspeção (ordens) | `src/mocks/inspecoes.ts` (ordens só na memória: somem ao recarregar) | `src/hooks/use-ordens-inspecao.ts` |
+
+Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
 
 A Visão 360 já usa a rota real `GET /api/uc/{id}/360`, então precisa do backend e da Gold no banco local (veja `backend/README.md`). Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 

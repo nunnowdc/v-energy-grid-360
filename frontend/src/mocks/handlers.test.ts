@@ -1,10 +1,22 @@
 import { getResponse } from 'msw'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { handlers } from '@/mocks/handlers'
+import { limparOrdens } from '@/mocks/inspecoes'
 
-function buscar(caminho: string) {
-  return getResponse(handlers, new Request(new URL(caminho, location.origin)))
+function buscar(caminho: string, opcoes?: RequestInit) {
+  return getResponse(handlers, new Request(new URL(caminho, location.origin), opcoes))
 }
+
+const enviar = (metodo: string, caminho: string, corpo?: unknown) =>
+  buscar(caminho, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json' },
+    body: corpo === undefined ? undefined : JSON.stringify(corpo),
+  })
+
+beforeEach(() => {
+  limparOrdens()
+})
 
 test('o exemplo de /api/filters/options cobre os 48 meses da base', async () => {
   const resposta = await buscar('/api/filters/options')
@@ -63,4 +75,51 @@ test('cada filtro desce um nível no detalhamento', async () => {
 
   const doBairro = await (await buscar('/api/metrics/revenue-variance?municipio=Olinda&bairro=Rio+Doce'))!.json()
   expect(doBairro.detalhamento.nivel).toBe('classe')
+})
+
+test('a fila de exemplo vem na ordem da prioridade, paginada', async () => {
+  const corpo = await (await buscar('/api/inspections/queue?pagina=2&limite=10'))!.json()
+
+  expect(corpo.itens).toHaveLength(10)
+  expect(corpo.itens[0].prioridade).toBe(11)
+  expect(corpo.total).toBe(corpo.resumo.ucs)
+  const scores = corpo.itens.map((item: { score: number }) => item.score)
+  expect(scores).toEqual([...scores].sort((a, b) => b - a))
+  expect(Math.min(...scores)).toBeGreaterThanOrEqual(20)
+})
+
+test('gerar a ordem marca a UC na fila e a ordem segue aberta → em campo → concluída', async () => {
+  const fila = await (await buscar('/api/inspections/queue?limite=1'))!.json()
+  const idUc = fila.itens[0].id_uc
+
+  const criadas = await (await enviar('POST', '/api/inspections/order', { ids_uc: [idUc, idUc] }))!.json()
+  expect(criadas.ordens).toHaveLength(1)
+  const { id_ordem } = criadas.ordens[0]
+
+  const depois = await (await buscar('/api/inspections/queue?limite=1'))!.json()
+  expect(depois.itens[0].ordem_aberta).toEqual({ id_ordem, status: 'ABERTA' })
+
+  // Não dá para concluir sem passar pelo campo
+  const pulando = await enviar('PATCH', `/api/inspections/${id_ordem}`, {
+    status: 'CONCLUIDA',
+    resultado: 'SEM_IRREGULARIDADE',
+  })
+  expect(pulando!.status).toBe(409)
+
+  await enviar('PATCH', `/api/inspections/${id_ordem}`, { status: 'EM_CAMPO' })
+  const concluida = await (
+    await enviar('PATCH', `/api/inspections/${id_ordem}`, { status: 'CONCLUIDA', resultado: 'IRREGULARIDADE_CONFIRMADA' })
+  )!.json()
+  expect(concluida).toMatchObject({ status: 'CONCLUIDA', resultado: 'IRREGULARIDADE_CONFIRMADA' })
+
+  const ordens = await (await buscar('/api/inspections/orders'))!.json()
+  expect(ordens.itens).toHaveLength(1)
+})
+
+test('cancelar guarda a ordem como cancelada', async () => {
+  const fila = await (await buscar('/api/inspections/queue?limite=1'))!.json()
+  const criadas = await (await enviar('POST', '/api/inspections/order', { ids_uc: [fila.itens[0].id_uc] }))!.json()
+
+  const cancelada = await (await enviar('DELETE', `/api/inspections/${criadas.ordens[0].id_ordem}`))!.json()
+  expect(cancelada.status).toBe('CANCELADA')
 })
