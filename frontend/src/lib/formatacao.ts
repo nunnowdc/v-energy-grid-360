@@ -67,3 +67,19 @@ export function formatarCompetenciaCurta(competencia: string) {
   const [ano, mes] = competencia.split('-')
   return `${mesesAbreviados[Number(mes) - 1]}/${ano.slice(2)}`
 }
+
+// Energia na maior unidade que deixa o número curto: 19.450.000 → "19,5 GWh"
+export function formatarEnergia(kwh: number) {
+  if (Math.abs(kwh) >= 1_000_000) {
+    return `${formatarNumero(kwh / 1_000_000)} GWh`
+  }
+  if (Math.abs(kwh) >= 1_000) {
+    return `${formatarNumero(kwh / 1_000)} MWh`
+  }
+  return formatarKwh(kwh)
+}
+
+// Intervalo de competências: ("2025-07", "2026-06") → "jul/2025 – jun/2026"
+export function formatarPeriodo(inicio: string, fim: string) {
+  return `${formatarCompetencia(inicio)} – ${formatarCompetencia(fim)}`
+}

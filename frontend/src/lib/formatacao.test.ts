@@ -4,11 +4,13 @@ import {
   formatarCompetenciaCurta,
   formatarData,
   formatarDataHora,
+  formatarEnergia,
   formatarKwh,
   formatarMoeda,
   formatarMoedaCompacta,
   formatarNumero,
   formatarPercentualComSinal,
+  formatarPeriodo,
 } from '@/lib/formatacao'
 
 // O Intl separa "R$" do número com um espaço que não quebra linha
@@ -42,4 +44,14 @@ test('datas sem depender do fuso do computador', () => {
 test('kWh e competência curta', () => {
   expect(formatarKwh(1203.5)).toBe('1.203,5 kWh')
   expect(formatarCompetenciaCurta('2025-07')).toBe('jul/25')
+})
+
+test('energia na unidade que deixa o número curto', () => {
+  expect(formatarEnergia(19_450_000)).toBe('19,5 GWh')
+  expect(formatarEnergia(812_300)).toBe('812,3 MWh')
+  expect(formatarEnergia(203)).toBe('203 kWh')
+})
+
+test('período entre duas competências', () => {
+  expect(formatarPeriodo('2025-07', '2026-06')).toBe('jul/2025 – jun/2026')
 })

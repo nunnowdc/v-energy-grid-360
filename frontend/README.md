@@ -72,6 +72,8 @@ src/
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
+│   ├── ReceitaConsumoMensal/ReceitaConsumoMensal.tsx ← receita e consumo por mês, atual × anterior
+│   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
 │   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
 │   ├── RotaInicial/RotaInicial.tsx
 │   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário no rodapé do menu
@@ -90,6 +92,7 @@ src/
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
+│   ├── use-indicadores.ts     ← KPIs da tela Indicadores (GET /api/metrics/general)
 │   ├── use-mobile.ts
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
 │   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
@@ -100,6 +103,7 @@ src/
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
 │   │   ├── query-client.ts  ← configuração do TanStack Query
 │   │   └── sessao.ts        ← sessão expirada (401) leva ao login
+│   ├── comparacao.ts        ← variação percentual entre dois períodos
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   └── utils.ts
@@ -289,7 +293,7 @@ Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde 
 - Quando uma rota real ficar pronta, apague o handler dela.
 - Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
-Rotas com exemplo hoje: `GET /api/filters/options`.
+Rotas com exemplo hoje: `GET /api/filters/options` e `GET /api/metrics/general` (Indicadores, números inventados em `src/mocks/indicadores.ts`). O formato de `/metrics/general` é uma **proposta** ao backend e está descrito em `src/hooks/use-indicadores.ts`.
 
 A Visão 360 já usa a rota real `GET /api/uc/{id}/360`, então precisa do backend e da Gold no banco local (veja `backend/README.md`). Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 
