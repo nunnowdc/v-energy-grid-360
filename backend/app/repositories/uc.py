@@ -2,11 +2,10 @@
 
 from collections.abc import Mapping
 
+from app.exceptions.uc import GoldUnavailableError
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
-
-from app.exceptions.uc import GoldUnavailableError
 
 
 class UCRepository:
