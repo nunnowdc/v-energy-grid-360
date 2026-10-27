@@ -41,7 +41,7 @@ def executar_agente(
         historico:   Lista de turnos anteriores no formato [{"role": "user"/"assistant", "content": "..."}].
         sessao_id:   Identificador único da sessão (gerado automaticamente se None).
         llm:         Cliente LLM (usa padrão com fallback OpenRouter → 9router se None).
-        validador:   Validador SQL (usa StubValidadorSQL se None).
+        validador:   Validador SQL (usa ValidadorSQLGlotPostgres se None).
         executor:    Executor SQL (usa SQLExecutor padrão se None).
         db_url:      URL de conexão ao PostgreSQL (usa DATABASE_URL do env se None).
 
