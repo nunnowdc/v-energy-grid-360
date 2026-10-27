@@ -1,7 +1,7 @@
 """Testes da etapa 2: tabelas, schemas, funções, colunas e complexidade.
 
-Nomes de tabelas: guia_seguranca_agente.md. Colunas pessoais:
-perfil_unidades_consumidoras.md. Tabelas de IA: scripts/criar_tabelas_ia.py.
+Nomes de tabelas e colunas: dicionario_dados_gold.md (camada Gold) e
+guia_seguranca_agente.md. Tabelas de IA: scripts/criar_tabelas_ia.py.
 """
 
 import pytest
@@ -21,12 +21,15 @@ def _bloqueado(sql, *codigos):
 @pytest.mark.parametrize(
     "tabela",
     [
-        "dim_unidade_consumidora", "fact_leituras", "fact_faturamento",
-        "fact_ocorrencias", "fact_atendimentos", "fact_gd", "fact_inspecoes",
-        "fact_perdas", "dim_alimentadores",
+        "agg_continuidade_alimentador", "agg_continuidade_alimentador_anual",
+        "agg_receita_mensal", "agg_receita_preco_volume",
+        "dim_alimentador", "dim_competencia", "dim_geracao_distribuida",
+        "dim_medidor", "dim_unidade_consumidora",
+        "fact_atendimentos", "fact_faturamento", "fact_inspecoes",
+        "fact_leituras", "fact_ocorrencias", "fila_inspecao",
     ],
 )
-def test_tabelas_do_guia_passam(tabela):
+def test_tabelas_da_gold_passam(tabela):
     assert validate_sql(f"SELECT COUNT(*) FROM {tabela}").allowed
 
 
@@ -172,7 +175,7 @@ def test_funcao_extra_pode_ser_liberada():
 
 @pytest.mark.parametrize(
     "coluna",
-    ["cpf_cnpj", "nome_titular", "logradouro", "numero", "cep", "latitude", "longitude"],
+    ["nome_titular", "cpf_cnpj_mascarado", "logradouro", "numero", "cep"],
 )
 def test_colunas_pessoais_reais_da_dim_unidade_consumidora(coluna):
     _bloqueado(f"SELECT {coluna} FROM dim_unidade_consumidora", "COLUMN_NOT_ALLOWED")
@@ -232,3 +235,88 @@ def test_excesso_de_joins():
 def test_joins_dentro_do_limite():
     joins = " ".join(f"CROSS JOIN fact_leituras t{i}" for i in range(3))
     assert validate_sql(f"SELECT COUNT(*) FROM fact_leituras a {joins}").allowed
+
+
+# ---------------- alinhamento com a Gold real (dicionario_dados_gold.md) ----------------
+
+@pytest.mark.parametrize("tabela", ["fact_gd", "fact_perdas", "dim_alimentadores"])
+def test_nomes_que_nao_existem_na_gold_nao_passam(tabela):
+    # Nomes de uma versão antiga do guia. Na Gold: dim_geracao_distribuida,
+    # fila_inspecao e dim_alimentador (singular).
+    _bloqueado(f"SELECT COUNT(*) FROM {tabela}", "TABLE_NOT_ALLOWED")
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT alimentador, dec, fec FROM agg_continuidade_alimentador_anual ORDER BY rank_dec LIMIT 5",
+        "SELECT municipio, bairro, efeito_volume, efeito_preco FROM agg_receita_preco_volume ORDER BY variacao_receita LIMIT 10",
+        "SELECT competencia, SUM(receita_faturada) FROM agg_receita_mensal WHERE classe = 'RESIDENCIAL' GROUP BY competencia",
+        "SELECT COUNT(*) FROM fact_inspecoes WHERE resultado = 'IRREGULARIDADE_CONFIRMADA'",
+        "SELECT u.municipio, COUNT(*) FROM dim_unidade_consumidora u JOIN dim_geracao_distribuida g ON g.id_uc = u.id_uc GROUP BY u.municipio",
+        "SELECT prioridade, id_uc, score, motivo_suspeita, kwh_recuperavel_estimado_ano FROM fila_inspecao ORDER BY prioridade LIMIT 20",
+    ],
+)
+def test_perguntas_de_negocio_com_colunas_reais_passam(sql):
+    assert validate_sql(sql).allowed
+
+
+def test_coordenadas_aproximadas_nao_sao_bloqueadas():
+    # LGPD "BAIXO" no dicionário (2 casas decimais, ~1 km).
+    assert validate_sql("SELECT bairro, AVG(latitude), AVG(longitude) FROM dim_unidade_consumidora GROUP BY bairro").allowed
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT nome_titular, logradouro, numero FROM fila_inspecao",
+        "SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora",
+    ],
+)
+def test_dado_pessoal_da_fila_e_do_cadastro(sql):
+    _bloqueado(sql, "COLUMN_NOT_ALLOWED")
+
+
+# ---------------- SELECT * em tabela com dado pessoal ----------------
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT * FROM dim_unidade_consumidora",
+        "SELECT u.* FROM dim_unidade_consumidora u",
+        "SELECT * FROM fila_inspecao",
+        "SELECT * FROM fila_inspecao ORDER BY prioridade LIMIT 10",
+        "WITH x AS (SELECT * FROM dim_unidade_consumidora) SELECT COUNT(*) FROM x",
+        "SELECT * FROM fact_faturamento f JOIN dim_unidade_consumidora u ON u.id_uc = f.id_uc",
+    ],
+)
+def test_select_star_em_tabela_com_dado_pessoal(sql):
+    _bloqueado(sql, "STAR_NOT_ALLOWED")
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT COUNT(*) FROM dim_unidade_consumidora",
+        "SELECT COUNT(*) FROM fila_inspecao WHERE score >= 50",
+        "SELECT * FROM agg_receita_mensal LIMIT 3",
+        "SELECT * FROM fact_leituras LIMIT 3",
+    ],
+)
+def test_count_star_e_star_em_tabelas_sem_dado_pessoal_passam(sql):
+    assert validate_sql(sql).allowed
+
+
+def test_star_blocked_tables_customizavel():
+    v = SQLValidator(star_blocked_tables=frozenset())
+    assert v.validate("SELECT * FROM dim_unidade_consumidora").code != "STAR_NOT_ALLOWED"
+
+
+# ---------------- troca de perfil dentro do SQL (decisoes_acoplamento, item 3) ----------------
+
+@pytest.mark.parametrize(
+    "sql",
+    ["SET ROLE postgres", "RESET ROLE", "SET search_path TO public", "SELECT set_config('role', 'postgres', false)"],
+)
+def test_set_e_reset_sao_bloqueados(sql):
+    _bloqueado(sql, "NOT_SELECT", "FUNCTION_NOT_ALLOWED")

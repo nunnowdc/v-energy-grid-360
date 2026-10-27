@@ -14,9 +14,19 @@ logger = logging.getLogger("venergy.no_recupera_contexto")
 
 # Mapeamento de rota para categorias de busca prioritárias
 _CATEGORIAS_POR_ROTA = {
-    "sql":   ["glossario", "esquema", "templates"],
-    "rag":   ["glossario", "prodist", "regras_setoriais"],
-    "ambos": ["glossario", "esquema", "prodist", "templates"],
+    "sql": [
+        "glossario", "esquema", "templates",
+        "dicionario_gold", "decisoes_negocio", "perfis_dados"
+    ],
+    "rag": [
+        "glossario", "prodist", "regras_setoriais",
+        "decisoes_negocio", "lgpd", "outros_relatorios"
+    ],
+    "ambos": [
+        "glossario", "esquema", "prodist", "templates",
+        "dicionario_gold", "decisoes_negocio", "lgpd",
+        "perfis_dados", "outros_relatorios"
+    ],
 }
 
 

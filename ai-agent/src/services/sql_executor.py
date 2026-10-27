@@ -8,7 +8,9 @@ import logging
 import os
 import re
 import sqlite3
+import sys
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
@@ -179,3 +181,37 @@ class SQLExecutor:
                 erro=str(e),
                 tempo_execucao_ms=(time.time() - inicio) * 1000,
             )
+
+
+def _testar_conexao_configurada() -> int:
+    """Testa a conexão PostgreSQL configurada no arquivo .env."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        print("Erro: instale a dependência python-dotenv antes de executar o teste.")
+        return 1
+
+    raiz_projeto = Path(__file__).resolve().parents[3]
+    load_dotenv(raiz_projeto / ".env")
+    db_url = os.getenv("DATABASE_URL")
+
+    if not db_url:
+        print(f"Erro: DATABASE_URL não encontrada em {raiz_projeto / '.env'}.")
+        return 1
+
+    resultado = SQLExecutor(db_url=db_url).executar(
+        "SELECT current_user AS usuario, current_database() AS banco, "
+        "inet_server_addr() AS host, inet_server_port() AS porta"
+    )
+
+    if not resultado.sucesso:
+        print(f"Falha na conexão PostgreSQL: {resultado.erro}")
+        return 1
+
+    print("Conexão PostgreSQL realizada com sucesso.")
+    print(resultado.linhas[0])
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_testar_conexao_configurada())

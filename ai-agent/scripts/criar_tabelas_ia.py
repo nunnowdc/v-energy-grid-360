@@ -7,6 +7,9 @@ from __future__ import annotations
 import os
 import sys
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DDL_TABELAS = """
 -- Extensão vetorial para o RAG

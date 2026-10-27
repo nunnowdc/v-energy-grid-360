@@ -5,17 +5,17 @@ Valida contratos de entrada/saída, bypasses de economia de tokens e tratamento 
 from __future__ import annotations
 
 import pytest
-from ai_agent.src.interfaces.stub_validador_sql import StubValidadorSQL
-from ai_agent.src.services.sql_executor import SQLExecutor
-from ai_agent.src.nos.no_completa_followup import no_completa_followup
-from ai_agent.src.nos.no_checa_escopo import no_checa_escopo, rota_pos_escopo
-from ai_agent.src.nos.no_roteador_consulta import no_roteador_consulta, rota_pos_roteador
-from ai_agent.src.nos.no_escreve_sql import no_escreve_sql
-from ai_agent.src.nos.no_valida_sql import no_valida_sql, rota_pos_validacao
-from ai_agent.src.nos.no_executa_sql import no_executa_sql, rota_pos_execucao
-from ai_agent.src.nos.no_recusa_honesta import no_recusa_honesta
-from ai_agent.src.nos.no_sintetiza_resposta import no_sintetiza_resposta
-from ai_agent.src.nos.no_finaliza_auditoria import no_finaliza_auditoria
+from src.interfaces.stub_validador_sql import StubValidadorSQL
+from src.services.sql_executor import SQLExecutor
+from src.nos.no_completa_followup import no_completa_followup
+from src.nos.no_checa_escopo import no_checa_escopo, rota_pos_escopo
+from src.nos.no_roteador_consulta import no_roteador_consulta, rota_pos_roteador
+from src.nos.no_escreve_sql import no_escreve_sql
+from src.nos.no_valida_sql import no_valida_sql, rota_pos_validacao
+from src.nos.no_executa_sql import no_executa_sql, rota_pos_execucao
+from src.nos.no_recusa_honesta import no_recusa_honesta
+from src.nos.no_sintetiza_resposta import no_sintetiza_resposta
+from src.nos.no_finaliza_auditoria import no_finaliza_auditoria
 
 
 # ── Nó 2: Follow-up ──────────────────────────────────────────────────────────
