@@ -38,7 +38,7 @@ function BuscaUc({ idAtual = '' }: BuscaUcProps) {
           placeholder="Ex.: UC100000"
           value={texto}
           onChange={(evento) => setTexto(evento.target.value)}
-          className="h-9 w-full bg-card font-mono uppercase placeholder:font-sans placeholder:normal-case sm:w-56"
+          className="h-9 w-full bg-card tabular-nums uppercase placeholder:normal-case sm:w-56"
         />
         <Button type="submit" className="h-9">
           <Search />

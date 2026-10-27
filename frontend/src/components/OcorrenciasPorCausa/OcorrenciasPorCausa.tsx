@@ -19,7 +19,7 @@ function OcorrenciasPorCausa({ porCausa }: OcorrenciasPorCausaProps) {
           <div className="flex items-baseline justify-between gap-3 text-[13px]">
             <span className="font-medium">{rotuloCausa(causa)}</span>
             <span>
-              <span className="font-mono font-semibold">{formatarNumero(ocorrencias)}</span>
+              <span className="tabular-nums font-semibold">{formatarNumero(ocorrencias)}</span>
               <span className="ml-1.5 text-xs text-muted-foreground">
                 {total > 0 ? `${formatarNumero((ocorrencias / total) * 100)}%` : ''}
               </span>

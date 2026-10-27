@@ -10,7 +10,7 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [Tailwind CSS](https://tailwindcss.com/) v4 (estilos)
 - [shadcn/ui](https://ui.shadcn.com/) com [Base UI](https://base-ui.com/) (componentes de interface)
 - [Lucide](https://lucide.dev/) (ícones)
-- [IBM Plex Sans e IBM Plex Mono](https://www.ibm.com/plex/) (tipografia)
+- [Inter](https://rsms.me/inter/) (tipografia)
 - [TanStack Query](https://tanstack.com/query) (chamadas à API, cache e estados de carregamento)
 - [Recharts](https://recharts.org/) pelo componente `chart` do shadcn/ui (gráficos)
 
@@ -107,7 +107,7 @@ src/
 │   ├── use-mobile.ts
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
 │   ├── use-ordens-inspecao.ts ← listar, gerar, mudar e cancelar ordens de inspeção
-│   ├── use-receita.ts         ← efeito preço e volume (GET /api/metrics/revenue-variance)
+│   ├── use-receita.ts         ← efeito preço e volume (GET /api/metrics/revenue-variance, rota real)
 │   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
 │   └── use-usuario.ts         ← usuário atual (de teste até o login existir)
 ├── lib/
@@ -149,8 +149,8 @@ Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o
 
 ### Tipografia
 
-- **IBM Plex Sans** (`font-sans`, o padrão) para textos.
-- **IBM Plex Mono** (`font-mono`) para números de KPI, variações e rótulos técnicos, como os grupos do menu e o selo da base. Os números ficam alinhados e com cara de painel técnico.
+- **Inter** (`font-sans`, o padrão) para todo o portal. É a fonte mais usada em painéis web e foi desenhada para telas.
+- Números (KPIs, variações, tabelas) e códigos (UC, alimentador) na mesma fonte do texto, com a classe `tabular-nums`: todos os dígitos têm a mesma largura, então os valores ficam alinhados em coluna. O portal não usa fonte mono.
 
 Regras:
 
@@ -311,7 +311,6 @@ Rotas com exemplo hoje (números inventados):
 | Rota | Tela | Exemplo | Formato (proposta ao backend) |
 |---|---|---|---|
 | `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
-| `GET /api/metrics/revenue-variance` | Receita | `src/mocks/receita.ts` | `src/hooks/use-receita.ts` |
 | `GET /api/network/continuity` | Continuidade | `src/mocks/continuidade.ts` | `src/hooks/use-continuidade.ts` |
 | `GET /api/inspections/queue` | Fila de inspeção | `src/mocks/inspecoes.ts` | `src/hooks/use-fila-inspecao.ts` |
 | `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}` | Fila de inspeção (ordens) | `src/mocks/inspecoes.ts` (ordens só na memória: somem ao recarregar) | `src/hooks/use-ordens-inspecao.ts` |
@@ -321,6 +320,7 @@ Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
 Rotas que já são reais e precisam do backend com a Gold no banco local (veja `backend/README.md`):
 
 - `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 
 ## Testes automatizados

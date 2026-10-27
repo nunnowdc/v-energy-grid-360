@@ -104,7 +104,7 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
               </TabsTrigger>
               <TabsTrigger value="ordens" className="px-3">
                 Ordens de inspeção
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="tabular-nums text-xs text-muted-foreground">
                   {formatarNumero(ordens.data?.itens.length ?? 0)}
                 </span>
               </TabsTrigger>

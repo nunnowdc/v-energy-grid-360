@@ -19,7 +19,7 @@ function Paginacao({ pagina, limite, total, nomeItens, aoMudar, desabilitado }: 
 
   return (
     <div className="flex items-center justify-between gap-3 pt-3 text-[13px] text-muted-foreground">
-      <span className="font-mono">
+      <span className="tabular-nums">
         {primeiro}–{ultimo} de {formatarNumero(total)} {nomeItens}
       </span>
       <div className="flex items-center gap-1">

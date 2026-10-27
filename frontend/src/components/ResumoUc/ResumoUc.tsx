@@ -34,7 +34,7 @@ function ResumoUc({ dados }: ResumoUcProps) {
     <div className="grid gap-4 lg:grid-cols-4">
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardDescription className="font-mono text-xs tracking-wider uppercase">
+          <CardDescription className="tabular-nums text-xs tracking-wider uppercase">
             Unidade consumidora · {uc.id_uc}
           </CardDescription>
           <CardTitle className="text-xl font-semibold">{uc.nome_titular ?? 'Titular não informado'}</CardTitle>
@@ -67,7 +67,7 @@ function ResumoUc({ dados }: ResumoUcProps) {
                 {medidor.tipo_medidor_atual ? textoDoCodigo(medidor.tipo_medidor_atual) : '—'}
               </Campo>
               <Campo rotulo="Modelo">
-                <span className="font-mono">{medidor.modelo_medidor_atual ?? '—'}</span>
+                <span className="tabular-nums">{medidor.modelo_medidor_atual ?? '—'}</span>
               </Campo>
               <Campo rotulo="Instalado em">
                 {medidor.data_instalacao_medidor_atual ? formatarData(medidor.data_instalacao_medidor_atual) : '—'}
@@ -90,7 +90,7 @@ function ResumoUc({ dados }: ResumoUcProps) {
           {gd.possui_gd ? (
             <dl className="grid gap-2">
               <Campo rotulo="Potência">
-                <span className="font-mono">
+                <span className="tabular-nums">
                   {gd.potencia_gd_kwp === null ? '—' : `${formatarNumero(gd.potencia_gd_kwp)} kWp`}
                 </span>
               </Campo>

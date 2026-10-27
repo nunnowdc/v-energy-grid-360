@@ -40,7 +40,8 @@ test('mostra a fila na prioridade da base, com os motivos em texto', async () =>
   expect(String(fetch.mock.calls[0][0])).toContain('/api/inspections/queue?pagina=1&limite=20&municipio=Recife')
   const [primeiraUc] = screen.getAllByRole('link', { name: /^UC9\d{5}$/ })
   expect(primeiraUc).toHaveAttribute('href', expect.stringMatching(/^\/visao-360\/UC9/))
-  expect(screen.getAllByText(/· Recife/)).not.toHaveLength(0)
+  // Filtrada por Recife: só aparece esse município
+  expect(within(screen.getByRole('table')).getAllByText('Recife')).toHaveLength(20)
   expect(screen.queryByText(/eletromecanico/)).not.toBeInTheDocument()
 })
 

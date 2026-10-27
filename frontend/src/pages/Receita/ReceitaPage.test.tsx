@@ -9,6 +9,20 @@ import { renderizar } from '@/test/renderizar'
 // O gráfico precisa medir a tela, o que o jsdom não faz
 vi.mock('@/components/PonteReceita/PonteReceita', () => ({ default: () => null }))
 
+// Recorte sem nenhuma linha na Gold: a API manda tudo nulo
+const vazio: DecomposicaoReceita = {
+  receita_p0: null,
+  receita_p1: null,
+  kwh_p0: null,
+  kwh_p1: null,
+  ucs_p0: null,
+  ucs_p1: null,
+  preco_p0: null,
+  preco_p1: null,
+  efeito_volume: null,
+  efeito_preco: null,
+}
+
 const decomposicao = (valores: Partial<DecomposicaoReceita>): DecomposicaoReceita => ({
   receita_p0: 100_000_000,
   receita_p1: 110_000_000,
@@ -75,7 +89,7 @@ test('mostra os períodos fixos, os KPIs e a parte das UCs com geração própri
   expect(screen.getAllByText('+10,0%', { exact: false })).not.toHaveLength(0)
   expect(screen.getByText('Consumo medido -4,0%')).toBeInTheDocument()
   // 3 mi de 4 mi de efeito volume
-  expect(screen.getByText('75%')).toBeInTheDocument()
+  expect(screen.getByText('75% do efeito volume vem das UCs com geração própria.')).toBeInTheDocument()
 })
 
 test('manda os filtros escolhidos', async () => {
@@ -106,4 +120,44 @@ test('a trilha volta um nível', async () => {
   const trilha = await screen.findByRole('navigation', { name: 'Nível do detalhamento' })
   fireEvent.click(within(trilha).getByRole('button', { name: 'Recife' }))
   await waitFor(() => expect(enderecosChamados(fetch)).toContain('/api/metrics/revenue-variance?municipio=Recife'))
+})
+
+test('quando só as UCs com geração própria perdem volume, a frase conta isso', async () => {
+  responderCom({
+    ...receita,
+    por_gd: [
+      { possui_gd: false, ...decomposicao({ efeito_volume: 1_000_000 }) },
+      { possui_gd: true, ...decomposicao({ efeito_volume: -5_000_000 }) },
+    ],
+  })
+  abrir('/receita')
+
+  expect(await screen.findByText(/A queda de volume vem das UCs com geração própria/)).toBeInTheDocument()
+})
+
+test('bairro sem UC com geração própria mostra o grupo vazio, sem zeros', async () => {
+  responderCom({
+    ...receita,
+    por_gd: [{ possui_gd: false, ...decomposicao({}) }, { possui_gd: true, ...vazio }],
+  })
+  abrir('/receita?municipio=Recife&bairro=Pina')
+
+  expect(await screen.findByText('Nenhuma UC neste recorte.')).toBeInTheDocument()
+  expect(screen.queryByText(/do efeito volume vem/)).not.toBeInTheDocument()
+})
+
+test('recorte sem dados na base avisa em vez de mostrar zeros', async () => {
+  responderCom({
+    ...receita,
+    total: vazio,
+    por_gd: [
+      { possui_gd: false, ...vazio },
+      { possui_gd: true, ...vazio },
+    ],
+    detalhamento: { nivel: 'classe', linhas: [] },
+  })
+  abrir('/receita?municipio=Recife&bairro=Pina&classe=RURAL')
+
+  expect(await screen.findAllByText('Nenhuma receita para esses filtros.')).toHaveLength(4)
+  expect(screen.queryByText(/R\$/)).not.toBeInTheDocument()
 })

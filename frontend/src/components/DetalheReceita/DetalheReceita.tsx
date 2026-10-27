@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import TabelaDecomposicao from '@/components/TabelaDecomposicao/TabelaDecomposicao'
 import { classesConsumo, ehClasseConsumo } from '@/config/classes'
-import type { NivelDetalhe, VariacaoReceita } from '@/hooks/use-receita'
+import { temDados, type DecomposicaoCompleta, type NivelDetalhe, type VariacaoReceita } from '@/hooks/use-receita'
 
 const nomeColuna: Record<NivelDetalhe, string> = {
   municipio: 'Município',
@@ -30,7 +30,10 @@ const textoDaLinha = (nivel: NivelDetalhe, nome: string) =>
 // Clicar numa linha desce um nível (município › bairro › classe)
 function DetalheReceita({ detalhamento, trilha, aoDescer }: DetalheReceitaProps) {
   const { nivel } = detalhamento
-  const ordenadas = [...detalhamento.linhas].sort((a, b) => a.efeito_volume - b.efeito_volume)
+  // Linha sem dados não entra (a Gold não costuma mandar, mas o formato permite)
+  const ordenadas = detalhamento.linhas
+    .filter((linha): linha is typeof linha & DecomposicaoCompleta => temDados(linha))
+    .sort((a, b) => a.efeito_volume - b.efeito_volume)
 
   return (
     <div className="flex flex-col gap-3">
