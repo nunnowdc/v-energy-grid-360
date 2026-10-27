@@ -36,7 +36,7 @@
     "sql_esperado": "SELECT u.municipio, SUM(l.consumo_kwh) AS consumo_total FROM fact_leituras l JOIN dim_unidade_consumidora u ON l.id_uc = u.id_uc WHERE l.ano = 2023 GROUP BY u.municipio ORDER BY consumo_total DESC LIMIT 5",
     "tabelas_obrigatorias": ["fact_leituras", "dim_unidade_consumidora"],
     "colunas_obrigatorias": ["consumo_kwh", "id_uc", "municipio", "ano"],
-    "termos_obrigatorios_resposta": ["volume"],
+    "termos_obrigatorios_resposta": ["consumo", "municípios"],
     "deve_recusar": false
   },
   {

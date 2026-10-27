@@ -251,3 +251,21 @@ def test_no_finaliza_auditoria():
 
     assert resultado["audit_id"] == "test-uuid-001"
     assert resultado["tempo_total_ms"] > 0
+
+
+def test_no_finaliza_auditoria_desativada_nao_monta_ou_registra_amostra(caplog):
+    """Execução opt-in pode omitir auditoria sem logar dados retornados do banco."""
+    estado = {
+        "audit_id": "test-uuid-002",
+        "tempo_inicio_ts": 1000.0,
+        "dados_sql": [{"nome_titular": "Cliente confidencial"}],
+    }
+
+    resultado = no_finaliza_auditoria(
+        estado,
+        db_url="postgresql://localhost/v_energy",
+        persistir=False,
+    )
+
+    assert resultado["audit_id"] == "test-uuid-002"
+    assert "Cliente confidencial" not in caplog.text

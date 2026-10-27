@@ -32,6 +32,7 @@ def executar_agente(
     validador: Optional[ValidadorSQLInterface] = None,
     executor: Optional[SQLExecutor] = None,
     db_url: Optional[str] = None,
+    persistir_auditoria: bool = True,
 ) -> RespostaAgente:
     """
     Executa o agente V-Energy Grid 360 ponta a ponta e retorna um schema Pydantic estruturado.
@@ -44,6 +45,7 @@ def executar_agente(
         validador:   Validador SQL (usa StubValidadorSQL se None).
         executor:    Executor SQL (usa SQLExecutor padrão se None).
         db_url:      URL de conexão ao PostgreSQL (usa DATABASE_URL do env se None).
+        persistir_auditoria: Se False, omite a persistência e log de amostras da auditoria.
 
     Returns:
         RespostaAgente: Contrato padronizado com resposta, SQL, dados, selo e auditoria.
@@ -56,6 +58,7 @@ def executar_agente(
         validador=validador,
         executor=executor,
         db_url=db_url,
+        persistir_auditoria=persistir_auditoria,
     )
 
     estado_inicial = inicializar(

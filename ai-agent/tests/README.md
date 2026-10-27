@@ -14,6 +14,8 @@ bancos.
 | `test_sql_executor.py` | Consultas e agregações sobre os dados sintéticos, joins, limite de linhas, captura de erros e configuração do executor PostgreSQL. |
 | `test_postgres_fixtures.py` | Seleção de PostgreSQL/SQLite, isolamento de `DATABASE_URL`, preservação de `TEST_DATABASE_URL` e tratamento de falhas no setup PostgreSQL. |
 | `test_avaliacao_golden_set.py` | Avaliação ponta a ponta de 12 casos de `golden_dataset/golden_dataset.json`, incluindo execução SQL, tabelas identificadas via AST, recusas e consumo de tokens. |
+| `test_avaliacao_golden_set_openrouter.py` | Avaliação manual e opt-in com OpenRouter e Gold PostgreSQL real. Executa os seis casos SQL e as três recusas; os três casos RAG ficam explicitamente pendentes até a infraestrutura vetorial estar pronta. |
+| `test_real_llm_eval_support.py` | Testes determinísticos das barreiras de OpenRouter, SQL agregado e limite mínimo amostral usadas pela avaliação real. |
 
 Os testes do validador de segurança também existem em
 `ai-agent/security/tests/`; eles ficam fora de `ai-agent/tests` e podem ser
@@ -152,6 +154,72 @@ não cobrem todas as diferenças do PostgreSQL.
   atuais não fazem gravação real de auditoria em PostgreSQL.
 - `FakeClienteLLM` e os mocks específicos simulam respostas e chamadas de LLM;
   os testes comuns não dependem de provedor de IA externo.
+
+## Avaliação real via OpenRouter
+
+O teste padrão do Golden Dataset continua usando LLM fake e dados sintéticos.
+Para uma chamada real, há um runner separado e opt-in. Ele usa o modelo
+configurado em `MODELO_LLM_PRIMARIO` (padrão
+`google/gemini-2.5-flash-lite`) e exige `OPENROUTER_API_KEY`. As chamadas não
+fazem fallback para 9router ou mock; uma falha no OpenRouter interrompe a
+avaliação. O limite é de 60 chamadas OpenRouter por execução.
+
+No PowerShell, configure as variáveis no mesmo terminal e rode o comando a
+partir da raiz do repositório:
+
+```powershell
+$env:OPENROUTER_API_KEY="<sua-chave OpenRouter>"
+$env:LLM_MOCK_MODE="false"
+$env:AI_AGENT_GOLD_DATABASE_URL="postgresql://<usuario_leitura>:<senha>@localhost:5432/<banco>"
+$env:AI_AGENT_GOLD_SCHEMA="public"
+$env:AI_AGENT_RUN_REAL_LLM="1"
+python -m pytest ai-agent/tests/test_avaliacao_golden_set_openrouter.py -v -s
+```
+
+Mantenha a chave apenas no ambiente local; não a escreva no código, em arquivo
+versionado ou no chat. Configure também um teto de gastos na conta OpenRouter:
+o runner informa os tokens reportados pelo provedor, mas não calcula o custo em
+dinheiro.
+
+O teste consulta o PostgreSQL existente em modo somente leitura e não cria nem
+remove tabelas/schemas, nem grava auditoria. Use um usuário de banco com
+permissão somente de leitura. **Não** aponte `TEST_DATABASE_URL` para a Gold:
+essa variável é usada pelas fixtures sintéticas que criam e removem um schema.
+`AI_AGENT_GOLD_DATABASE_URL` é a conexão separada do runner real.
+
+O runner envia ao OpenRouter a pergunta e os prompts do agente, que incluem o
+schema SQL autorizado. Os resultados do banco só são usados na etapa de síntese
+depois de passarem por validação: apenas tabelas Gold autorizadas, agregações e
+dimensões não identificáveis; sem projeção de identificadores ou registros
+individuais; cada grupo precisa retornar `sample_size` de pelo menos 10
+UCs/registros. Grupos menores são suprimidos antes de chamar o LLM. Se não for
+possível comprovar o limite, o resultado não é compartilhado e o caso falha.
+O runner não imprime SQL nem valores retornados pelo banco.
+
+O relatório mostra execução SQL, correspondência de tabelas, cobertura de
+termos, recusas, tokens e chamadas. As métricas de qualidade são informativas;
+SQL inseguro, erros do provedor/configuração, impossibilidade de validar a
+amostra mínima e falhas nas recusas esperadas reprovam a execução. Com
+`AI_AGENT_RUN_REAL_LLM` ausente, o teste é ignorado. Depois de uma execução
+opt-in, remova as variáveis locais quando terminar:
+
+```powershell
+Remove-Item Env:OPENROUTER_API_KEY
+Remove-Item Env:AI_AGENT_GOLD_DATABASE_URL
+Remove-Item Env:AI_AGENT_GOLD_SCHEMA
+Remove-Item Env:AI_AGENT_RUN_REAL_LLM
+```
+
+### Casos RAG reais em standby
+
+Os três casos RAG não são executados pelo runner OpenRouter até a infraestrutura
+estar pronta. O ambiente verificado ainda não declara/instala
+`sentence-transformers`, não confirma `tb_conhecimento_vetorial` indexada no
+PostgreSQL Gold, e o grafo não oferece injeção do buscador nem controle para
+desabilitar auditoria no banco. A avaliação não instala pacotes, cria tabelas
+ou popula vetores automaticamente. Quando esses requisitos estiverem
+implementados, a busca vetorial deverá ser read-only e a auditoria deverá
+permanecer desativada ou isolada do banco Gold antes de incluir esses casos.
 
 ## Golden Dataset
 
