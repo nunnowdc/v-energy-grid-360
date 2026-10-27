@@ -41,8 +41,8 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 | `ADMIN_TI` | Conta técnica da TI e dos desenvolvedores | Todas, mais a criação de contas |
 
 - Diretor e diretor comercial usam o mesmo perfil, `DIRETORIA`.
-- ⚠️ A Diretoria também vê a Continuidade, porque acompanha a qualidade do serviço, que gera multas regulatórias. Hoje o plano do backend libera essa rota só para Operação.
-- ⚠️ Perdas também vê a Visão 360, para investigar a unidade consumidora suspeita. No backend, isso ainda é uma proposta.
+- A Diretoria também vê a Continuidade, porque acompanha a qualidade do serviço, que gera multas regulatórias.
+- Perdas também vê a Visão 360, para investigar a unidade consumidora suspeita.
 - A Diretoria não vê a Visão 360 (dados pessoais de clientes) nem a Fila de inspeção (ações operacionais), seguindo a LGPD e o princípio do menor privilégio.
 - `ADMIN_TI` não é um cargo do case: é uma conta técnica para administrar o portal.
 - As contas são pré-cadastradas pelo `ADMIN_TI`, sem cadastro público. A troca de senha é opcional.
@@ -50,12 +50,15 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 
 ### Dados e telas
 
-- **Receita:** compara o primeiro ano da base (jul/2022 a jun/2023) com os últimos 12 meses (jul/2025 a jun/2026), os dois períodos calculados na Gold. A escolha livre de períodos fica para depois.
+- **Receita:** compara o primeiro ano da base (jul/2022 a jun/2023) com os últimos 12 meses (jul/2025 a jun/2026), os dois períodos calculados na Gold. Os períodos aparecem só como texto, sem escolha livre no MVP.
 - **Volume:** é o consumo medido nas leituras, porque as faturas não trazem kWh.
-- **"Hoje":** é o último mês da base (jun/2026), nunca a data do computador. Sem período escolhido, as telas mostram os últimos 12 meses da base.
+- **"Hoje":** é o último mês da base (jun/2026), nunca a data do computador.
+- **Períodos:** Indicadores e Continuidade mostram os últimos 3, 6 ou 12 meses da base (padrão 12). Os Indicadores comparam com os mesmos meses imediatamente anteriores.
 - **Gold:** no MVP, é um retrato fixo carregado no PostgreSQL local, sem atualização.
-- ⚠️ **Decomposição preço × volume:** a fórmula final (a da Gold ou Shapley) ainda será decidida.
-- **Dados de exemplo:** enquanto a Gold não está no banco, o frontend usa dados de exemplo (MSW), só no `npm run dev`. Eles nunca vêm da base real (veja `frontend/README.md`).
+- **Decomposição preço × volume:** usa a fórmula publicada na Gold: efeito-volume = (kWh P1 − kWh P0) × preço P0, e efeito-preço = (preço P1 − preço P0) × kWh P1. A decomposição de Shapley do diagnóstico fica fora do MVP.
+- **Filtros:** um valor por filtro. A Continuidade filtra por alimentador e causa: o município limita os alimentadores mostrados, e a causa filtra só as ocorrências. DEC e FEC são sempre do alimentador inteiro, nunca de um município ou de uma causa.
+- ⚠️ **Motivo da suspeita:** a Fila de inspeção ainda não filtra por motivo, porque a Gold guarda vários motivos no mesmo texto. Depende de uma lista de motivos da Engenharia de Dados.
+- **Dados de exemplo:** enquanto o backend não tem todas as rotas, o frontend usa dados de exemplo (MSW), só no `npm run dev`. Eles nunca vêm da base real (veja `frontend/README.md`).
 
 ## Fluxo de trabalho (Git Flow)
 
