@@ -7,11 +7,24 @@ import operator
 from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict
 from pydantic import BaseModel, Field
 
+CategoriaDocumentoContexto = Literal[
+    "glossario",
+    "esquema",
+    "prodist",
+    "templates",
+    "perfis_dados",
+    "dicionario_gold",
+    "decisoes_negocio",
+    "regras_setoriais",
+    "lgpd",
+    "outros_relatorios",
+]
+
 
 class DocumentoContexto(BaseModel):
     """Representa um fragmento de documento ou esquema recuperado pelo RAG."""
     id: str
-    categoria: Literal["glossario", "esquema", "prodist", "templates"]
+    categoria: CategoriaDocumentoContexto
     titulo: str
     conteudo: str
     fonte: str

@@ -210,16 +210,68 @@ Remove-Item Env:AI_AGENT_GOLD_SCHEMA
 Remove-Item Env:AI_AGENT_RUN_REAL_LLM
 ```
 
-### Casos RAG reais em standby
+### Avaliação RAG real via OpenRouter
 
-Os três casos RAG não são executados pelo runner OpenRouter até a infraestrutura
-estar pronta. O ambiente verificado ainda não declara/instala
-`sentence-transformers`, não confirma `tb_conhecimento_vetorial` indexada no
-PostgreSQL Gold, e o grafo não oferece injeção do buscador nem controle para
-desabilitar auditoria no banco. A avaliação não instala pacotes, cria tabelas
-ou popula vetores automaticamente. Quando esses requisitos estiverem
-implementados, a busca vetorial deverá ser read-only e a auditoria deverá
-permanecer desativada ou isolada do banco Gold antes de incluir esses casos.
+Os casos RAG têm um runner independente para não exigir o banco vetorial ao
+executar a avaliação SQL. O runner avalia TC-007 e TC-008 por meio do grafo
+existente, usando `AI_AGENT_RAG_DATABASE_URL` para a base pgvector separada.
+Antes de chamar o OpenRouter, valida a extensão, a tabela, os embeddings e se
+cada pergunta recupera ao menos um trecho. A auditoria é desativada durante a
+avaliação. Use uma conta PostgreSQL somente leitura.
+
+TC-009 permanece pendente: o corpus atualmente indexado não contém fonte sobre
+os critérios de compensação financeira por violação de continuidade. O runner
+não altera o corpus nem contabiliza esse caso como aprovado ou reprovado.
+
+O `sentence-transformers` e o modelo de embeddings precisam estar disponíveis
+no mesmo ambiente Python usado para pytest. Ative o ambiente virtual do projeto
+antes de instalar o pacote, se aplicável:
+
+```powershell
+python -m pip install sentence-transformers
+```
+
+Configure as variáveis no mesmo PowerShell e execute da raiz do repositório:
+
+```powershell
+$env:OPENROUTER_API_KEY="<sua-chave OpenRouter>"
+$env:MODELO_LLM_PRIMARIO="<provedor/modelo>"
+$env:LLM_MOCK_MODE="false"
+$env:AI_AGENT_RAG_DATABASE_URL="postgresql://<usuario_leitura>:<senha>@localhost:5433/v_energy_rag"
+$env:AI_AGENT_RUN_REAL_RAG="1"
+python -m pytest ai-agent/tests/test_avaliacao_rag_openrouter.py -v -s
+```
+
+O runner não precisa de `AI_AGENT_GOLD_DATABASE_URL`: estes casos consultam
+somente a base vetorial. Durante a avaliação, a conexão RAG é aplicada
+temporariamente a `DATABASE_URL`, que é o nome usado pelo buscador existente.
+Não configure `AI_AGENT_RAG_DATABASE_URL` com a URL da Gold.
+
+A avaliação exige OpenRouter estrito (sem fallback para 9router/mock) e
+respeita o limite de chamadas do cliente live. Configure também um teto de
+gastos na conta OpenRouter. O relatório mostra apenas contagens, métricas e
+tokens; não imprime o conteúdo dos trechos recuperados nem a resposta integral.
+As perguntas e os trechos recuperados são enviados ao provedor, portanto
+confirme que o corpus pode ser compartilhado antes da execução.
+
+A execução falha se pgvector/tabela/embeddings estiverem indisponíveis ou se
+algum caso habilitado não recuperar contexto, não produzir uma resposta RAG com
+fonte ou não fizer chamada real ao OpenRouter. Cobertura dos termos esperados e
+presença textual da fonte são métricas informativas. Sem
+`AI_AGENT_RUN_REAL_RAG=1`, o teste é ignorado. Não execute junto com o runner
+SQL sem considerar que são avaliações distintas e podem consumir chamadas
+pagas.
+
+Depois da execução, remova as variáveis para evitar chamadas acidentais em
+outras execuções de pytest:
+
+```powershell
+Remove-Item Env:OPENROUTER_API_KEY
+Remove-Item Env:MODELO_LLM_PRIMARIO
+Remove-Item Env:LLM_MOCK_MODE
+Remove-Item Env:AI_AGENT_RAG_DATABASE_URL
+Remove-Item Env:AI_AGENT_RUN_REAL_RAG
+```
 
 ## Golden Dataset
 

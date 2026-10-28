@@ -38,7 +38,7 @@ function AppSidebar() {
                 <span className="truncate text-[15px] font-bold text-sidebar-accent-foreground">
                   V-Energy
                 </span>
-                <span className="truncate font-mono text-[11px] tracking-[0.15em] text-sidebar-muted">
+                <span className="truncate tabular-nums text-[11px] tracking-[0.15em] text-sidebar-muted">
                   GRID 360
                 </span>
               </div>
@@ -57,7 +57,7 @@ function AppSidebar() {
 
           return (
             <SidebarGroup key={grupo}>
-              <SidebarGroupLabel className="font-mono text-[11px] tracking-[0.1em] text-sidebar-muted uppercase">
+              <SidebarGroupLabel className="tabular-nums text-[11px] tracking-[0.1em] text-sidebar-muted uppercase">
                 {grupo}
               </SidebarGroupLabel>
               <SidebarGroupContent>

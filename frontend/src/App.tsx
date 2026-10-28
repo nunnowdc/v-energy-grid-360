@@ -41,7 +41,8 @@ function App() {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-      <ReactQueryDevtools />
+      {/* No canto esquerdo: à direita ficaria em cima do botão de enviar do agente */}
+      <ReactQueryDevtools buttonPosition="bottom-left" />
     </QueryClientProvider>
   )
 }

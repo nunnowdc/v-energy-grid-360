@@ -9,3 +9,5 @@ fastapi>=0.111.0
 uvicorn>=0.30.0
 pytest>=8.0.0
 sqlglot>=30.0
+transformers==4.57.5
+sentence-transformers>=5.2.0

@@ -21,7 +21,7 @@ function CartaoKpi({ titulo, valor, variacao, complementoVariacao, detalhe, tend
         <CardDescription className="text-[13px] font-medium">{titulo}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        <span className="font-mono text-[28px] leading-none font-semibold tracking-tight">{valor}</span>
+        <span className="tabular-nums text-[28px] leading-none font-semibold tracking-tight">{valor}</span>
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
             {variacao !== undefined && (

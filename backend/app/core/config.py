@@ -6,6 +6,8 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from dotenv import dotenv_values
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 ENV_LOCAL_PATH = Path(__file__).resolve().parents[2] / ".env.local"
 
@@ -61,15 +63,23 @@ def get_settings() -> Settings:
     database_url = value("DATABASE_URL", "") or None
     if database_url:
         try:
-            parsed_database_url = urlsplit(database_url)
-        except ValueError:
+            parsed_database_url = make_url(database_url)
+        except (ArgumentError, ValueError):
             raise ValueError("DATABASE_URL inválida") from None
         if (
-            parsed_database_url.scheme != "postgresql+psycopg"
-            or not parsed_database_url.path.strip("/")
+            parsed_database_url.drivername
+            not in {
+                "postgresql",
+                "postgresql+psycopg",
+            }
+            or not parsed_database_url.database
         ):
             raise ValueError(
-                "DATABASE_URL deve usar postgresql+psycopg e indicar o banco"
+                "DATABASE_URL deve usar postgresql ou postgresql+psycopg e indicar o banco"
             )
+        # O SQLAlchemy precisa do driver no esquema; o agente de IA usa a forma sem ele
+        database_url = parsed_database_url.set(
+            drivername="postgresql+psycopg"
+        ).render_as_string(hide_password=False)
 
     return Settings(environment, host, port, origins, database_url)

@@ -103,6 +103,14 @@ describe('quando a resposta nem chega', () => {
     expect(erro.message).toContain('demorou demais')
   })
 
+  test('quem precisa de mais tempo passa o próprio tempo limite', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}')))
+    await apiFetch('/x')
+    await apiFetch('/y', { tempoLimiteMs: 90_000 })
+    expect(timeout.mock.calls).toEqual([[30_000], [90_000]])
+  })
+
   test('busca cancelada (o filtro mudou) não vira ErroApi', async () => {
     vi.stubGlobal('fetch', (_url: string, opcoes: RequestInit) => Promise.reject(opcoes.signal!.reason))
     const controle = new AbortController()

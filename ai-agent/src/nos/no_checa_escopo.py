@@ -8,7 +8,7 @@ import re
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
-from ..provedores.cliente_llm import ClienteLLM
+from ..provedores.cliente_llm import ClienteLLM, ErroLLMIndisponivel
 
 logger = logging.getLogger("venergy.no_checa_escopo")
 
@@ -126,12 +126,24 @@ def no_checa_escopo(
         }
 
     # ── 3. Classificação via LLM para casos ambíguos ──
-    resposta = llm.invoke(
-        prompt=f"Pergunta: {pergunta}",
-        system_prompt=SYSTEM_PROMPT_ESCOPO,
-        temperatura=0.0,
-        resposta_mock="DENTRO_ESCOPO",
-    )
+    try:
+        resposta = llm.invoke(
+            prompt=f"Pergunta: {pergunta}",
+            system_prompt=SYSTEM_PROMPT_ESCOPO,
+            temperatura=0.0,
+            resposta_mock="DENTRO_ESCOPO",
+        )
+    except ErroLLMIndisponivel:
+        logger.warning("Nó 3 — LLM indisponível na checagem de escopo. Falha fechada (recusa).")
+        return {
+            "dentro_escopo": False,
+            "rota": "recusa",
+            "motivo_fora_escopo": "Serviço de IA temporariamente indisponível.",
+            "motivo_recusa": "llm_indisponivel",
+            "passos_executados": [
+                "Nó 3 — Escopo: LLM indisponível; falha fechada com recusa honesta."
+            ],
+        }
 
     chamadas_llm = state.get("chamadas_llm", 0) + 1
     tokens_prompt = state.get("tokens_prompt", 0) + resposta.tokens_prompt

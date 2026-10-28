@@ -29,6 +29,9 @@ MENSAGENS_RECUSA = {
         "Após múltiplas tentativas, não consegui gerar uma consulta válida para esta pergunta. "
         "Por favor, tente reformular ou entre em contato com o time de dados."
     ),
+    "llm_indisponivel": (
+        "O serviço de IA está temporariamente indisponível. Tente novamente em instantes."
+    ),
     "recusa": (
         "Não consigo responder a esta pergunta. Ela está fora do escopo dos dados da V-Energy "
         "ou não foi possível determinar uma interpretação segura e precisa."
@@ -45,11 +48,15 @@ def no_recusa_honesta(state: EstadoAgente) -> Dict[str, Any]:
     erro = state.get("erro_validacao_ou_execucao")
     tentativas = state.get("tentativas_sql", 0)
     motivo_escopo = state.get("motivo_fora_escopo")
+    motivo_recusa_estado = state.get("motivo_recusa")
 
     # Prioridade de classificação
     if malicioso:
         tipo = "bloqueio_seguranca"
         texto = MENSAGENS_RECUSA["bloqueio_seguranca"]
+    elif motivo_recusa_estado == "llm_indisponivel":
+        tipo = "llm_indisponivel"
+        texto = MENSAGENS_RECUSA["llm_indisponivel"]
     elif rota in ("fora_escopo", "bloqueio_seguranca"):
         tipo = rota
         texto = MENSAGENS_RECUSA[rota]
@@ -61,6 +68,9 @@ def no_recusa_honesta(state: EstadoAgente) -> Dict[str, Any]:
     elif tentativas >= 2:
         tipo = "max_tentativas"
         texto = MENSAGENS_RECUSA["max_tentativas"]
+    elif motivo_recusa_estado in MENSAGENS_RECUSA:
+        tipo = motivo_recusa_estado
+        texto = MENSAGENS_RECUSA[tipo]
     else:
         tipo = "recusa"
         texto = MENSAGENS_RECUSA["recusa"]

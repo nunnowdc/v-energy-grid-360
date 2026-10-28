@@ -6,11 +6,24 @@ from __future__ import annotations
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
+CategoriaRAG = Literal[
+    "glossario",
+    "esquema",
+    "prodist",
+    "templates",
+    "perfis_dados",
+    "dicionario_gold",
+    "decisoes_negocio",
+    "regras_setoriais",
+    "lgpd",
+    "outros_relatorios",
+]
+
 
 class ChunkConhecimento(BaseModel):
     """Um fragmento de conhecimento indexado na base vetorial."""
     id: str
-    categoria: Literal["glossario", "esquema", "prodist", "templates"]
+    categoria: CategoriaRAG
     titulo: str
     conteudo: str
     fonte: str

@@ -45,7 +45,10 @@ DIMENSAO_VETOR = 384
 INSERT_SQL = """
 INSERT INTO tb_conhecimento_vetorial (id, categoria, titulo, conteudo, fonte, metadados, embedding)
 VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::vector)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (categoria, titulo, md5(conteudo)) DO UPDATE SET
+    embedding = EXCLUDED.embedding,
+    fonte = EXCLUDED.fonte,
+    metadados = EXCLUDED.metadados;
 """
 
 

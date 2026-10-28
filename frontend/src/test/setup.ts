@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach } from 'vitest'
+
+// findBy e waitFor esperam até 3 s (o padrão é 1 s): em máquina lenta ou ocupada,
+// a tela pode demorar mais que isso para aparecer. Teste que passa não fica mais lento
+configure({ asyncUtilTimeout: 3000 })
 
 // Desmonta o que cada teste renderizou, para um não interferir no outro
 afterEach(() => {

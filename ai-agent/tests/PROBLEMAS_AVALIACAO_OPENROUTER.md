@@ -92,3 +92,21 @@ nos cinco casos SQL, não das métricas informativas.
 - [ ] Reexecutar a avaliação após qualquer ajuste e registrar aqui a data,
   modelo, resultado e diferenças observadas, sem incluir chaves, SQL sensível
   ou valores retornados do banco.
+
+## Atualização: avaliação dos casos RAG
+
+Foi preparado um runner RAG separado em
+`test_avaliacao_rag_openrouter.py`. Ele cobre TC-007 e TC-008 com OpenRouter
+real e a base pgvector configurada por `AI_AGENT_RAG_DATABASE_URL`. A execução é
+opt-in, valida previamente a base e a recuperação, desativa a auditoria e não
+exibe o conteúdo dos trechos. A cobertura dos termos e a presença textual das
+fontes são informativas; ausência de recuperação ou falha técnica reprova o
+runner.
+
+TC-009 continua pendente porque o corpus indexado não inclui uma fonte sobre
+critérios de compensação financeira por violação de continuidade. Nenhum
+indexador ou documento-fonte foi alterado.
+
+Esta atualização documenta o comportamento implementado, mas não afirma que a
+avaliação foi executada contra o banco vetorial do usuário ou que houve chamadas
+reais ao OpenRouter.
