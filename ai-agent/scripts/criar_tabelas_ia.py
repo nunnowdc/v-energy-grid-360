@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Base de conhecimento vetorial (RAG regulatório e de esquemas Gold)
 CREATE TABLE IF NOT EXISTS tb_conhecimento_vetorial (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    categoria   VARCHAR(50)  NOT NULL,  -- 'glossario' | 'esquema' | 'prodist' | 'templates'
+    categoria   VARCHAR(50)  NOT NULL,  -- 'glossario' | 'esquema' | 'prodist' | 'templates' | 'perfis_dados'
     titulo      VARCHAR(255) NOT NULL,
     conteudo    TEXT         NOT NULL,
     fonte       VARCHAR(150),

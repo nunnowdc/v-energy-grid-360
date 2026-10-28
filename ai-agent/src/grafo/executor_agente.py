@@ -125,7 +125,7 @@ def _testar_pipeline_com_banco() -> int:
         print(f"Erro: DATABASE_URL não encontrada em {arquivo_env}.")
         return 1
 
-    pergunta = "Qual o faturamento em Olinda no ano de 2023?"
+    pergunta = "Quantidade de UCs com fatura abertas?"
     print(f"Arquivo .env: {arquivo_env}")
     print(f"Pergunta de teste: {pergunta}")
     print("Executando o pipeline do agente...")
