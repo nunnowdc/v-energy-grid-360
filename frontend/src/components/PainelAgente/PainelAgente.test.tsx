@@ -1,8 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { Route, Routes } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import PainelAgente from '@/components/PainelAgente/PainelAgente'
 import type { AuditoriaAgente, RespostaAgente } from '@/hooks/use-agente-ia'
-import AgenteIaPage from '@/pages/AgenteIa/AgenteIaPage'
 import { renderizar } from '@/test/renderizar'
 
 // Respostas e auditorias inventadas, no formato das rotas reais do agente
@@ -69,13 +68,13 @@ const corpoDas = (fetch: ReturnType<typeof backend>, caminho: string) =>
     .filter(([url]) => String(url) === caminho)
     .map(([, init]) => JSON.parse(String(init!.body)))
 
-function abrir() {
-  return renderizar(
-    <Routes>
-      <Route path="/agente-ia" element={<AgenteIaPage />} />
-    </Routes>,
-    { url: '/agente-ia' },
-  )
+const auditoriasBuscadas = (fetch: ReturnType<typeof backend>) =>
+  fetch.mock.calls.map(([url]) => String(url)).filter((url) => url.startsWith('/api/ai/audit/'))
+
+function abrir({ url = '/receita', aberto = true } = {}) {
+  const aoFechar = vi.fn()
+  renderizar(<PainelAgente aberto={aberto} aoFechar={aoFechar} />, { url })
+  return { aoFechar }
 }
 
 function perguntar(texto: string) {
@@ -91,24 +90,27 @@ const passosNoGrafo = () =>
 
 beforeEach(() => {
   let sequencia = 0
-  vi.spyOn(crypto, 'randomUUID').mockImplementation(() => `00000000-0000-4000-8000-00000000000${sequencia++}` as `${string}-${string}-${string}-${string}-${string}`)
+  vi.spyOn(crypto, 'randomUUID').mockImplementation(
+    () => `00000000-0000-4000-8000-00000000000${sequencia++}` as `${string}-${string}-${string}-${string}-${string}`,
+  )
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
-test('conversa vazia oferece sugestões e o painel explica o que vai aparecer', () => {
+test('conversa vazia oferece sugestões e já deixa o cursor na pergunta', () => {
   backend({ perguntas: [], auditorias: {} })
   abrir()
-  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Agente de IA')
+  expect(screen.getByRole('complementary', { name: 'Agente de IA' })).toBeInTheDocument()
   expect(within(screen.getByRole('list', { name: 'Sugestões de pergunta' })).getAllByRole('button')).toHaveLength(3)
-  expect(screen.getByText(/Faça uma pergunta para ver aqui cada passo/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Sua pergunta')).toHaveFocus()
+  expect(screen.getByRole('button', { name: 'Nova conversa' })).toBeDisabled()
 })
 
-test('a sugestão vira pergunta, a resposta chega com selo e o painel mostra o grafo', async () => {
+test('a sugestão vira pergunta com o contexto da tela, e a resposta chega com selo e tempo', async () => {
   const fetch = backend({ perguntas: [{ corpo: resposta('a1') }], auditorias: { a1: auditoria('a1') } })
-  abrir()
+  abrir({ url: '/receita' })
 
   fireEvent.click(screen.getByRole('button', { name: 'Qual o faturamento em Recife no ano de 2024?' }))
   expect(screen.getByText(/Analisando a pergunta/)).toBeInTheDocument()
@@ -119,14 +121,41 @@ test('a sugestão vira pergunta, a resposta chega com selo e o painel mostra o g
       user_id: 'teste-admin_ti',
       session_id: '00000000-0000-4000-8000-000000000000',
       message: 'Qual o faturamento em Recife no ano de 2024?',
-      context: { page: 'agente_ia' },
+      context: { page: 'receita' },
       history: [],
     },
   ])
   expect(screen.getByText('Consulta certificada')).toBeInTheDocument()
   expect(screen.getByText('7,4 s')).toBeInTheDocument()
+})
 
-  // O painel abre sozinho na última resposta, com um nó por passo e a auditoria no fim
+test('na Visão 360 o contexto leva a UC aberta, e o "/" é a tela de Indicadores', async () => {
+  const fetch = backend({ perguntas: [{ corpo: resposta('a1') }], auditorias: {} })
+  abrir({ url: '/visao-360/UC100000' })
+  perguntar('Essa UC tem fatura atrasada?')
+  await screen.findByText('Resposta a1')
+  expect(corpoDas(fetch, '/api/ai/ask')[0].context).toEqual({ page: 'visao-360', id_uc: 'UC100000' })
+  document.body.innerHTML = ''
+
+  const outro = backend({ perguntas: [{ corpo: resposta('a2') }], auditorias: {} })
+  abrir({ url: '/' })
+  perguntar('Qual a receita total?')
+  await screen.findByText('Resposta a2')
+  expect(corpoDas(outro, '/api/ai/ask').at(-1).context).toEqual({ page: 'indicadores' })
+})
+
+test('o passo a passo só aparece, e só é buscado, ao clicar em "Ver o passo a passo"', async () => {
+  const fetch = backend({ perguntas: [{ corpo: resposta('a1') }], auditorias: { a1: auditoria('a1') } })
+  abrir()
+  perguntar('Qual o faturamento em Olinda?')
+  await screen.findByText('Resposta a1')
+
+  expect(screen.queryByRole('region', { name: 'Como a IA chegou nisso?' })).not.toBeInTheDocument()
+  expect(auditoriasBuscadas(fetch)).toEqual([])
+
+  const ver = screen.getByRole('button', { name: 'Ver o passo a passo' })
+  fireEvent.click(ver)
+  expect(ver).toHaveAttribute('aria-expanded', 'true')
   await waitFor(() =>
     expect(passosNoGrafo()).toEqual([
       'Nó 1: Filtro de segurança',
@@ -137,13 +166,17 @@ test('a sugestão vira pergunta, a resposta chega com selo e o painel mostra o g
       'Nó 12: Auditoria',
     ]),
   )
+  expect(auditoriasBuscadas(fetch)).toEqual(['/api/ai/audit/a1'])
   // A consulta aparece no nó que a produziu e a amostra no nó da execução
   expect(screen.getByText(/FROM agg_receita_mensal/)).toBeInTheDocument()
   expect(screen.getByRole('cell', { name: '1.500,5' })).toBeInTheDocument()
   expect(screen.getByText('Consulta aos dados')).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Esconder o passo a passo' }))
+  expect(screen.queryByRole('list', { name: 'Passos do agente' })).not.toBeInTheDocument()
 })
 
-test('a pergunta seguinte leva o histórico, e dá para voltar ao passo a passo da anterior', async () => {
+test('a pergunta seguinte leva o histórico, e cada resposta abre o próprio passo a passo', async () => {
   const fetch = backend({
     perguntas: [{ corpo: resposta('a1') }, { corpo: resposta('a2') }],
     auditorias: {
@@ -162,18 +195,17 @@ test('a pergunta seguinte leva o histórico, e dá para voltar ao passo a passo 
     { role: 'user', content: 'Qual o faturamento em Olinda?' },
     { role: 'assistant', content: 'Resposta a1' },
   ])
-  expect(await screen.findByText('Qual o faturamento em Olinda em 2023?')).toBeInTheDocument()
 
-  const [verPrimeira] = screen.getAllByRole('button', { name: 'Ver o passo a passo' })
-  fireEvent.click(verPrimeira)
-  expect(verPrimeira).toHaveAttribute('aria-pressed', 'true')
-  await waitFor(() => expect(screen.queryByText('Qual o faturamento em Olinda em 2023?')).not.toBeInTheDocument())
+  const [, verSegunda] = screen.getAllByRole('button', { name: 'Ver o passo a passo' })
+  fireEvent.click(verSegunda)
+  expect(await screen.findByText('Qual o faturamento em Olinda em 2023?')).toBeInTheDocument()
+  expect(auditoriasBuscadas(fetch)).toEqual(['/api/ai/audit/a2'])
 })
 
 test('falha na rota mostra o erro na conversa e "Tentar de novo" pergunta outra vez', async () => {
   const fetch = backend({
     perguntas: [{ status: 500, corpo: { detail: 'Erro interno no processamento da pergunta.' } }, { corpo: resposta('a1') }],
-    auditorias: { a1: auditoria('a1') },
+    auditorias: {},
   })
   abrir()
 
@@ -190,7 +222,7 @@ test('falha na rota mostra o erro na conversa e "Tentar de novo" pergunta outra 
 })
 
 test('👍 grava o retorno na auditoria e trava o voto', async () => {
-  const fetch = backend({ perguntas: [{ corpo: resposta('a1') }], auditorias: { a1: auditoria('a1') } })
+  const fetch = backend({ perguntas: [{ corpo: resposta('a1') }], auditorias: {} })
   abrir()
   perguntar('Qual o faturamento em Olinda?')
   await screen.findByText('Resposta a1')
@@ -222,6 +254,7 @@ test('recusa honesta aparece com o selo dela e o passo interrompido no grafo', a
   perguntar('Qual a previsão do tempo?')
 
   expect(await screen.findByText('Sem resposta segura')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Ver o passo a passo' }))
   await waitFor(() =>
     expect(passosNoGrafo()).toEqual(['Nó 1: Filtro de segurança', 'Nó 3: Escopo', 'Nó 10: Recusa honesta', 'Nó 12: Auditoria']),
   )
@@ -230,10 +263,7 @@ test('recusa honesta aparece com o selo dela e o passo interrompido no grafo', a
 })
 
 test('"Nova conversa" limpa a conversa e começa outra sessão', async () => {
-  const fetch = backend({
-    perguntas: [{ corpo: resposta('a1') }, { corpo: resposta('a2') }],
-    auditorias: { a1: auditoria('a1'), a2: auditoria('a2') },
-  })
+  const fetch = backend({ perguntas: [{ corpo: resposta('a1') }, { corpo: resposta('a2') }], auditorias: {} })
   abrir()
   perguntar('Qual o faturamento em Olinda?')
   await screen.findByText('Resposta a1')
@@ -247,4 +277,17 @@ test('"Nova conversa" limpa a conversa e começa outra sessão', async () => {
   const [primeira, segunda] = corpoDas(fetch, '/api/ai/ask')
   expect(segunda.session_id).not.toBe(primeira.session_id)
   expect(segunda.history).toEqual([])
+})
+
+test('fechado, o painel some da tela; o X e o Esc pedem para fechar', () => {
+  backend({ perguntas: [], auditorias: {} })
+  const { aoFechar } = abrir({ aberto: false })
+  expect(screen.queryByRole('complementary', { name: 'Agente de IA' })).not.toBeInTheDocument()
+  document.body.innerHTML = ''
+
+  const aberto = abrir()
+  fireEvent.click(screen.getByRole('button', { name: 'Fechar o agente' }))
+  fireEvent.keyDown(screen.getByLabelText('Sua pergunta'), { key: 'Escape' })
+  expect(aberto.aoFechar).toHaveBeenCalledTimes(2)
+  expect(aoFechar).not.toHaveBeenCalled()
 })

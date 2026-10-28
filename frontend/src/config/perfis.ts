@@ -19,7 +19,7 @@ export const nomesPerfis: Record<Perfil, string> = {
 
 // Espelho do mapa perfil → permissões do backend, que é a fonte da verdade.
 // Só é usado pelo usuário de teste enquanto o login não existe.
-// O agente de IA é de todos os perfis (decisão do time)
+// O agente de IA (painel ao lado das telas) é de todos os perfis (decisão do time)
 export const permissoesPorPerfil: Record<Perfil, Permissao[]> = {
   DIRETORIA: ['ver_indicadores', 'ver_receita', 'ver_continuidade', 'usar_agente_ia'],
   ATENDIMENTO: ['ver_visao_360', 'usar_agente_ia'],

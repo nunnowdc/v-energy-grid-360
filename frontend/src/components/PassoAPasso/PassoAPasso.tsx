@@ -1,13 +1,10 @@
-import { Waypoints } from 'lucide-react'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import GrafoRaciocinio from '@/components/GrafoRaciocinio/GrafoRaciocinio'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { NO_AUDITORIA } from '@/config/nos-agente'
 import { useAuditoriaAgente, type AuditoriaAgente } from '@/hooks/use-agente-ia'
 import { formatarNumero } from '@/lib/formatacao'
 import { lerListaPassos, montarPassos } from '@/lib/passos-agente'
-import { cn } from '@/lib/utils'
 
 const nomesRotas: Record<string, string> = {
   sql: 'Consulta aos dados',
@@ -119,7 +116,7 @@ function Raciocinio({ auditoria }: { auditoria: AuditoriaAgente }) {
         </p>
       )}
 
-      <dl className="grid grid-cols-2 gap-3 rounded-lg border px-3 py-2.5 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 rounded-lg border px-3 py-2.5">
         <Indicador rotulo="Caminho" valor={nomesRotas[auditoria.rota_escolhida] ?? auditoria.rota_escolhida} />
         <Indicador rotulo="Tempo total" valor={segundos(auditoria.tempo_execucao_ms)} />
         <Indicador rotulo="Linhas no resultado" valor={formatarNumero(auditoria.linhas_retornadas)} />
@@ -160,43 +157,22 @@ function Esqueleto() {
   )
 }
 
-function PainelComAuditoria({ auditId }: { auditId: string }) {
+// "Como a IA chegou nisso?": a trilha de auditoria de uma resposta, aberta
+// dentro da própria resposta na conversa
+function PassoAPasso({ auditId }: { auditId: string }) {
   const consulta = useAuditoriaAgente(auditId)
+
   return (
-    <EstadoConsulta consulta={consulta} esqueleto={<Esqueleto />}>
-      {(auditoria) => <Raciocinio auditoria={auditoria} />}
-    </EstadoConsulta>
+    <section aria-label="Como a IA chegou nisso?" className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5">
+        <h3 className="text-[13px] font-semibold">Como a IA chegou nisso?</h3>
+        <p className="text-xs text-muted-foreground">Cada nó é um passo do agente, na ordem em que aconteceu</p>
+      </div>
+      <EstadoConsulta consulta={consulta} esqueleto={<Esqueleto />}>
+        {(auditoria) => <Raciocinio auditoria={auditoria} />}
+      </EstadoConsulta>
+    </section>
   )
 }
 
-type PainelRaciocinioProps = {
-  // Resposta escolhida na conversa; sem ela, o painel explica o que vai aparecer
-  auditId?: string
-  className?: string
-}
-
-// "Como a IA chegou nisso?": a trilha de auditoria de uma resposta
-function PainelRaciocinio({ auditId, className }: PainelRaciocinioProps) {
-  return (
-    <Card className={cn('min-h-0', className)}>
-      <CardHeader>
-        <CardTitle className="text-[15px] font-semibold">Como a IA chegou nisso?</CardTitle>
-        <CardDescription>Cada nó é um passo do agente, na ordem em que aconteceu</CardDescription>
-      </CardHeader>
-      <CardContent className="min-h-0 flex-1 overflow-y-auto">
-        {auditId ? (
-          <PainelComAuditoria auditId={auditId} />
-        ) : (
-          <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center">
-            <Waypoints aria-hidden="true" className="size-8 text-muted-foreground" />
-            <p className="max-w-xs text-sm text-muted-foreground">
-              Faça uma pergunta para ver aqui cada passo que o agente seguiu até a resposta.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-export default PainelRaciocinio
+export default PassoAPasso

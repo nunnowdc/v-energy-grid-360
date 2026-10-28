@@ -55,6 +55,7 @@ src/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
+│   ├── BotaoAgente/BotaoAgente.tsx        ← botão do cabeçalho que abre e fecha o agente de IA
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
 │   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
 │   ├── CaixaPergunta/CaixaPergunta.tsx    ← campo da pergunta ao agente (Enter envia)
@@ -77,12 +78,13 @@ src/
 │   ├── HistoricosUc/HistoricosUc.tsx      ← abas de faturas, leituras, interrupções e chamados
 │   ├── Layout/Layout.tsx
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
-│   ├── MensagemAgente/MensagemAgente.tsx  ← resposta do agente com selo, tempo e passo a passo
+│   ├── MensagemAgente/MensagemAgente.tsx  ← resposta do agente com selo, tempo, 👍/👎 e o passo a passo
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
 │   ├── OrdensInspecao/OrdensInspecao.tsx  ← ordens geradas: enviar para campo, concluir, cancelar
 │   ├── OcorrenciasPorCausa/OcorrenciasPorCausa.tsx ← barras das ocorrências por causa
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
-│   ├── PainelRaciocinio/PainelRaciocinio.tsx ← "Como a IA chegou nisso?": resumo, grafo, consulta e amostra
+│   ├── PainelAgente/PainelAgente.tsx      ← agente de IA numa coluna à direita, ao lado da tela
+│   ├── PassoAPasso/PassoAPasso.tsx        ← "Como a IA chegou nisso?": resumo, grafo, consulta e amostra
 │   ├── PonteReceita/PonteReceita.tsx      ← cascata: receita base, efeitos e receita comparada
 │   ├── RankingAlimentadores/RankingAlimentadores.tsx ← piores alimentadores em DEC
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
@@ -200,9 +202,17 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 | `/visao-360/:idUc` | Visão 360 | Atendimento, Perdas, Administrador (TI) | Tudo sobre uma unidade consumidora em uma única tela |
 | `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
-| `/agente-ia` | Agente de IA | Todos | Perguntas em português sobre a base Gold, com selo de confiança e o passo a passo de cada resposta em forma de grafo |
 
-As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`) e o cabeçalho (`AppHeader`).
+As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`), o cabeçalho (`AppHeader`) e o agente de IA (`PainelAgente`).
+
+### Agente de IA
+
+Não é uma tela: o botão **Agente de IA** do cabeçalho abre o agente numa coluna à direita, e a tela atual continua aberta e utilizável ao lado. Todos os perfis têm acesso (permissão `usar_agente_ia`).
+
+- Em telas largas (a partir de 1024 px) o agente divide o espaço com a tela; nas estreitas, abre por cima.
+- A conversa continua ao trocar de tela e ao fechar e reabrir o painel. "Nova conversa" começa outra sessão.
+- Cada pergunta leva a tela aberta como contexto (`page`, e `id_uc` na Visão 360) e as 3 perguntas anteriores, para o agente entender "e em 2023?".
+- Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado.
 
 ## Perfis de acesso
 
@@ -334,7 +344,7 @@ Rotas que já são reais e precisam do backend com a Gold no banco local (veja `
 - `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
-- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde em modo de teste. Os testes da tela usam respostas inventadas no próprio teste.
+- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde em modo de teste. Os testes do painel usam respostas inventadas no próprio teste.
 
 ## Testes automatizados
 

@@ -1,6 +1,6 @@
 import { LoaderCircle, RotateCw, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import MensagemAgente, { AvatarAgente } from '@/components/MensagemAgente/MensagemAgente'
+import MensagemAgente from '@/components/MensagemAgente/MensagemAgente'
 import { Button } from '@/components/ui/button'
 import type { RespostaAgente } from '@/hooks/use-agente-ia'
 
@@ -14,9 +14,6 @@ export type Troca = {
 
 type ConversaAgenteProps = {
   trocas: Troca[]
-  // audit_id da resposta com o passo a passo aberto
-  selecionada?: string
-  aoVerPassos: (auditId: string) => void
   aoTentarDeNovo: (troca: Troca) => void
 }
 
@@ -31,9 +28,10 @@ function Aguardando() {
 
   return (
     <div className="flex items-center gap-2 rounded-xl rounded-tl-sm border bg-card px-3.5 py-2.5 text-sm text-muted-foreground">
-      <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-      Analisando a pergunta e consultando os dados
-      <span className="tabular-nums">· {segundos} s</span>
+      <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin" />
+      <span>
+        Analisando a pergunta e consultando os dados <span className="tabular-nums">· {segundos} s</span>
+      </span>
     </div>
   )
 }
@@ -55,7 +53,7 @@ function Falha({ mensagem, aoTentarDeNovo }: { mensagem: string; aoTentarDeNovo:
 }
 
 // Perguntas à direita, respostas à esquerda; desce sozinha a cada mensagem nova
-function ConversaAgente({ trocas, selecionada, aoVerPassos, aoTentarDeNovo }: ConversaAgenteProps) {
+function ConversaAgente({ trocas, aoTentarDeNovo }: ConversaAgenteProps) {
   const fim = useRef<HTMLDivElement>(null)
   const ultima = trocas.at(-1)
 
@@ -66,26 +64,17 @@ function ConversaAgente({ trocas, selecionada, aoVerPassos, aoTentarDeNovo }: Co
   return (
     <div role="log" aria-label="Conversa com o agente" className="flex flex-col gap-4">
       {trocas.map((troca) => (
-        <div key={troca.id} className="flex flex-col gap-4">
+        <div key={troca.id} className="flex flex-col gap-3">
           <p className="ml-auto max-w-[85%] rounded-xl rounded-tr-sm bg-primary px-3.5 py-2 text-sm break-words whitespace-pre-line text-primary-foreground">
             {troca.pergunta}
           </p>
-          <div className="flex gap-2.5">
-            <AvatarAgente />
-            <div className="min-w-0 flex-1">
-              {troca.resposta ? (
-                <MensagemAgente
-                  resposta={troca.resposta}
-                  selecionada={troca.resposta.audit_id === selecionada}
-                  aoVerPassos={() => aoVerPassos(troca.resposta!.audit_id)}
-                />
-              ) : troca.erro ? (
-                <Falha mensagem={troca.erro} aoTentarDeNovo={() => aoTentarDeNovo(troca)} />
-              ) : (
-                <Aguardando />
-              )}
-            </div>
-          </div>
+          {troca.resposta ? (
+            <MensagemAgente resposta={troca.resposta} />
+          ) : troca.erro ? (
+            <Falha mensagem={troca.erro} aoTentarDeNovo={() => aoTentarDeNovo(troca)} />
+          ) : (
+            <Aguardando />
+          )}
         </div>
       ))}
       <div ref={fim} />
