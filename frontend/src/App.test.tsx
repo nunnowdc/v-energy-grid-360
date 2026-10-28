@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import App from '@/App'
 import type { Perfil } from '@/config/perfis'
@@ -79,6 +79,25 @@ describe('menu e rotas por perfil', () => {
   test('endereço que não existe mostra "Página não encontrada"', () => {
     abrir('/nao-existe', 'ADMIN_TI')
     expect(titulo()).toBe('Página não encontrada')
+  })
+
+  test('o agente de IA abre ao lado da tela, que continua aberta, em qualquer perfil', () => {
+    abrir('/receita', 'DIRETORIA')
+    const botao = screen.getByRole('button', { name: 'Agente de IA' })
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('complementary', { name: 'Agente de IA' })).not.toBeInTheDocument()
+
+    fireEvent.click(botao)
+    expect(botao).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('complementary', { name: 'Agente de IA' })).toBeInTheDocument()
+    expect(titulo()).toBe('Receita')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar o agente' }))
+    expect(screen.queryByRole('complementary', { name: 'Agente de IA' })).not.toBeInTheDocument()
+    document.body.innerHTML = ''
+
+    abrir('/visao-360', 'ATENDIMENTO')
+    expect(screen.getByRole('button', { name: 'Agente de IA' })).toBeInTheDocument()
   })
 
   test('o login abre fora do layout, sem o menu', () => {

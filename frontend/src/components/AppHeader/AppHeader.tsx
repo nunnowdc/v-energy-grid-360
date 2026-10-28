@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useLocation } from 'react-router'
 import SeloBase from '@/components/SeloBase/SeloBase'
 import { Separator } from '@/components/ui/separator'
@@ -5,7 +6,12 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { buscarItemAtual } from '@/config/navegacao'
 import { useUsuario } from '@/hooks/use-usuario'
 
-function AppHeader() {
+type AppHeaderProps = {
+  // Botões no canto direito, ex.: o que abre o agente de IA
+  acoes?: ReactNode
+}
+
+function AppHeader({ acoes }: AppHeaderProps) {
   const { pathname } = useLocation()
   const { pode } = useUsuario()
   const item = buscarItemAtual(pathname)
@@ -40,8 +46,11 @@ function AppHeader() {
         </ol>
       </nav>
 
-      <div className="ml-auto hidden sm:block">
-        <SeloBase />
+      <div className="ml-auto flex items-center gap-3">
+        <div className="hidden sm:block">
+          <SeloBase />
+        </div>
+        {acoes}
       </div>
     </header>
   )
