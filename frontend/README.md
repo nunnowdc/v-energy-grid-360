@@ -57,26 +57,32 @@ src/
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
 │   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
+│   ├── CaixaPergunta/CaixaPergunta.tsx    ← campo da pergunta ao agente (Enter envia)
 │   ├── CartaoKpi/
 │   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
 │   │   └── CartaoKpiEsqueleto.tsx
 │   ├── ConsumoDozeMeses/ConsumoDozeMeses.tsx ← gráfico de consumo da UC (12 meses)
+│   ├── ConversaAgente/ConversaAgente.tsx  ← perguntas e respostas, com espera e erro
 │   ├── DetalheReceita/DetalheReceita.tsx  ← onde está a variação, descendo município › bairro › classe
 │   ├── EstadoConsulta/EstadoConsulta.tsx  ← carregando, erro, vazio e atualizando
 │   ├── EstadoErro/EstadoErro.tsx
 │   ├── EstadoVazio/EstadoVazio.tsx
 │   ├── FaturasEmAberto/FaturasEmAberto.tsx ← faturas pendentes e atrasadas da UC
+│   ├── FeedbackResposta/FeedbackResposta.tsx ← 👍/👎 de uma resposta do agente
 │   ├── FilaSuspeitas/FilaSuspeitas.tsx    ← fila de UCs suspeitas com motivos, energia e score
 │   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
 │   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
 │   ├── GraficosMensais/GraficosMensais.tsx ← duas medidas por mês empilhadas, atual × anterior
+│   ├── GrafoRaciocinio/GrafoRaciocinio.tsx ← caminho do agente: um nó por passo
 │   ├── HistoricosUc/HistoricosUc.tsx      ← abas de faturas, leituras, interrupções e chamados
 │   ├── Layout/Layout.tsx
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
+│   ├── MensagemAgente/MensagemAgente.tsx  ← resposta do agente com selo, tempo e passo a passo
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
 │   ├── OrdensInspecao/OrdensInspecao.tsx  ← ordens geradas: enviar para campo, concluir, cancelar
 │   ├── OcorrenciasPorCausa/OcorrenciasPorCausa.tsx ← barras das ocorrências por causa
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
+│   ├── PainelRaciocinio/PainelRaciocinio.tsx ← "Como a IA chegou nisso?": resumo, grafo, consulta e amostra
 │   ├── PonteReceita/PonteReceita.tsx      ← cascata: receita base, efeitos e receita comparada
 │   ├── RankingAlimentadores/RankingAlimentadores.tsx ← piores alimentadores em DEC
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
@@ -86,8 +92,10 @@ src/
 │   ├── RotaProtegida/RotaProtegida.tsx
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
+│   ├── SeloConfianca/SeloConfianca.tsx    ← quanto dá para confiar na resposta do agente
 │   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
 │   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
+│   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
 │   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
@@ -98,8 +106,10 @@ src/
 │   ├── codigos.ts           ← categorias da Gold como texto de tela (com acento)
 │   ├── motivos.ts           ← motivos da fila de inspeção como texto de tela
 │   ├── navegacao.ts         ← telas do menu (grupo, título e descrição)
+│   ├── nos-agente.ts        ← nome e função de cada um dos 12 nós do agente de IA
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
+│   ├── use-agente-ia.ts       ← perguntar, auditoria e 👍/👎 do agente (rotas /api/ai/*, reais)
 │   ├── use-continuidade.ts    ← DEC, FEC e ocorrências (GET /api/network/continuity)
 │   ├── use-fila-inspecao.ts   ← fila de UCs suspeitas (GET /api/inspections/queue)
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
@@ -119,6 +129,7 @@ src/
 │   ├── comparacao.ts        ← variação percentual entre dois períodos
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
+│   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
 ├── pages/
@@ -189,6 +200,7 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 | `/visao-360/:idUc` | Visão 360 | Atendimento, Perdas, Administrador (TI) | Tudo sobre uma unidade consumidora em uma única tela |
 | `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
+| `/agente-ia` | Agente de IA | Todos | Perguntas em português sobre a base Gold, com selo de confiança e o passo a passo de cada resposta em forma de grafo |
 
 As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`) e o cabeçalho (`AppHeader`).
 
@@ -210,7 +222,7 @@ Toda chamada ao backend passa pela função `apiFetch` (`src/lib/api/api-fetch.t
 
 - Coloca o prefixo `/api`, envia o cookie de login e converte a resposta de JSON.
 - Em caso de erro, lança um `ErroApi` com o `status` e uma mensagem em português, pronta para mostrar na tela.
-- Desiste depois de 30 segundos.
+- Desiste depois de 30 segundos. Quem precisa de mais tempo passa `tempoLimiteMs` (o agente de IA usa 90 s).
 - **401** (sessão expirada): qualquer consulta ou alteração leva ao `/login` com o aviso "Sua sessão expirou. Entre novamente.". O JWT dura 15 minutos e não é renovado.
 - **429** (limite de requisições): mostra "Muitas tentativas. Aguarde um instante e tente de novo." e não tenta de novo sozinho.
 
@@ -322,6 +334,7 @@ Rotas que já são reais e precisam do backend com a Gold no banco local (veja `
 - `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
+- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde em modo de teste. Os testes da tela usam respostas inventadas no próprio teste.
 
 ## Testes automatizados
 

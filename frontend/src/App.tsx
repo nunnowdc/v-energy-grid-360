@@ -6,6 +6,7 @@ import RotaInicial from './components/RotaInicial/RotaInicial'
 import RotaProtegida from './components/RotaProtegida/RotaProtegida'
 import { TooltipProvider } from './components/ui/tooltip'
 import { queryClient } from './lib/api/query-client'
+import AgenteIaPage from './pages/AgenteIa/AgenteIaPage'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
 import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import LoginPage from './pages/Login/LoginPage'
@@ -35,6 +36,9 @@ function App() {
               </Route>
               <Route element={<RotaProtegida permissao="ver_continuidade" />}>
                 <Route path="continuidade" element={<ContinuidadePage />} />
+              </Route>
+              <Route element={<RotaProtegida permissao="usar_agente_ia" />}>
+                <Route path="agente-ia" element={<AgenteIaPage />} />
               </Route>
               <Route path="*" element={<NotFoundPage />} />
             </Route>

@@ -2,6 +2,7 @@ import {
   Activity,
   ClipboardList,
   LayoutDashboard,
+  Sparkles,
   TrendingUp,
   UserRound,
   type LucideIcon,
@@ -9,7 +10,7 @@ import {
 import type { Permissao } from '@/config/perfis'
 
 // Grupos do menu lateral, na ordem em que aparecem
-export const gruposNavegacao = ['Negócio', 'Operação'] as const
+export const gruposNavegacao = ['Negócio', 'Operação', 'Assistente'] as const
 
 export type GrupoNavegacao = (typeof gruposNavegacao)[number]
 
@@ -63,6 +64,15 @@ export const itensNavegacao: ItemNavegacao[] = [
     icone: ClipboardList,
     grupo: 'Operação',
     permissao: 'ver_fila_inspecao',
+  },
+  // Por último: o perfil que abre "/" cai na primeira tela de dados dele
+  {
+    to: '/agente-ia',
+    label: 'Agente de IA',
+    descricao: 'Perguntas em português sobre os dados, com o passo a passo de cada resposta',
+    icone: Sparkles,
+    grupo: 'Assistente',
+    permissao: 'usar_agente_ia',
   },
 ]
 

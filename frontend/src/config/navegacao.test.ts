@@ -22,10 +22,10 @@ test('buscarItemAtual encontra a tela pelo endereço', () => {
   expect(buscarItemAtual('/nao-existe')).toBeUndefined()
 })
 
-test('cada perfil vê as telas da matriz combinada pelo time', () => {
-  expect(telasDoPerfil('DIRETORIA')).toEqual(['Indicadores', 'Receita', 'Continuidade'])
-  expect(telasDoPerfil('ATENDIMENTO')).toEqual(['Visão 360'])
-  expect(telasDoPerfil('PERDAS')).toEqual(['Visão 360', 'Fila de inspeção'])
-  expect(telasDoPerfil('OPERACAO')).toEqual(['Continuidade'])
-  expect(telasDoPerfil('ADMIN_TI')).toHaveLength(5)
+test('cada perfil vê as telas da matriz combinada pelo time, e todos usam o agente', () => {
+  expect(telasDoPerfil('DIRETORIA')).toEqual(['Indicadores', 'Receita', 'Continuidade', 'Agente de IA'])
+  expect(telasDoPerfil('ATENDIMENTO')).toEqual(['Visão 360', 'Agente de IA'])
+  expect(telasDoPerfil('PERDAS')).toEqual(['Visão 360', 'Fila de inspeção', 'Agente de IA'])
+  expect(telasDoPerfil('OPERACAO')).toEqual(['Continuidade', 'Agente de IA'])
+  expect(telasDoPerfil('ADMIN_TI')).toHaveLength(6)
 })
