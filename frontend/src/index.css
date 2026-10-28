@@ -13,6 +13,7 @@
      shadcn que pedem font-mono também ficam na fonte do texto */
   --font-mono: var(--font-sans);
   --color-canvas: var(--canvas);
+  --color-agente: var(--agente);
   --color-sidebar-muted: var(--sidebar-muted);
   --color-marca-grade: var(--marca-grade);
   --color-marca-energia: var(--marca-energia);
@@ -66,6 +67,8 @@
   --foreground: #0f1a1e;
   /* Fundo da área de conteúdo; cartões e cabeçalho ficam brancos sobre ele */
   --canvas: #f4f6f7;
+  /* Coluna do agente de IA: um tom abaixo do canvas, para separar do dashboard */
+  --agente: #e9eef0;
   --card: oklch(1 0 0);
   --card-foreground: #0f1a1e;
   --popover: oklch(1 0 0);

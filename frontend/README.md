@@ -157,6 +157,7 @@ Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o
 | Período anterior nas comparações | `--chart-anterior` | `bg-chart-anterior` |
 | Bandeiras tarifárias | `--bandeira-verde`, `--bandeira-amarela`, `--bandeira-vermelha-p1`, `--bandeira-vermelha-p2` | `bg-bandeira-verde`… |
 | Fundo da área de conteúdo (cartões e cabeçalho ficam brancos sobre ele) | `--canvas` | `bg-canvas` |
+| Coluna do agente de IA, um tom abaixo do canvas (balões e campo de pergunta ficam brancos sobre ela) | `--agente` | `bg-agente` |
 | Menu lateral escuro em petróleo | `--sidebar`, `--sidebar-foreground`, `--sidebar-muted`… | `bg-sidebar`, `text-sidebar-muted`… |
 | Marca (só na marca e no favicon) | `--marca-grade`, `--marca-energia` | `bg-marca-energia`… |
 

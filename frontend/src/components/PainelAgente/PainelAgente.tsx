@@ -108,7 +108,7 @@ function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
       aria-label="Agente de IA"
       hidden={!aberto}
       onKeyDown={aoTeclar}
-      className="fixed inset-0 z-40 flex flex-col bg-card shadow-xl sm:left-auto sm:w-[26rem] sm:border-l lg:sticky lg:top-0 lg:z-auto lg:h-svh lg:w-[24rem] lg:shrink-0 lg:shadow-none 2xl:w-[28rem]"
+      className="fixed inset-0 z-40 flex flex-col bg-agente shadow-xl sm:left-auto sm:w-[26rem] sm:border-l lg:sticky lg:top-0 lg:z-auto lg:h-svh lg:w-[24rem] lg:shrink-0 lg:shadow-none 2xl:w-[28rem]"
     >
       <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
         <Sparkles aria-hidden="true" className="size-4 text-primary" />
@@ -129,7 +129,7 @@ function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-canvas px-4 py-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
         {trocas.length === 0 ? (
           <SugestoesPerguntas aoEscolher={enviar} />
         ) : (
