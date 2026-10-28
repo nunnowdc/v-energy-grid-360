@@ -1,7 +1,9 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { useLocation } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import PainelAgente from '@/components/PainelAgente/PainelAgente'
 import type { AuditoriaAgente, RespostaAgente } from '@/hooks/use-agente-ia'
+import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 import { renderizar } from '@/test/renderizar'
 
 // Respostas e auditorias inventadas, no formato das rotas reais do agente
@@ -71,11 +73,25 @@ const corpoDas = (fetch: ReturnType<typeof backend>, caminho: string) =>
 const auditoriasBuscadas = (fetch: ReturnType<typeof backend>) =>
   fetch.mock.calls.map(([url]) => String(url)).filter((url) => url.startsWith('/api/ai/audit/'))
 
-function abrir({ url = '/receita', aberto = true } = {}) {
+// Mostra o endereço atual, para conferir a tela que o agente abriu
+function Endereco() {
+  const { pathname, search } = useLocation()
+  return <output aria-label="Endereço">{pathname + search}</output>
+}
+
+function abrir({ url = '/receita', aberto = true, comOpcoes = false } = {}) {
   const aoFechar = vi.fn()
-  renderizar(<PainelAgente aberto={aberto} aoFechar={aoFechar} />, { url })
+  renderizar(
+    <>
+      <PainelAgente aberto={aberto} aoFechar={aoFechar} />
+      <Endereco />
+    </>,
+    { url, opcoesFiltros: comOpcoes ? opcoesFiltrosExemplo : undefined },
+  )
   return { aoFechar }
 }
+
+const endereco = () => screen.getByLabelText('Endereço').textContent
 
 function perguntar(texto: string) {
   fireEvent.change(screen.getByLabelText('Sua pergunta'), { target: { value: texto } })
@@ -277,6 +293,57 @@ test('"Nova conversa" limpa a conversa e começa outra sessão', async () => {
   const [primeira, segunda] = corpoDas(fetch, '/api/ai/ask')
   expect(segunda.session_id).not.toBe(primeira.session_id)
   expect(segunda.history).toEqual([])
+})
+
+test('a resposta em Markdown aparece formatada, sem os asteriscos', async () => {
+  backend({
+    perguntas: [{ corpo: resposta('d1', { answer: '**FEC** é a frequência.\n\n- por UC\n- em `agg_continuidade`' }) }],
+    auditorias: {},
+  })
+  abrir()
+  perguntar('O que é FEC?')
+
+  expect(await screen.findByText('FEC', { selector: 'strong' })).toBeInTheDocument()
+  expect(screen.getByText('agg_continuidade', { selector: 'code' })).toBeInTheDocument()
+  expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['por UC', 'em agg_continuidade'])
+  expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument()
+})
+
+test('a resposta leva o dashboard para a tela e os filtros do assunto', async () => {
+  backend({
+    perguntas: [
+      {
+        corpo: resposta('a1', {
+          sql: "SELECT SUM(receita_faturada) FROM agg_receita_mensal WHERE unaccent(lower(municipio)) = unaccent(lower('recife'))",
+        }),
+      },
+    ],
+    auditorias: {},
+  })
+  abrir({ url: '/continuidade?meses=6', comOpcoes: true })
+  perguntar('Qual o faturamento em Recife no ano de 2024?')
+
+  await screen.findByText('Resposta a1')
+  // O React Router troca de tela com prioridade baixa: pode chegar um instante depois da resposta
+  await waitFor(() => expect(endereco()).toBe('/receita?municipio=Recife'))
+  // O link reabre essa visão se a pessoa sair dela
+  expect(screen.getByRole('link', { name: 'No dashboard: Receita · Recife' })).toHaveAttribute(
+    'href',
+    '/receita?municipio=Recife',
+  )
+})
+
+test('recusa honesta não mexe no dashboard', async () => {
+  backend({
+    perguntas: [{ corpo: resposta('r1', { answer: 'Não sei.', sql: null, selo_confianca: 'recusa_honesta' }) }],
+    auditorias: {},
+  })
+  abrir({ url: '/continuidade', comOpcoes: true })
+  perguntar('Qual o faturamento em Recife?')
+
+  await screen.findByText('Não sei.')
+  expect(endereco()).toBe('/continuidade')
+  expect(screen.queryByRole('link', { name: /No dashboard/ })).not.toBeInTheDocument()
 })
 
 test('fechado, o painel some da tela; o X e o Esc pedem para fechar', () => {

@@ -1,16 +1,27 @@
 import { MessageSquarePlus, Sparkles, X } from 'lucide-react'
-import { useEffect, useState, type KeyboardEvent } from 'react'
-import { useLocation } from 'react-router'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import CaixaPergunta from '@/components/CaixaPergunta/CaixaPergunta'
 import ConversaAgente, { type Troca } from '@/components/ConversaAgente/ConversaAgente'
 import SugestoesPerguntas from '@/components/SugestoesPerguntas/SugestoesPerguntas'
 import { Button } from '@/components/ui/button'
-import { usePerguntarAgente, type PerguntaAgente, type TurnoConversa } from '@/hooks/use-agente-ia'
+import { buscarItemAtual } from '@/config/navegacao'
+import {
+  usePerguntarAgente,
+  type PerguntaAgente,
+  type RespostaAgente,
+  type TurnoConversa,
+} from '@/hooks/use-agente-ia'
+import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { useUsuario } from '@/hooks/use-usuario'
 import { ErroApi } from '@/lib/api/erro-api'
+import { telaDaResposta } from '@/lib/tela-da-resposta'
 
 // Quantas perguntas anteriores vão junto, para o agente entender "e em 2023?"
 const TROCAS_NO_HISTORICO = 3
+
+// Só resposta com base (dados ou documentos) mexe no dashboard; recusa e erro, não
+const SELOS_QUE_MOSTRAM_TELA = ['certificada', 'gerada_confiavel', 'documental_rag']
 
 function historicoDe(anteriores: Troca[]): TurnoConversa[] {
   return anteriores
@@ -40,14 +51,36 @@ type PainelAgenteProps = {
 
 // Agente de IA numa coluna à direita, ao lado do dashboard. Fica montado
 // mesmo fechado, então a conversa continua ao trocar de tela ou reabrir.
-// Telas largas: coluna fixa que divide o espaço com a tela; estreitas: por cima
+// Telas largas: coluna fixa que divide o espaço com a tela; estreitas: por cima.
+// Cada resposta leva o dashboard para a tela e os filtros do assunto dela
 function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
-  const { pathname } = useLocation()
-  const { usuario } = useUsuario()
+  const { pathname, search } = useLocation()
+  const navigate = useNavigate()
+  const { usuario, pode } = useUsuario()
+  const { data: opcoes } = useOpcoesFiltros()
   const perguntar = usePerguntarAgente()
   const [sessao, setSessao] = useState(() => crypto.randomUUID())
   const [trocas, setTrocas] = useState<Troca[]>([])
   const aguardando = trocas.some((troca) => !troca.resposta && !troca.erro)
+
+  // A resposta chega segundos depois; até lá a pessoa pode ter mudado de tela
+  const enderecoAtual = useRef(pathname + search)
+  useEffect(() => {
+    enderecoAtual.current = pathname + search
+  }, [pathname, search])
+
+  // Tela e filtros do assunto da resposta, se o perfil pode abrir essa tela
+  function telaPara(troca: Troca, resposta: RespostaAgente): Troca['tela'] {
+    if (!SELOS_QUE_MOSTRAM_TELA.includes(resposta.selo_confianca)) {
+      return undefined
+    }
+    const tela = telaDaResposta({ pergunta: troca.pergunta, sql: resposta.sql, resposta: resposta.answer, opcoes })
+    const item = tela && buscarItemAtual(tela.caminho.split('?')[0])
+    if (!tela || !item || !pode(item.permissao)) {
+      return undefined
+    }
+    return { caminho: tela.caminho, descricao: [item.label, ...tela.filtros].join(' · ') }
+  }
 
   // Ao abrir, o cursor já vai para a pergunta
   useEffect(() => {
@@ -71,7 +104,13 @@ function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
         history: historicoDe(anteriores),
       },
       {
-        onSuccess: (resposta) => atualizar(troca.id, { resposta }),
+        onSuccess: (resposta) => {
+          const tela = telaPara(troca, resposta)
+          atualizar(troca.id, { resposta, tela })
+          if (tela && tela.caminho !== enderecoAtual.current) {
+            navigate(tela.caminho)
+          }
+        },
         onError: (erro) =>
           atualizar(troca.id, {
             erro: erro instanceof ErroApi ? erro.message : 'Algo deu errado. Tente de novo em instantes.',
