@@ -1,8 +1,6 @@
 import { delay, http, HttpResponse } from 'msw'
-import type { MudancaOrdem } from '@/hooks/use-ordens-inspecao'
 import { gerarContinuidade } from '@/mocks/continuidade'
 import { gerarIndicadores } from '@/mocks/indicadores'
-import { buscarFila, gerarOrdens, listarOrdens, mudarOrdem } from '@/mocks/inspecoes'
 import { opcoesAtuais } from '@/mocks/opcoes-atuais'
 
 // Simula a demora da rede para dar para ver o carregamento (nos testes, sem demora)
@@ -25,43 +23,6 @@ export const handlers = [
       return HttpResponse.json({ detail: 'Use os últimos 3, 6 ou 12 meses da base.' }, { status: 422 })
     }
     return HttpResponse.json(indicadores)
-  }),
-
-  http.get('/api/inspections/queue', async ({ request }) => {
-    const params = new URL(request.url).searchParams
-    await demora(500)
-    const filtros = { municipio: params.get('municipio'), bairro: params.get('bairro'), classe: params.get('classe') }
-    return HttpResponse.json(
-      buscarFila(await opcoesAtuais(), filtros, Number(params.get('pagina') ?? 1), Number(params.get('limite') ?? 20)),
-    )
-  }),
-
-  http.get('/api/inspections/orders', async () => {
-    await demora(300)
-    return HttpResponse.json({ itens: listarOrdens() })
-  }),
-
-  http.post('/api/inspections/order', async ({ request }) => {
-    const { ids_uc } = (await request.json()) as { ids_uc: string[] }
-    await demora(500)
-    return HttpResponse.json({ ordens: gerarOrdens(await opcoesAtuais(), ids_uc) }, { status: 201 })
-  }),
-
-  http.patch('/api/inspections/:idOrdem', async ({ params, request }) => {
-    const mudanca = (await request.json()) as MudancaOrdem
-    await demora(400)
-    const resultado = mudarOrdem(String(params.idOrdem), mudanca)
-    return 'erro' in resultado
-      ? HttpResponse.json({ detail: resultado.erro }, { status: resultado.status })
-      : HttpResponse.json(resultado.ordem)
-  }),
-
-  http.delete('/api/inspections/:idOrdem', async ({ params }) => {
-    await demora(400)
-    const resultado = mudarOrdem(String(params.idOrdem), { status: 'CANCELADA' })
-    return 'erro' in resultado
-      ? HttpResponse.json({ detail: resultado.erro }, { status: resultado.status })
-      : HttpResponse.json(resultado.ordem)
   }),
 
   http.get('/api/network/continuity', async ({ request }) => {
