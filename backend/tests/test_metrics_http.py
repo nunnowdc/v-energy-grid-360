@@ -243,10 +243,34 @@ def test_calendario_valido_sem_medidas_retorna_null() -> None:
         {"inicio": "2025-11", "fim": "2025-12"},
         {"inicio": "2025-10", "fim": "2025-11"},
         {"inicio": "2026-01", "fim": "2025-12"},
+        # Termina depois do último mês da base
+        {"inicio": "2025-11", "fim": "2026-01"},
     ],
 )
 def test_periodo_invalido_retorna_422(params: dict[str, str]) -> None:
     assert get_response(params).status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("inicio", "fim", "previous_start", "previous_end"),
+    [
+        ("2025-04", "2025-06", "2025-01", "2025-03"),
+        ("2024-07", "2024-12", "2024-01", "2024-06"),
+        ("2024-07", "2024-09", "2024-04", "2024-06"),
+    ],
+)
+def test_periodo_pode_terminar_antes_do_ultimo_mes_da_base(
+    inicio: str, fim: str, previous_start: str, previous_end: str
+) -> None:
+    response = get_response({"inicio": inicio, "fim": fim})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["atual"]["inicio"], body["atual"]["fim"]) == (inicio, fim)
+    assert (body["anterior"]["inicio"], body["anterior"]["fim"]) == (
+        previous_start,
+        previous_end,
+    )
 
 
 @pytest.mark.parametrize("consumo", [None, -2.0])

@@ -95,7 +95,9 @@ def get_general_metrics(
 
     last = max(months)
     end = end or last
-    if end != last:
+    # O período pode terminar em qualquer mês da base; sem o anterior, de mesmo
+    # tamanho, no calendário, a resposta é 503 (conferido logo abaixo)
+    if end > last:
         raise InvalidMetricsParametersError("Período inválido")
     start = start or _month_at(_month_index(end) - size + 1)
     if _month_index(start) != _month_index(end) - size + 1:

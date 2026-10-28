@@ -148,14 +148,23 @@ def read_revenue_variance(
     municipio: str | None = Query(default=None),
     bairro: str | None = Query(default=None),
     classe: str | None = Query(default=None),
+    inicio_p0: str | None = Query(
+        default=None,
+        description="Primeiro mês (yyyy-MM) dos 12 meses do período base",
+    ),
+    inicio_p1: str | None = Query(
+        default=None,
+        description="Primeiro mês (yyyy-MM) dos 12 meses do período comparado",
+    ),
 ) -> RevenueVarianceResponse:
-    """Expõe a comparação Gold com recorte geográfico opcional."""
+    """Expõe a comparação Gold com recorte geográfico e períodos opcionais.
 
-    if any(
-        key not in {"municipio", "bairro", "classe"} for key in request.query_params
-    ) or any(
-        len(request.query_params.getlist(key)) > 1
-        for key in ("municipio", "bairro", "classe")
+    Sem períodos, compara o primeiro ano da base com os últimos 12 meses.
+    """
+    allowed = ("municipio", "bairro", "classe", "inicio_p0", "inicio_p1")
+
+    if any(key not in allowed for key in request.query_params) or any(
+        len(request.query_params.getlist(key)) > 1 for key in allowed
     ):
         raise HTTPException(status_code=422, detail="Parâmetros inválidos")
 
@@ -163,7 +172,12 @@ def read_revenue_variance(
         with repository_context as repository:
             return RevenueVarianceResponse.model_validate(
                 get_revenue_variance(
-                    repository, municipio or None, bairro or None, classe or None
+                    repository,
+                    municipio or None,
+                    bairro or None,
+                    classe or None,
+                    inicio_p0 or None,
+                    inicio_p1 or None,
                 )
             )
 
