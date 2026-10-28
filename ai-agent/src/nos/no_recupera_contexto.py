@@ -29,6 +29,12 @@ _CATEGORIAS_POR_ROTA = {
     ],
 }
 
+_LIMIAR_POR_ROTA = {
+    "sql": 0.70,
+    "rag": 0.45,
+    "ambos": 0.55,
+}
+
 
 def no_recupera_contexto(
     state: EstadoAgente,
@@ -36,12 +42,22 @@ def no_recupera_contexto(
 ) -> Dict[str, Any]:
     """
     Recupera chunks de conhecimento relevantes para a pergunta.
-    Filtra as categorias com base na rota decidida pelo Nó 4.
+    Filtra as categorias e ajusta o limiar de similaridade com base na rota decidida pelo Nó 4.
     """
     pergunta = state.get("pergunta_autonoma") or state.get("pergunta_original", "")
     rota = state.get("rota", "sql")
 
-    _buscador = buscador or BuscadorVetorial(db_url=os.getenv("DATABASE_URL"))
+    # Se RAG_LIMIAR_SIMILARIDADE estiver definido no ambiente, ele prevalece (passar limiar=None)
+    env_limiar = os.getenv("RAG_LIMIAR_SIMILARIDADE")
+    if env_limiar is not None and env_limiar.strip() != "":
+        limiar_calculado = None
+    else:
+        limiar_calculado = _LIMIAR_POR_ROTA.get(rota, 0.70)
+
+    _buscador = buscador or BuscadorVetorial(
+        db_url=os.getenv("DATABASE_URL"),
+        limiar=limiar_calculado,
+    )
 
     categorias = _CATEGORIAS_POR_ROTA.get(rota, ["glossario", "esquema"])
 

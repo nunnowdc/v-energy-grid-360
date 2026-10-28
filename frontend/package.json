@@ -54,5 +54,8 @@
     "workerDirectory": [
       "public"
     ]
+  },
+  "allowScripts": {
+    "msw@2.15.0": true
   }
 }

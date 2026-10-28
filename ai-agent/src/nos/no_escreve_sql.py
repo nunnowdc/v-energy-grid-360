@@ -8,7 +8,7 @@ import re
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
-from ..provedores.cliente_llm import ClienteLLM
+from ..provedores.cliente_llm import ClienteLLM, ErroLLMIndisponivel
 
 logger = logging.getLogger("venergy.no_escreve_sql")
 
@@ -382,15 +382,11 @@ def no_escreve_sql(
 ) -> Dict[str, Any]:
     """
     Gera ou corrige uma consulta SQL com base na pergunta autônoma e no contexto do RAG.
-    Incrementa o contador de tentativas e chamadas de LLM.
+    Incrementa o contador de tentativas e chamadas de LLM apenas se houver sucesso.
     """
-    tentativas = state.get("tentativas_sql", 0) + 1
-    chamadas_llm = state.get("chamadas_llm", 0) + 1
-    tokens_prompt = state.get("tokens_prompt", 0)
-    tokens_resposta = state.get("tokens_resposta", 0)
-
     pergunta = state.get("pergunta_autonoma") or state.get("pergunta_original", "")
     erro_anterior = state.get("erro_validacao_ou_execucao")
+    tentativas = state.get("tentativas_sql", 0) + 1
 
     # Monta contexto RAG em texto se houver
     chunks_rag = state.get("contexto_rag", [])
@@ -408,16 +404,29 @@ def no_escreve_sql(
             f"Corrija o SQL e NÃO cometa o mesmo erro:\nErro: {erro_anterior}"
         )
 
-    resposta = llm.invoke(
-        prompt=prompt,
-        system_prompt=system,
-        temperatura=0.0,
-        resposta_mock=(
-            "SELECT SUM(f.receita_faturada) AS receita_total "
-            "FROM agg_receita_mensal r "
-            "WHERE r.municipio = 'Recife' AND r.ano = 2024"
-        ),
-    )
+    try:
+        resposta = llm.invoke(
+            prompt=prompt,
+            system_prompt=system,
+            temperatura=0.0,
+            resposta_mock=(
+                "SELECT SUM(r.receita_faturada) AS receita_total "
+                "FROM agg_receita_mensal r "
+                "WHERE r.municipio = 'Recife' AND r.ano = 2024"
+            ),
+        )
+    except ErroLLMIndisponivel:
+        logger.warning("Nó 7 — LLM indisponível ao tentar gerar SQL.")
+        return {
+            "motivo_recusa": "llm_indisponivel",
+            "passos_executados": [
+                "Nó 7 — LLM indisponível ao tentar gerar SQL."
+            ],
+        }
+
+    chamadas_llm = state.get("chamadas_llm", 0) + 1
+    tokens_prompt = state.get("tokens_prompt", 0) + resposta.tokens_prompt
+    tokens_resposta = state.get("tokens_resposta", 0) + resposta.tokens_resposta
 
     sql_gerado, premissas_sql = _limpar_sql(resposta.texto)
     logger.info("Nó 7 | Tentativa %d | SQL gerado: %s", tentativas, sql_gerado[:120])
@@ -428,8 +437,8 @@ def no_escreve_sql(
         "hit_cache": False,
         "tentativas_sql": tentativas,
         "chamadas_llm": chamadas_llm,
-        "tokens_prompt": tokens_prompt + resposta.tokens_prompt,
-        "tokens_resposta": tokens_resposta + resposta.tokens_resposta,
+        "tokens_prompt": tokens_prompt,
+        "tokens_resposta": tokens_resposta,
         "passos_executados": [
             f"Nó 7 — SQL escrito (tentativa {tentativas}): {sql_gerado[:80]}...",
             *[

@@ -34,7 +34,7 @@ def test_filtro_seguranca_bloqueia_prompt_injection(pergunta_maliciosa: str):
     estado = {"pergunta_original": pergunta_maliciosa}
     resultado = no_filtro_seguranca(estado)
 
-    assert resultado["eh_malicioso"] is True
+    assert resultado["malicioso"] is True
     assert resultado["rota"] == "bloqueio_seguranca"
     assert "Bloqueado" in resultado["passos_executados"][0]
 
@@ -50,7 +50,7 @@ def test_filtro_seguranca_bloqueia_flooding_acima_do_limite():
     estado = {"pergunta_original": pergunta_longa}
     resultado = no_filtro_seguranca(estado)
 
-    assert resultado["eh_malicioso"] is True
+    assert resultado["malicioso"] is True
     assert resultado["rota"] == "bloqueio_seguranca"
     assert "limite de caracteres" in resultado["motivo_fora_escopo"]
 
@@ -70,7 +70,7 @@ def test_filtro_seguranca_aprova_perguntas_legitimas(pergunta_legitima: str):
     estado = {"pergunta_original": pergunta_legitima}
     resultado = no_filtro_seguranca(estado)
 
-    assert resultado["eh_malicioso"] is False
+    assert resultado["malicioso"] is False
     assert resultado.get("rota") != "bloqueio_seguranca"
 
     estado_combinado = {**estado, **resultado}
