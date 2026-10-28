@@ -26,7 +26,7 @@ _TEMPLATES_PADRAO = {
     "faturamento_por_municipio_ano": (
         "SELECT r.municipio, r.ano, SUM(r.receita_faturada) AS receita_total "
         "FROM agg_receita_mensal r "
-        "WHERE r.municipio = '{municipio}' AND r.ano = {ano} "
+        "WHERE unaccent(lower(r.municipio)) = unaccent(lower(:municipio)) AND r.ano = :ano "
         "GROUP BY r.municipio, r.ano"
     ),
 }
@@ -123,7 +123,6 @@ def no_cache_parametrizado(
     sql = template.replace(":municipio", f"'{slots['municipio']}'").replace(
         ":ano", str(slots["ano"])
     )
-    sql = sql.replace("{municipio}", slots["municipio"]).replace("{ano}", str(slots["ano"]))
     return {
         "hit_cache": True,
         "sql_cache": sql,
