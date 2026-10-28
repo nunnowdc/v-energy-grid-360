@@ -8,7 +8,8 @@ from app.controllers.filters import router as filters_router
 from app.controllers.health import router as health_router
 from app.controllers.metrics import router as metrics_router
 from app.controllers.uc import router as uc_router
-from app.core.config import get_settings
+from app.core.config import ENV_LOCAL_PATH, get_settings
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -22,6 +23,9 @@ if settings.database_url:
         "DATABASE_URL",
         settings.database_url.replace("postgresql+psycopg://", "postgresql://", 1),
     )
+# As chaves e o modelo do LLM também vêm do .env.local. Quem já está no
+# ambiente, como a DATABASE_URL acima, não é sobrescrito
+load_dotenv(ENV_LOCAL_PATH)
 
 from src.api.ai_router import router as ai_router
 
