@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class ChunkConhecimento(BaseModel):
     """Um fragmento de conhecimento indexado na base vetorial."""
     id: str
-    categoria: Literal["glossario", "esquema", "prodist", "templates"]
+    categoria: Literal["glossario", "esquema", "prodist", "templates", "perfis_dados"]
     titulo: str
     conteudo: str
     fonte: str
