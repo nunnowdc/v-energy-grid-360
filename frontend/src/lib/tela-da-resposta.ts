@@ -105,6 +105,12 @@ function montar(tela: (typeof telas)[number], valores: Valores, opcoes?: OpcoesF
     const atendidos = opcoes.alimentadores.find(({ codigo }) => codigo === alimentador)?.municipios
 
     let municipio = igual(valores.municipio, opcoes.municipios.map(({ nome }) => nome))
+    // Bairro sem município: vale se o nome existe num município só
+    // ("Jardim Primavera" é de Camaragibe; "Centro" há em vários)
+    if (!valores.municipio && valores.bairro) {
+      const comOBairro = opcoes.municipios.filter(({ bairros }) => igual(valores.bairro, bairros))
+      municipio = comOBairro.length === 1 ? comOBairro[0].nome : undefined
+    }
     // O município fica só se o alimentador o atende
     if (atendidos && municipio && !atendidos.includes(municipio)) {
       municipio = undefined

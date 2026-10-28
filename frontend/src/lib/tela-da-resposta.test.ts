@@ -44,6 +44,21 @@ describe('com consulta, a tela vem do agente', () => {
     )
   })
 
+  test('bairro sem município leva o município, se o nome só existe em um', () => {
+    expect(telaDoAgente({ tela: 'receita', filtros: { bairro: 'boa viagem' } }, opcoes)).toEqual({
+      caminho: '/receita?municipio=Recife&bairro=Boa+Viagem',
+      filtros: ['Recife', 'Boa Viagem'],
+    })
+    // Com o mesmo bairro em dois municípios, não dá para saber qual
+    const comBairroRepetido = {
+      ...opcoes,
+      municipios: [...opcoes.municipios, { nome: 'Moreno', bairros: ['Boa Viagem'] }],
+    }
+    expect(telaDoAgente({ tela: 'receita', filtros: { bairro: 'Boa Viagem' } }, comBairroRepetido)?.caminho).toBe(
+      '/receita',
+    )
+  })
+
   test('o município sai se o alimentador não o atende', () => {
     expect(
       telaDoAgente({ tela: 'continuidade', filtros: { municipio: 'Recife', alimentador: 'ALM-OLI-001' } }, opcoes)?.caminho,
