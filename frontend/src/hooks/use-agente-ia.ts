@@ -25,6 +25,22 @@ export type PerguntaAgente = {
   history?: TurnoConversa[]
 }
 
+// Tela que mostra os dados da resposta, escolhida pelo agente a partir da consulta
+// executada (ai-agent/src/services/tela_dashboard.py). Os valores vêm como estão
+// no SQL, ex.: "recife"; o painel confere com as opções dos filtros antes de aplicar
+export type DashboardAgente = {
+  tela: 'indicadores' | 'receita' | 'continuidade' | 'inspecoes' | 'visao_360'
+  filtros: {
+    municipio?: string | null
+    bairro?: string | null
+    classe?: string | null
+    alimentador?: string | null
+    causa?: string | null
+    // Só na visao_360
+    id_uc?: string | null
+  }
+}
+
 export type RespostaAgente = {
   answer: string
   sql: string | null
@@ -33,6 +49,8 @@ export type RespostaAgente = {
   selo_confianca: SeloConfianca | (string & {})
   fontes: string[]
   tempo_ms: number
+  // null: a resposta não tem consulta ou os dados dela não estão em nenhuma tela
+  dashboard?: DashboardAgente | null
 }
 
 export type AuditoriaAgente = {

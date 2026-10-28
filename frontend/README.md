@@ -13,6 +13,7 @@ Aplicação web do portal V-Energy Grid 360: um sistema interno usado por atende
 - [Inter](https://rsms.me/inter/) (tipografia)
 - [TanStack Query](https://tanstack.com/query) (chamadas à API, cache e estados de carregamento)
 - [Recharts](https://recharts.org/) pelo componente `chart` do shadcn/ui (gráficos)
+- [react-markdown](https://github.com/remarkjs/react-markdown) com [remark-gfm](https://github.com/remarkjs/remark-gfm) (respostas do agente de IA em Markdown)
 
 ## Pré-requisitos
 
@@ -99,6 +100,7 @@ src/
 │   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
 │   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
+│   ├── TextoMarkdown/TextoMarkdown.tsx    ← resposta do agente em Markdown com o visual do portal
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
 ├── config/
@@ -132,6 +134,7 @@ src/
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
+│   ├── tela-da-resposta.ts  ← tela e filtros do dashboard para uma resposta do agente
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
 ├── pages/
@@ -213,7 +216,8 @@ Não é uma tela: o botão **Agente de IA** do cabeçalho abre o agente numa col
 - Em telas largas (a partir de 1024 px) o agente divide o espaço com a tela; nas estreitas, abre por cima.
 - A conversa continua ao trocar de tela e ao fechar e reabrir o painel. "Nova conversa" começa outra sessão.
 - Cada pergunta leva a tela aberta como contexto (`page`, e `id_uc` na Visão 360) e as 3 perguntas anteriores, para o agente entender "e em 2023?".
-- Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado.
+- Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. O texto vem em Markdown (negrito, listas, tabelas) e é mostrado formatado; HTML no texto não é interpretado. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado.
+- **O dashboard acompanha a conversa.** Cada resposta com base (dados ou documentos; recusa e erro não contam) leva a tela para onde estão os dados dela: "faturamento em Recife" abre os Indicadores de Recife, "qual alimentador teve o maior DEC" abre a Continuidade naquele alimentador, "a UC mais suspeita" abre a Visão 360 dela. Quem escolhe é o agente, pela consulta que executou: as tabelas decidem a tela e o WHERE (ou a linha única do resultado) decide os filtros, no campo `dashboard` de `/api/ai/ask`. O front (`src/lib/tela-da-resposta.ts`) só aplica os valores que existem em `/filters/options` e que a tela tem. Respostas sem consulta (glossário, normas) abrem a tela do assunto da pergunta. A resposta mostra o link "No dashboard: …" para reabrir essa visão.
 
 ## Perfis de acesso
 

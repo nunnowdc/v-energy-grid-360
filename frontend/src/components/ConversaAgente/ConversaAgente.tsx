@@ -1,6 +1,6 @@
 import { LoaderCircle, RotateCw, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import MensagemAgente from '@/components/MensagemAgente/MensagemAgente'
+import MensagemAgente, { type TelaNoDashboard } from '@/components/MensagemAgente/MensagemAgente'
 import { Button } from '@/components/ui/button'
 import type { RespostaAgente } from '@/hooks/use-agente-ia'
 
@@ -10,6 +10,8 @@ export type Troca = {
   pergunta: string
   resposta?: RespostaAgente
   erro?: string
+  // Tela do dashboard aberta por causa desta resposta
+  tela?: TelaNoDashboard
 }
 
 type ConversaAgenteProps = {
@@ -69,7 +71,7 @@ function ConversaAgente({ trocas, aoTentarDeNovo }: ConversaAgenteProps) {
             {troca.pergunta}
           </p>
           {troca.resposta ? (
-            <MensagemAgente resposta={troca.resposta} />
+            <MensagemAgente resposta={troca.resposta} tela={troca.tela} />
           ) : troca.erro ? (
             <Falha mensagem={troca.erro} aoTentarDeNovo={() => aoTentarDeNovo(troca)} />
           ) : (
