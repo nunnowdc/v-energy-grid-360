@@ -64,12 +64,16 @@ def get_settings() -> Settings:
             parsed_database_url = urlsplit(database_url)
         except ValueError:
             raise ValueError("DATABASE_URL inválida") from None
-        if (
-            parsed_database_url.scheme != "postgresql+psycopg"
-            or not parsed_database_url.path.strip("/")
-        ):
+        if parsed_database_url.scheme not in {
+            "postgresql",
+            "postgresql+psycopg",
+        } or not parsed_database_url.path.strip("/"):
             raise ValueError(
-                "DATABASE_URL deve usar postgresql+psycopg e indicar o banco"
+                "DATABASE_URL deve usar postgresql ou postgresql+psycopg e indicar o banco"
             )
+        # O SQLAlchemy precisa do driver no esquema; o agente de IA usa a forma sem ele
+        database_url = parsed_database_url._replace(
+            scheme="postgresql+psycopg"
+        ).geturl()
 
     return Settings(environment, host, port, origins, database_url)
