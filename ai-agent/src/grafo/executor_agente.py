@@ -20,8 +20,12 @@ from .construtor_grafo import construir_grafo_final
 from ..interfaces.validador_sql_interface import ValidadorSQLInterface
 from ..provedores.cliente_llm import ClienteLLM
 from ..services.sql_executor import SQLExecutor
+from ..services.tela_dashboard import tela_do_dashboard
 
 logger = logging.getLogger("venergy.executor_agente")
+
+# Só resposta com consulta executada leva o portal para uma tela
+_SELOS_COM_DADOS = {"certificada", "gerada_confiavel"}
 
 
 def executar_agente(
@@ -89,6 +93,12 @@ def executar_agente(
 
     # Mapeia o estado final do LangGraph para o contrato de saída público
     dados_brutos = estado_final.get("dados_sql")
+    selo = estado_final.get("selo_confianca", "erro_bloqueado")
+    dashboard = (
+        tela_do_dashboard(estado_final.get("sql_gerado"), dados_brutos)
+        if selo in _SELOS_COM_DADOS
+        else None
+    )
     return RespostaAgente(
         audit_id=estado_final.get("audit_id", str(uuid.uuid4())),
         pergunta_original=estado_final.get("pergunta_original", pergunta),
@@ -96,7 +106,7 @@ def executar_agente(
         resposta_texto=estado_final.get("texto_resposta", ""),
         sql_gerado=estado_final.get("sql_gerado"),
         dados_tabela=dados_brutos,
-        selo_confianca=estado_final.get("selo_confianca", "erro_bloqueado"),
+        selo_confianca=selo,
         fontes_citadas=estado_final.get("fontes_citadas", []),
         passos_executados=estado_final.get("passos_executados", []),
         hit_cache=estado_final.get("hit_cache", False),
@@ -105,6 +115,7 @@ def executar_agente(
             estado_final.get("tokens_prompt", 0) + estado_final.get("tokens_resposta", 0)
         ),
         chamadas_llm=estado_final.get("chamadas_llm", 0),
+        dashboard=dashboard,
     )
 
 
@@ -125,7 +136,7 @@ def _testar_pipeline_com_banco() -> int:
         print(f"Erro: DATABASE_URL não encontrada em {arquivo_env}.")
         return 1
 
-    pergunta = "Qual foi o faturamento total de Recife em 2023?."
+    pergunta = "Quantidade de UCs com fatura abertas?"
     print(f"Arquivo .env: {arquivo_env}")
     print(f"Pergunta de teste: {pergunta}")
     print("Executando o pipeline do agente...")

@@ -1,46 +1,49 @@
 import { ehClasseConsumo, type ClasseConsumo } from '@/config/classes'
 import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 
+// Períodos aceitos pelo backend: os últimos 3, 6 ou 12 meses da base
+export const mesesPeriodo = [12, 6, 3] as const
+export type MesesPeriodo = (typeof mesesPeriodo)[number]
+export const MESES_PADRAO: MesesPeriodo = 12
+
 // Filtro ausente = sem filtro (todos). Sem período = últimos 12 meses da base
 export type Filtros = {
-  inicio?: string
-  fim?: string
+  meses?: MesesPeriodo
   municipio?: string
   bairro?: string
   classe?: ClasseConsumo
+  alimentador?: string
+  causa?: string
 }
 
 export type NomeFiltro = keyof Filtros
 
-export const nomesFiltros: NomeFiltro[] = ['inicio', 'fim', 'municipio', 'bairro', 'classe']
-
-const FORMATO_COMPETENCIA = /^\d{4}-(0[1-9]|1[0-2])$/
+export const nomesFiltros: NomeFiltro[] = ['meses', 'municipio', 'bairro', 'classe', 'alimentador', 'causa']
 
 // Lê os filtros da URL, descartando valores que não existem.
-// Enquanto as opções não chegam, confere só o formato
+// Enquanto as opções não chegam, aceita os textos como vieram
 export function lerFiltros(params: URLSearchParams, opcoes?: OpcoesFiltros): Filtros {
-  const inicioUrl = lerCompetencia(params.get('inicio'), opcoes)
-  const fimUrl = lerCompetencia(params.get('fim'), opcoes)
-  // Período invertido digitado na URL: troca os dois de lugar
-  const invertido = inicioUrl && fimUrl && inicioUrl > fimUrl
-  const inicio = invertido ? fimUrl : inicioUrl
-  const fim = invertido ? inicioUrl : fimUrl
-
   const municipio = lerMunicipio(params.get('municipio'), opcoes)
   const bairro = municipio ? lerBairro(params.get('bairro'), municipio, opcoes) : undefined
   const classe = params.get('classe')
 
   return {
-    inicio,
-    fim,
+    meses: lerMeses(params.get('meses')),
     municipio,
     bairro,
     classe: ehClasseConsumo(classe) ? classe : undefined,
+    alimentador: lerAlimentador(params.get('alimentador'), municipio, opcoes),
+    causa: lerCausa(params.get('causa'), opcoes),
   }
 }
 
 // Devolve a URL com um filtro trocado (valor vazio remove o filtro)
-export function aplicarFiltro(params: URLSearchParams, nome: NomeFiltro, valor?: string) {
+export function aplicarFiltro(
+  params: URLSearchParams,
+  nome: NomeFiltro,
+  valor?: string,
+  opcoes?: OpcoesFiltros,
+) {
   const proximo = new URLSearchParams(params)
 
   if (valor) {
@@ -49,16 +52,14 @@ export function aplicarFiltro(params: URLSearchParams, nome: NomeFiltro, valor?:
     proximo.delete(nome)
   }
 
-  // O bairro pertence ao município: trocar o município zera o bairro
   if (nome === 'municipio') {
+    // O bairro pertence ao município: trocar o município zera o bairro
     proximo.delete('bairro')
-  }
-
-  // O início nunca fica depois do fim: o outro lado acompanha a escolha
-  const inicio = proximo.get('inicio')
-  const fim = proximo.get('fim')
-  if (inicio && fim && inicio > fim) {
-    proximo.set(nome === 'inicio' ? 'fim' : 'inicio', nome === 'inicio' ? inicio : fim)
+    // O alimentador só sai se não atender o município novo
+    const alimentador = proximo.get('alimentador')
+    if (valor && alimentador && !atendeMunicipio(alimentador, valor, opcoes)) {
+      proximo.delete('alimentador')
+    }
   }
 
   return proximo
@@ -73,14 +74,15 @@ export function removerFiltros(params: URLSearchParams) {
   return proximo
 }
 
-function lerCompetencia(valor: string | null, opcoes?: OpcoesFiltros) {
-  if (!valor || !FORMATO_COMPETENCIA.test(valor)) {
-    return undefined
-  }
-  if (opcoes && !opcoes.competencias.includes(valor)) {
-    return undefined
-  }
-  return valor
+// Primeiro e último mês (yyyy-MM) dos últimos N meses da base.
+// A âncora é o último mês da base, nunca a data de hoje
+export function janelaDoPeriodo(competencias: string[], meses: MesesPeriodo = MESES_PADRAO) {
+  const janela = competencias.slice(-meses)
+  return { inicio: janela[0], fim: janela.at(-1) }
+}
+
+function lerMeses(valor: string | null) {
+  return mesesPeriodo.find((meses) => String(meses) === valor)
 }
 
 function lerMunicipio(valor: string | null, opcoes?: OpcoesFiltros) {
@@ -102,4 +104,28 @@ function lerBairro(valor: string | null, municipio: string, opcoes?: OpcoesFiltr
     return undefined
   }
   return valor
+}
+
+function lerAlimentador(valor: string | null, municipio: string | undefined, opcoes?: OpcoesFiltros) {
+  if (!valor || !opcoes) {
+    return valor ?? undefined
+  }
+  const alimentador = opcoes.alimentadores.find((item) => item.codigo === valor)
+  if (!alimentador || (municipio && !alimentador.municipios.includes(municipio))) {
+    return undefined
+  }
+  return valor
+}
+
+function lerCausa(valor: string | null, opcoes?: OpcoesFiltros) {
+  if (!valor || (opcoes && !opcoes.causas.includes(valor))) {
+    return undefined
+  }
+  return valor
+}
+
+// Sem as opções carregadas, não dá para saber: mantém a escolha
+function atendeMunicipio(codigo: string, municipio: string, opcoes?: OpcoesFiltros) {
+  const alimentador = opcoes?.alimentadores.find((item) => item.codigo === codigo)
+  return !opcoes || Boolean(alimentador?.municipios.includes(municipio))
 }

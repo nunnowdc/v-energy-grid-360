@@ -7,6 +7,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
+from pydantic import ValidationError
+
 from ..contratos.modelos_rag import ChunkConhecimento, ResultadoBuscaRAG
 
 logger = logging.getLogger("venergy.buscador_vetorial")
@@ -26,10 +28,24 @@ SELECT
 FROM tb_conhecimento_vetorial
 WHERE 1 = 1
   {filtro_categoria}
-  AND 1 - (embedding <=> %(embedding)s::vector) >= %(limiar)s
 ORDER BY embedding <=> %(embedding)s::vector
 LIMIT %(top_k)s;
 """
+
+
+def _obter_limiar_padrao() -> float:
+    env_limiar = os.getenv("RAG_LIMIAR_SIMILARIDADE")
+    if env_limiar is not None and env_limiar.strip() != "":
+        try:
+            return float(env_limiar)
+        except ValueError:
+            logger.warning(
+                "Valor inválido para RAG_LIMIAR_SIMILARIDADE ('%s'). Usando fallback %.2f.",
+                env_limiar,
+                LIMIAR_SIMILARIDADE,
+            )
+            return LIMIAR_SIMILARIDADE
+    return LIMIAR_SIMILARIDADE
 
 
 class BuscadorVetorial:
@@ -43,12 +59,12 @@ class BuscadorVetorial:
         db_url: Optional[str] = None,
         modelo_embedding: str = "paraphrase-multilingual-MiniLM-L12-v2",
         top_k: int = TOP_K,
-        limiar: float = LIMIAR_SIMILARIDADE,
+        limiar: Optional[float] = None,
     ):
         self.db_url = db_url or os.getenv("DATABASE_URL")
         self.modelo_embedding = modelo_embedding
         self.top_k = top_k
-        self.limiar = limiar
+        self.limiar = _obter_limiar_padrao() if limiar is None else limiar
         self._modelo = None  # lazy load
 
     def _carregar_modelo(self):
@@ -89,10 +105,15 @@ class BuscadorVetorial:
             logger.error("Erro ao gerar embedding: %s", e)
             return ResultadoBuscaRAG(chunks=[], top_score=0.0, houve_corte_limiar=False)
 
+        params: Dict[str, Any] = {
+            "embedding": f"[{','.join(str(v) for v in embedding)}]",
+            "top_k": self.top_k,
+        }
+
         filtro_categoria = ""
         if categorias:
-            placeholders = ", ".join(f"'{c}'" for c in categorias)
-            filtro_categoria = f"AND categoria IN ({placeholders})"
+            filtro_categoria = "AND categoria = ANY(%(categorias)s)"
+            params["categorias"] = list(categorias)
 
         sql = SQL_BUSCA_VETORIAL.format(filtro_categoria=filtro_categoria)
 
@@ -103,11 +124,8 @@ class BuscadorVetorial:
 
             with psycopg2.connect(self.db_url) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(sql, {
-                        "embedding": f"[{','.join(str(v) for v in embedding)}]",
-                        "limiar": self.limiar,
-                        "top_k": self.top_k,
-                    })
+                    cur.execute("SET enable_indexscan = off;")
+                    cur.execute(sql, params)
                     rows = cur.fetchall()
 
         except Exception as e:
@@ -115,22 +133,32 @@ class BuscadorVetorial:
             return ResultadoBuscaRAG(chunks=[], top_score=0.0, houve_corte_limiar=False)
 
         if not rows:
-            logger.info("RAG: nenhum chunk acima do limiar %.2f para query: %s", self.limiar, query[:60])
-            return ResultadoBuscaRAG(chunks=[], top_score=0.0, houve_corte_limiar=True)
-
-        chunks = [
-            ChunkConhecimento(
-                id=str(row["id"]),
-                categoria=row["categoria"],
-                titulo=row["titulo"],
-                conteudo=row["conteudo"],
-                fonte=row["fonte"] or "",
-                metadados=row.get("metadados") or {},
-            )
-            for row in rows
-        ]
+            return ResultadoBuscaRAG(chunks=[], top_score=0.0, houve_corte_limiar=False)
 
         top_score = float(rows[0]["similaridade"]) if rows else 0.0
+        validos = [r for r in rows if float(r["similaridade"]) >= self.limiar]
+        if not validos:
+            logger.info(
+                "RAG: melhor chunk '%s' (%s) com score %.3f, abaixo do limiar %.2f",
+                rows[0]["titulo"], rows[0]["categoria"], top_score, self.limiar,
+            )
+            return ResultadoBuscaRAG(chunks=[], top_score=top_score, houve_corte_limiar=True)
+        rows = validos
+
+        chunks = []
+        for row in rows:
+            try:
+                chunks.append(ChunkConhecimento(
+                    id=str(row["id"]),
+                    categoria=row["categoria"],
+                    titulo=row["titulo"],
+                    conteudo=row["conteudo"],
+                    fonte=row["fonte"] or "",
+                    metadados=row.get("metadados") or {},
+                ))
+            except ValidationError as e:
+                logger.warning("RAG: chunk %s ignorado: %s", row["id"], e.errors()[0]["msg"])
+
         logger.info("RAG: %d chunk(s) recuperados. Top score: %.3f", len(chunks), top_score)
 
         return ResultadoBuscaRAG(

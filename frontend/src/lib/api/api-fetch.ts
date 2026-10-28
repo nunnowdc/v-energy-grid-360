@@ -2,7 +2,7 @@ import { ErroApi } from '@/lib/api/erro-api'
 
 const PREFIXO_API = '/api'
 
-// O agente de IA pode levar alguns segundos para responder
+// Quem precisa de mais tempo (ex.: o agente de IA) passa tempoLimiteMs
 const TEMPO_LIMITE_MS = 30_000
 
 const MENSAGEM_GENERICA = 'Algo deu errado no servidor. Tente de novo em instantes.'
@@ -22,13 +22,14 @@ const statusComMensagemFixa = [401, 403, 429]
 type OpcoesApiFetch = Omit<RequestInit, 'body' | 'headers'> & {
   corpo?: unknown
   headers?: Record<string, string>
+  tempoLimiteMs?: number
 }
 
 export async function apiFetch<T>(
   caminho: string,
-  { corpo, headers, signal, ...opcoes }: OpcoesApiFetch = {},
+  { corpo, headers, signal, tempoLimiteMs = TEMPO_LIMITE_MS, ...opcoes }: OpcoesApiFetch = {},
 ): Promise<T> {
-  const sinais = [AbortSignal.timeout(TEMPO_LIMITE_MS)]
+  const sinais = [AbortSignal.timeout(tempoLimiteMs)]
   if (signal) {
     sinais.push(signal)
   }
