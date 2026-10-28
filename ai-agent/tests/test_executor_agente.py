@@ -52,6 +52,10 @@ def test_pipeline_caminho_feliz_sql(sql_executor_teste: SQLExecutor, fake_llm_fa
     assert resultado.chamadas_llm >= 1
     assert resultado.tokens_totais > 0
     assert len(resultado.passos_executados) > 3
+    assert resultado.dashboard is not None
+    assert resultado.dashboard.tela == "indicadores"
+    assert resultado.dashboard.filtros.municipio == "Olinda"
+    assert resultado.dashboard.filtros.classe == "Comercial"
 
 
 def test_pipeline_loop_autocorrecao_retry(sql_executor_teste: SQLExecutor):
@@ -134,6 +138,8 @@ def test_pipeline_esgotamento_de_tentativas_recusa_honesta(sql_executor_teste: S
 
     assert resultado.selo_confianca == "recusa_honesta"
     assert resultado.dados_tabela is None
+    # A tela do portal não muda por causa de uma consulta que não rodou
+    assert resultado.dashboard is None
     assert "múltiplas tentativas" in resultado.resposta_texto or "não consegui gerar" in resultado.resposta_texto
 
 

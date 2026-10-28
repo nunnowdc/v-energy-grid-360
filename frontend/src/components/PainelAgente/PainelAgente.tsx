@@ -15,7 +15,7 @@ import {
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { useUsuario } from '@/hooks/use-usuario'
 import { ErroApi } from '@/lib/api/erro-api'
-import { telaDaResposta } from '@/lib/tela-da-resposta'
+import { telaDaPergunta, telaDoAgente, type TelaDaResposta } from '@/lib/tela-da-resposta'
 
 // Quantas perguntas anteriores vão junto, para o agente entender "e em 2023?"
 const TROCAS_NO_HISTORICO = 3
@@ -52,7 +52,7 @@ type PainelAgenteProps = {
 // Agente de IA numa coluna à direita, ao lado do dashboard. Fica montado
 // mesmo fechado, então a conversa continua ao trocar de tela ou reabrir.
 // Telas largas: coluna fixa que divide o espaço com a tela; estreitas: por cima.
-// Cada resposta leva o dashboard para a tela e os filtros do assunto dela
+// Cada resposta leva o dashboard para a tela e os filtros dos dados dela
 function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
@@ -69,12 +69,19 @@ function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
     enderecoAtual.current = pathname + search
   }, [pathname, search])
 
-  // Tela e filtros do assunto da resposta, se o perfil pode abrir essa tela
+  // Tela e filtros dos dados da resposta, se o perfil pode abrir essa tela.
+  // Com consulta, a tela vem do agente; sem consulta (glossário, normas), do
+  // assunto da pergunta
   function telaPara(troca: Troca, resposta: RespostaAgente): Troca['tela'] {
     if (!SELOS_QUE_MOSTRAM_TELA.includes(resposta.selo_confianca)) {
       return undefined
     }
-    const tela = telaDaResposta({ pergunta: troca.pergunta, sql: resposta.sql, resposta: resposta.answer, opcoes })
+    let tela: TelaDaResposta | null = null
+    if (resposta.dashboard) {
+      tela = telaDoAgente(resposta.dashboard, opcoes)
+    } else if (!resposta.sql) {
+      tela = telaDaPergunta(troca.pergunta, opcoes)
+    }
     const item = tela && buscarItemAtual(tela.caminho.split('?')[0])
     if (!tela || !item || !pode(item.permissao)) {
       return undefined

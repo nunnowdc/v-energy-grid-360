@@ -134,7 +134,7 @@ src/
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
-│   ├── tela-da-resposta.ts  ← tela e filtros do dashboard que mostram o assunto de uma resposta
+│   ├── tela-da-resposta.ts  ← tela e filtros do dashboard para uma resposta do agente
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
 ├── pages/
@@ -217,7 +217,7 @@ Não é uma tela: o botão **Agente de IA** do cabeçalho abre o agente numa col
 - A conversa continua ao trocar de tela e ao fechar e reabrir o painel. "Nova conversa" começa outra sessão.
 - Cada pergunta leva a tela aberta como contexto (`page`, e `id_uc` na Visão 360) e as 3 perguntas anteriores, para o agente entender "e em 2023?".
 - Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. O texto vem em Markdown (negrito, listas, tabelas) e é mostrado formatado; HTML no texto não é interpretado. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado.
-- **O dashboard acompanha a conversa.** Cada resposta com base (dados ou documentos; recusa e erro não contam) leva a tela para o assunto dela, com os filtros citados: "faturamento em Recife" abre a Receita de Recife, "qual alimentador teve o maior DEC" abre a Continuidade naquele alimentador. A resposta mostra o link "No dashboard: …" para reabrir essa visão. Por enquanto o front deduz a tela e os filtros (`src/lib/tela-da-resposta.ts`): o assunto vem da pergunta (ou das tabelas da consulta) e os filtros só valem se existirem nas opções de `/filters/options`. Quando o agente passar a devolver a tela e os filtros na resposta, o front deve usar os dele.
+- **O dashboard acompanha a conversa.** Cada resposta com base (dados ou documentos; recusa e erro não contam) leva a tela para onde estão os dados dela: "faturamento em Recife" abre os Indicadores de Recife, "qual alimentador teve o maior DEC" abre a Continuidade naquele alimentador, "a UC mais suspeita" abre a Visão 360 dela. Quem escolhe é o agente, pela consulta que executou: as tabelas decidem a tela e o WHERE (ou a linha única do resultado) decide os filtros, no campo `dashboard` de `/api/ai/ask`. O front (`src/lib/tela-da-resposta.ts`) só aplica os valores que existem em `/filters/options` e que a tela tem. Respostas sem consulta (glossário, normas) abrem a tela do assunto da pergunta. A resposta mostra o link "No dashboard: …" para reabrir essa visão.
 
 ## Perfis de acesso
 

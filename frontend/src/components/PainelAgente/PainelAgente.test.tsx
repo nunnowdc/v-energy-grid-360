@@ -309,12 +309,13 @@ test('a resposta em Markdown aparece formatada, sem os asteriscos', async () => 
   expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument()
 })
 
-test('a resposta leva o dashboard para a tela e os filtros do assunto', async () => {
+test('a resposta leva o dashboard para a tela e os filtros que o agente escolheu', async () => {
   backend({
     perguntas: [
       {
         corpo: resposta('a1', {
           sql: "SELECT SUM(receita_faturada) FROM agg_receita_mensal WHERE unaccent(lower(municipio)) = unaccent(lower('recife'))",
+          dashboard: { tela: 'indicadores', filtros: { municipio: 'recife', bairro: null } },
         }),
       },
     ],
@@ -325,12 +326,40 @@ test('a resposta leva o dashboard para a tela e os filtros do assunto', async ()
 
   await screen.findByText('Resposta a1')
   // O React Router troca de tela com prioridade baixa: pode chegar um instante depois da resposta
-  await waitFor(() => expect(endereco()).toBe('/receita?municipio=Recife'))
+  await waitFor(() => expect(endereco()).toBe('/?municipio=Recife'))
   // O link reabre essa visão se a pessoa sair dela
-  expect(screen.getByRole('link', { name: 'No dashboard: Receita · Recife' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: 'No dashboard: Indicadores · Recife' })).toHaveAttribute(
     'href',
-    '/receita?municipio=Recife',
+    '/?municipio=Recife',
   )
+})
+
+test('com consulta sem tela no portal, o dashboard fica como está', async () => {
+  backend({
+    perguntas: [
+      { corpo: resposta('a1', { sql: 'SELECT AVG(tempo_resolucao_h) FROM fact_atendimentos', dashboard: null }) },
+    ],
+    auditorias: {},
+  })
+  abrir({ url: '/continuidade', comOpcoes: true })
+  // O assunto da pergunta seria Indicadores, mas quem decide é a consulta
+  perguntar('Qual o tempo médio de atendimento das UCs?')
+
+  await screen.findByText('Resposta a1')
+  expect(endereco()).toBe('/continuidade')
+  expect(screen.queryByRole('link', { name: /No dashboard/ })).not.toBeInTheDocument()
+})
+
+test('resposta de documentação, sem consulta, abre a tela do assunto da pergunta', async () => {
+  backend({
+    perguntas: [{ corpo: resposta('d1', { sql: null, selo_confianca: 'documental_rag', dashboard: null }) }],
+    auditorias: {},
+  })
+  abrir({ url: '/receita', comOpcoes: true })
+  perguntar('O que é DEC e FEC?')
+
+  await screen.findByText('Resposta d1')
+  await waitFor(() => expect(endereco()).toBe('/continuidade'))
 })
 
 test('recusa honesta não mexe no dashboard', async () => {

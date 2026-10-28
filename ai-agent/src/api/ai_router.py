@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from ..contratos.resposta_agente import TelaDashboard
 from ..grafo.executor_agente import executar_agente
 from ..insights.service import InsightsService
 
@@ -42,6 +43,8 @@ class RespostaChat(BaseModel):
     selo_confianca: str
     fontes: List[str] = []
     tempo_ms: float
+    # Tela e filtros que o portal abre ao lado da resposta (None = não muda a tela)
+    dashboard: Optional[TelaDashboard] = None
 
 
 class RequisicaoFeedback(BaseModel):
@@ -74,6 +77,7 @@ async def ask(req: RequisicaoChat) -> RespostaChat:
         selo_confianca=resultado.selo_confianca,
         fontes=resultado.fontes_citadas,
         tempo_ms=resultado.tempo_execucao_ms,
+        dashboard=resultado.dashboard,
     )
 
 

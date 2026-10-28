@@ -7,6 +7,27 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
+class FiltrosDashboard(BaseModel):
+    """Valores filtrados na consulta, como estão no SQL ou no resultado (ex.: 'recife')."""
+    municipio: Optional[str] = None
+    bairro: Optional[str] = None
+    classe: Optional[str] = None
+    alimentador: Optional[str] = None
+    causa: Optional[str] = None
+    id_uc: Optional[str] = None
+
+
+class TelaDashboard(BaseModel):
+    """
+    Tela do portal que mostra o assunto da resposta, aberta ao lado da conversa.
+    O portal confere os valores com as opções dos filtros antes de aplicar.
+    """
+    tela: Literal["indicadores", "receita", "continuidade", "inspecoes", "visao_360"] = Field(
+        description="Tela do dashboard; visao_360 vem sempre com filtros.id_uc."
+    )
+    filtros: FiltrosDashboard = Field(default_factory=FiltrosDashboard)
+
+
 class RespostaAgente(BaseModel):
     """
     Estrutura de dados pública padronizada para retorno do agente.
@@ -31,3 +52,7 @@ class RespostaAgente(BaseModel):
     tempo_execucao_ms: float = Field(default=0.0, description="Latência total da requisição em milissegundos.")
     tokens_totais: int = Field(default=0, description="Total de tokens consumidos na interação.")
     chamadas_llm: int = Field(default=0, description="Quantidade de chamadas a provedores de LLM realizadas.")
+    dashboard: Optional[TelaDashboard] = Field(
+        default=None,
+        description="Tela e filtros do portal que mostram os dados da resposta, se houver consulta executada.",
+    )
