@@ -339,8 +339,6 @@ Rotas com exemplo hoje (números inventados):
 |---|---|---|---|
 | `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
 | `GET /api/network/continuity` | Continuidade | `src/mocks/continuidade.ts` | `src/hooks/use-continuidade.ts` |
-| `GET /api/inspections/queue` | Fila de inspeção | `src/mocks/inspecoes.ts` | `src/hooks/use-fila-inspecao.ts` |
-| `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}` | Fila de inspeção (ordens) | `src/mocks/inspecoes.ts` (ordens só na memória: somem ao recarregar) | `src/hooks/use-ordens-inspecao.ts` |
 
 Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
 
@@ -348,6 +346,7 @@ Rotas que já são reais e precisam do backend com a Gold no banco local (veja `
 
 - `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
+- `GET /api/inspections/queue`, `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}`: a Fila de inspeção. As ordens ficam na tabela `ordens_inspecao`, que não vem com a Gold: crie uma vez com `backend/sql/ordens_inspecao.sql` (veja `backend/README.md`). Os testes da tela usam um backend inventado no próprio teste, com as mesmas regras (gerar é tudo ou nada; a hora vem em UTC).
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 - `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde em modo de teste. Os testes do painel usam respostas inventadas no próprio teste.
 

@@ -9,11 +9,20 @@ import {
   type ResultadoInspecao,
 } from '@/hooks/use-ordens-inspecao'
 import { ErroApi } from '@/lib/api/erro-api'
-import { formatarDataHora } from '@/lib/formatacao'
+import { formatarInstante } from '@/lib/formatacao'
 
 const textoResultado: Record<ResultadoInspecao, string> = {
   IRREGULARIDADE_CONFIRMADA: 'Irregularidade confirmada',
   SEM_IRREGULARIDADE: 'Sem irregularidade',
+}
+
+// Os botões só oferecem mudanças que valem para a situação da ordem: o 409 quer
+// dizer que outra pessoa mudou a ordem antes (a lista já foi recarregada)
+function textoErro(erro: Error) {
+  if (erro instanceof ErroApi && erro.status === 409) {
+    return 'Essa ordem já tinha mudado de situação. A lista foi atualizada.'
+  }
+  return erro instanceof ErroApi ? erro.message : 'Não foi possível atualizar a ordem. Tente de novo.'
 }
 
 type OrdensInspecaoProps = {
@@ -32,7 +41,7 @@ function OrdensInspecao({ ordens }: OrdensInspecaoProps) {
     <div className="flex flex-col gap-3">
       {erro && (
         <p role="alert" className="text-sm text-destructive">
-          {erro instanceof ErroApi ? erro.message : 'Não foi possível atualizar a ordem. Tente de novo.'}
+          {textoErro(erro)}
         </p>
       )}
       <Table>
@@ -58,7 +67,7 @@ function OrdensInspecao({ ordens }: OrdensInspecaoProps) {
               <TableCell className="whitespace-nowrap">
                 {ordem.bairro} <span className="text-muted-foreground">· {ordem.municipio}</span>
               </TableCell>
-              <TableCell>{formatarDataHora(ordem.criada_em)}</TableCell>
+              <TableCell>{formatarInstante(ordem.criada_em)}</TableCell>
               <TableCell>
                 <StatusOrdem status={ordem.status} />
                 {ordem.resultado && (
