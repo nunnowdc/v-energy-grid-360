@@ -273,7 +273,7 @@ class FakeClienteLLM(ClienteLLM):
     """
 
     def __init__(self, mapa_respostas: Optional[Dict[str, str]] = None, resposta_padrao: str = ""):
-        super().__init__()
+        # Não chamar super().__init__() pois ele valida chaves de API
         self.forcar_mock = True
         self.mapa_respostas = mapa_respostas or {}
         self.resposta_padrao = resposta_padrao

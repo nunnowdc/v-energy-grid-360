@@ -9,7 +9,7 @@ import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -27,6 +27,38 @@ logger = logging.getLogger("venergy.executor_agente")
 # Só resposta com consulta executada leva o portal para uma tela
 _SELOS_COM_DADOS = {"certificada", "gerada_confiavel"}
 
+# Selos que indicam resposta baseada em dados (exigem SQL)
+_SELOS_BASEADOS_EM_DADOS = {"certificada", "gerada_confiavel"}
+
+
+def avaliar_resultado_teste_pipeline(resposta: RespostaAgente) -> tuple[int, str]:
+    """
+    Avalia o resultado do script de teste manual (_testar_pipeline_com_banco).
+    Não imprime nada; retorna (código_de_saída, mensagem).
+    Regras, nesta ordem:
+    - selo == "erro_bloqueado" -> (1, "Falha: o pipeline não conseguiu concluir a execução.")
+    - selo == "recusa_honesta" -> (0, "Aviso: o agente recusou responder (não é erro de execução).")
+    - selo em ("certificada", "gerada_confiavel") e not resposta.sql_gerado ->
+      (1, "Falha: resposta baseada em dados, mas nenhum SQL foi executado.")
+    - selo == "documental_rag" -> (0, "Pipeline concluído com sucesso (resposta documental, sem SQL).")
+    - demais casos -> (0, "Pipeline concluído com sucesso.")
+    """
+    selo = resposta.selo_confianca
+
+    if selo == "erro_bloqueado":
+        return 1, "Falha: o pipeline não conseguiu concluir a execução."
+
+    if selo == "recusa_honesta":
+        return 0, "Aviso: o agente recusou responder (não é erro de execução)."
+
+    if selo in _SELOS_BASEADOS_EM_DADOS and not resposta.sql_gerado:
+        return 1, "Falha: resposta baseada em dados, mas nenhum SQL foi executado."
+
+    if selo == "documental_rag":
+        return 0, "Pipeline concluído com sucesso (resposta documental, sem SQL)."
+
+    return 0, "Pipeline concluído com sucesso."
+
 
 def executar_agente(
     pergunta: str,
@@ -36,6 +68,8 @@ def executar_agente(
     validador: Optional[ValidadorSQLInterface] = None,
     executor: Optional[SQLExecutor] = None,
     db_url: Optional[str] = None,
+    user_id: Optional[str] = None,
+    contexto_tela: Optional[Dict[str, Any]] = None,
 ) -> RespostaAgente:
     """
     Executa o agente V-Energy Grid 360 ponta a ponta e retorna um schema Pydantic estruturado.
@@ -48,6 +82,8 @@ def executar_agente(
         validador:   Validador SQL (usa StubValidadorSQL se None).
         executor:    Executor SQL (usa SQLExecutor padrão se None).
         db_url:      URL de conexão ao PostgreSQL (usa DATABASE_URL do env se None).
+        user_id:     Identificador do usuário autenticado (virá da autenticação no futuro).
+        contexto_tela: Contexto da tela aberta no portal (page, id_uc, etc.).
 
     Returns:
         RespostaAgente: Contrato padronizado com resposta, SQL, dados, selo e auditoria.
@@ -66,6 +102,8 @@ def executar_agente(
         pergunta=pergunta,
         historico=historico,
         sessao_id=sessao_id,
+        user_id=user_id,
+        contexto_tela=contexto_tela,
     )
 
     try:
@@ -120,7 +158,11 @@ def executar_agente(
 
 
 def _testar_pipeline_com_banco() -> int:
-    """Executa uma pergunta real no grafo usando a conexão configurada no .env."""
+    """Executa uma pergunta real no grafo usando a conexão configurada no .env.
+
+    Uso: python -m src.grafo.executor_agente "sua pergunta aqui"
+    Se nenhuma pergunta for passada, usa a padrão.
+    """
     try:
         from dotenv import load_dotenv
     except ImportError:
@@ -136,7 +178,10 @@ def _testar_pipeline_com_banco() -> int:
         print(f"Erro: DATABASE_URL não encontrada em {arquivo_env}.")
         return 1
 
-    pergunta = "Quantidade de UCs com fatura abertas?"
+    pergunta = " ".join(sys.argv[1:]).strip() or (
+        " qual o KWh médio no Cabo de Santo Agostinho na classe industrial "
+        
+    )
     print(f"Arquivo .env: {arquivo_env}")
     print(f"Pergunta de teste: {pergunta}")
     print("Executando o pipeline do agente...")
@@ -150,17 +195,12 @@ def _testar_pipeline_com_banco() -> int:
     print(f"Dados retornados: {resposta.dados_tabela}")
     print(f"Passos: {resposta.passos_executados}")
     print(f"Chamadas ao LLM: {resposta.chamadas_llm}")
+    if resposta.fontes_citadas:
+        print(f"Fontes: {resposta.fontes_citadas}")
 
-    if resposta.selo_confianca == "erro_bloqueado":
-        print("\nFalha: o pipeline não conseguiu concluir a execução.")
-        return 1
-
-    if not resposta.sql_gerado:
-        print("\nFalha: o pipeline não gerou nem executou SQL.")
-        return 1
-
-    print("\nPipeline concluído com sucesso.")
-    return 0
+    codigo, mensagem = avaliar_resultado_teste_pipeline(resposta)
+    print(f"\n{mensagem}")
+    return codigo
 
 
 if __name__ == "__main__":

@@ -223,7 +223,7 @@ def test_no_sintetiza_resposta(fake_llm_factory):
     texto_executivo = "Em 2023, o faturamento comercial em Olinda totalizou R$ 1.575,00."
     fake_llm = fake_llm_factory(resposta_padrao=texto_executivo)
     estado = {
-        "pergunta_autonoma": "Qual o faturamento comercial em Olinda?",
+        "pergunta_autonoma": "Qual o faturamento comercial em Olinda em 2023?",
         "dados_sql": [{"classe": "Comercial", "total_receita": 1575.0}],
         "contexto_rag": [],
         "chamadas_llm": 0,
