@@ -1,11 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { apiFetch } from '@/lib/api/api-fetch'
-import type { Filtros } from '@/lib/filtros-url'
+import { anosDaReceita, type Filtros } from '@/lib/filtros-url'
 
-// Formato de GET /api/metrics/revenue-variance?municipio=&bairro=&classe=, igual ao
-// backend/app/schemas/metrics.py. Vem de agg_receita_preco_volume, com os períodos
-// fixos da Gold (P0 = primeiro ano, P1 = últimos 12 meses), sem parâmetro de período.
-// Os valores de um recorte são a SOMA das linhas da Gold; os preços são receita ÷ kWh
+// Formato de GET /api/metrics/revenue-variance?inicio_p0=&inicio_p1=&municipio=&bairro=&classe=,
+// igual ao backend/app/schemas/metrics.py. P0 e P1 têm 12 meses cada, a partir de inicio_p0 e
+// inicio_p1; sem eles, o backend usa o primeiro ano da base e os últimos 12 meses. A conta é a
+// da Gold (agg_receita_preco_volume), feita sobre agg_receita_mensal para qualquer par de anos.
+// Os valores de um recorte são a SOMA das células da Gold; os preços são receita ÷ kWh
 
 type Medidas<Valor> = {
   receita_p0: Valor
@@ -54,11 +56,16 @@ export type VariacaoReceita = {
   }
 }
 
-export function useReceita({ municipio, bairro, classe }: Filtros) {
+export function useReceita(filtros: Filtros) {
+  const { municipio, bairro, classe } = filtros
+  const { data: opcoes } = useOpcoesFiltros()
+  // Manda sempre os dois anos, para a resposta ser a dos anos que a barra de filtros mostra
+  const anos = opcoes ? anosDaReceita(opcoes.competencias, filtros) : undefined
+
   return useQuery({
-    queryKey: ['receita', municipio ?? null, bairro ?? null, classe ?? null],
+    queryKey: ['receita', anos?.base, anos?.comparado, municipio ?? null, bairro ?? null, classe ?? null],
     queryFn: ({ signal }) => {
-      const params = new URLSearchParams()
+      const params = new URLSearchParams({ inicio_p0: anos!.base!, inicio_p1: anos!.comparado! })
       if (municipio) {
         params.set('municipio', municipio)
       }
@@ -68,9 +75,9 @@ export function useReceita({ municipio, bairro, classe }: Filtros) {
       if (classe) {
         params.set('classe', classe)
       }
-      const consulta = params.size > 0 ? `?${params}` : ''
-      return apiFetch<VariacaoReceita>(`/metrics/revenue-variance${consulta}`, { signal })
+      return apiFetch<VariacaoReceita>(`/metrics/revenue-variance?${params}`, { signal })
     },
+    enabled: anos?.base !== undefined && anos.comparado !== undefined,
     // Ao trocar um filtro, os números anteriores ficam esmaecidos até os novos chegarem
     placeholderData: keepPreviousData,
   })

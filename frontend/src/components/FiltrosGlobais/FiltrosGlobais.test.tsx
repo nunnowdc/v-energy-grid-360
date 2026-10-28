@@ -121,3 +121,32 @@ test('alimentador depende do município, e causa aparece com o nome amigável', 
   escolher('Causa', 'Falha de equipamento')
   expect(urlAtual()).toBe('?municipio=Olinda&causa=FALHA+DE+EQUIPAMENTO')
 })
+
+test('"Até" lista só os meses com espaço para o período anterior, do mais recente ao mais antigo', () => {
+  abrir('/?meses=12', ['periodo', 'ate'])
+  expect(valorDe('Período')).toBe('Últimos 12 meses')
+  expect(valorDe('Até')).toBe('jun/2026')
+  const meses = textos('Até')
+  expect(meses.slice(0, 3)).toEqual(['jun/2026', 'mai/2026', 'abr/2026'])
+  expect(meses.at(-1)).toBe('jun/2024')
+
+  escolher('Até', 'dez/2025')
+  expect(urlAtual()).toBe('?meses=12&ate=2025-12')
+})
+
+test('anos da Receita: cada lista só deixa o comparado depois do base', () => {
+  abrir('/receita', ['anos'])
+  expect(valorDe('Período base')).toBe('jul/2022 – jun/2023')
+  expect(valorDe('Comparado com')).toBe('jul/2025 – jun/2026')
+  expect(textos('Período base')).toEqual(['jul/2022 – jun/2023', 'jul/2023 – jun/2024', 'jul/2024 – jun/2025'])
+
+  escolher('Período base', 'jul/2024 – jun/2025')
+  expect(urlAtual()).toBe('?base=2024-07')
+  // Com o base em jul/2024, o comparado só pode ser o último ano
+  expect(textos('Comparado com')).toEqual(['jul/2025 – jun/2026'])
+
+  escolher('Período base', 'jul/2022 – jun/2023')
+  escolher('Comparado com', 'jul/2023 – jun/2024')
+  expect(urlAtual()).toBe('?comparado=2023-07')
+  expect(textos('Período base')).toEqual(['jul/2022 – jun/2023'])
+})

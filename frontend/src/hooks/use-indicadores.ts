@@ -4,9 +4,9 @@ import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { apiFetch } from '@/lib/api/api-fetch'
 import { janelaDoPeriodo, type Filtros } from '@/lib/filtros-url'
 
-// Formato proposto para GET /api/metrics/general?inicio=yyyy-MM&fim=yyyy-MM&municipio=&classe=
-// (ainda não existe no backend). Tudo vem de agg_receita_mensal, somado no recorte
-// pedido. O período anterior tem o mesmo tamanho e termina no mês antes de "inicio"
+// Formato de GET /api/metrics/general?inicio=yyyy-MM&fim=yyyy-MM&municipio=&classe=, igual ao
+// backend/app/schemas/metrics.py. Tudo vem de agg_receita_mensal, somado no recorte pedido.
+// O período tem 3, 6 ou 12 meses; o anterior tem o mesmo tamanho e termina no mês antes de "inicio"
 
 // Totais de um período
 export type ResumoIndicadores = {
@@ -37,10 +37,10 @@ export type IndicadoresGerais = {
   por_classe: { classe: ClasseConsumo; receita_faturada: number; receita_faturada_anterior: number }[]
 }
 
-export function useIndicadores({ meses, municipio, classe }: Filtros) {
+export function useIndicadores({ meses, ate, municipio, classe }: Filtros) {
   const { data: opcoes } = useOpcoesFiltros()
-  // O período é contado a partir do último mês da base, que vem das opções
-  const janela = opcoes ? janelaDoPeriodo(opcoes.competencias, meses) : undefined
+  // O período termina no mês escolhido ou no último mês da base, que vem das opções
+  const janela = opcoes ? janelaDoPeriodo(opcoes.competencias, meses, ate) : undefined
 
   return useQuery({
     queryKey: ['indicadores', janela?.inicio, janela?.fim, municipio ?? null, classe ?? null],

@@ -301,7 +301,9 @@ Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos 
 
 | Parâmetro | Formato | Sem o parâmetro |
 |---|---|---|
-| `meses` | `3`, `6` ou `12`: os últimos meses **da base**, nunca da data de hoje | Últimos 12 meses |
+| `meses` | `3`, `6` ou `12`: o tamanho do período | Últimos 12 meses |
+| `ate` | Último mês do período (`yyyy-MM`). Só vale se antes dele couber o período anterior, de mesmo tamanho | Último mês **da base**, nunca a data de hoje |
+| `base` e `comparado` | Primeiro mês (`yyyy-MM`) de um ano da base, para a Receita. O comparado vem depois do base | Primeiro ano da base × últimos 12 meses |
 | `municipio` | Nome do município | Todos |
 | `bairro` | Nome do bairro (exige `municipio`) | Todos |
 | `classe` | `RESIDENCIAL`, `COMERCIAL`, `INDUSTRIAL`, `RURAL` ou `PODER_PUBLICO` | Todas |
@@ -312,13 +314,13 @@ Filtros de cada tela, combinados com o backend em `docs/backend/impl_filtros.md`
 
 | Tela | Filtros |
 |---|---|
-| Indicadores | Período, município, classe |
-| Receita | Município, bairro, classe (os períodos são fixos e aparecem só como texto) |
+| Indicadores | Período, até, município, classe |
+| Receita | Período base, comparado com, município, bairro, classe |
 | Fila de inspeção | Município, bairro, classe |
 | Continuidade | Período, município, alimentador, causa |
 | Visão 360 | Nenhum: a tela recebe o ID da UC |
 
-Para a API, o período vira `inicio` e `fim` (`yyyy-MM`) com `janelaDoPeriodo()` de `src/lib/filtros-url.ts`; o backend calcula sozinho a janela de comparação, com o mesmo tamanho. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
+Para a API, o período vira `inicio` e `fim` (`yyyy-MM`) com `janelaDoPeriodo()` de `src/lib/filtros-url.ts`; o backend calcula sozinho a janela de comparação, com o mesmo tamanho. Na Receita, os anos são de 12 meses contados do fim da base (`anosDaBase()`), para os dois lados terem os mesmos meses do ano, e vão para a API como `inicio_p0` e `inicio_p1`. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
 
 Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora. Cada filtro aceita um valor só.
 
@@ -337,7 +339,6 @@ Rotas com exemplo hoje (números inventados):
 
 | Rota | Tela | Exemplo | Formato (proposta ao backend) |
 |---|---|---|---|
-| `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
 | `GET /api/network/continuity` | Continuidade | `src/mocks/continuidade.ts` | `src/hooks/use-continuidade.ts` |
 
 Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
@@ -345,6 +346,7 @@ Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
 Rotas que já são reais e precisam do backend com a Gold no banco local (veja `backend/README.md`):
 
 - `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
 - `GET /api/inspections/queue`, `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}`: a Fila de inspeção. As ordens ficam na tabela `ordens_inspecao`, que não vem com a Gold: crie uma vez com `backend/sql/ordens_inspecao.sql` (veja `backend/README.md`). Os testes da tela usam um backend inventado no próprio teste, com as mesmas regras (gerar é tudo ou nada; a hora vem em UTC).
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.

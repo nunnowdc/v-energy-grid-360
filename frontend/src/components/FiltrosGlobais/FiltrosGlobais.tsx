@@ -7,9 +7,18 @@ import { rotuloCausa } from '@/config/causas'
 import { classesConsumo } from '@/config/classes'
 import { useFiltros } from '@/hooks/use-filtros'
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
-import { MESES_PADRAO, mesesPeriodo } from '@/lib/filtros-url'
+import { formatarCompetencia, formatarPeriodo } from '@/lib/formatacao'
+import {
+  anosDaBase,
+  anosDaReceita,
+  MESES_PADRAO,
+  mesesFinais,
+  mesesPeriodo,
+  type AnoDaBase,
+} from '@/lib/filtros-url'
 
-export type CampoFiltro = 'periodo' | 'municipio' | 'bairro' | 'classe' | 'alimentador' | 'causa'
+// "ate" é o mês em que o período termina; "anos" são o ano base e o ano comparado da Receita
+export type CampoFiltro = 'periodo' | 'ate' | 'anos' | 'municipio' | 'bairro' | 'classe' | 'alimentador' | 'causa'
 
 // "Últimos 12 meses" é o padrão (sem parâmetro na URL); as outras janelas vêm depois
 const opcoesPeriodo = mesesPeriodo
@@ -20,6 +29,8 @@ const opcoesPeriodo = mesesPeriodo
 // Cabem os valores mais comuns; um valor maior é cortado com "…". No celular, cada filtro ocupa a linha toda
 const larguras: Record<CampoFiltro, string> = {
   periodo: 'sm:w-56',
+  ate: 'sm:w-36',
+  anos: 'sm:w-72',
   municipio: 'sm:w-64',
   bairro: 'sm:w-56',
   classe: 'sm:w-64',
@@ -46,18 +57,57 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
         const alimentadores = dados.alimentadores.filter(
           ({ municipios }) => !filtros.municipio || municipios.includes(filtros.municipio),
         )
+        // O último mês da base é o padrão de "Até"; os outros vêm do mais recente para o mais antigo
+        const ultimoMes = dados.competencias.at(-1)
+        const outrosFins = mesesFinais(dados.competencias, filtros.meses).slice(0, -1).reverse()
+        // Cada lista só oferece os anos que deixam o comparado depois do base
+        const anos = anosDaBase(dados.competencias)
+        const emVigor = anosDaReceita(dados.competencias, filtros)
+        const rotuloAno = (ano?: AnoDaBase) => (ano ? formatarPeriodo(ano.inicio, ano.fim) : '—')
+        const opcaoAno = (ano: AnoDaBase) => ({ valor: ano.inicio, rotulo: rotuloAno(ano) })
 
         return (
           <div className="flex flex-wrap items-center gap-2">
             {campos.includes('periodo') && (
               <FiltroSelect
                 rotulo="Período"
-                valor={filtros.meses ? String(filtros.meses) : undefined}
+                // "meses=12" na URL é o mesmo que o padrão, que é a opção vazia
+                valor={filtros.meses && filtros.meses !== MESES_PADRAO ? String(filtros.meses) : undefined}
                 opcoes={opcoesPeriodo}
                 textoVazio={`Últimos ${MESES_PADRAO} meses`}
                 className={larguras.periodo}
                 aoMudar={(valor) => alterarFiltro('meses', valor)}
               />
+            )}
+            {campos.includes('ate') && (
+              <FiltroSelect
+                rotulo="Até"
+                valor={filtros.ate}
+                opcoes={outrosFins.map((mes) => ({ valor: mes, rotulo: formatarCompetencia(mes) }))}
+                textoVazio={ultimoMes ? formatarCompetencia(ultimoMes) : '—'}
+                className={larguras.ate}
+                aoMudar={(valor) => alterarFiltro('ate', valor)}
+              />
+            )}
+            {campos.includes('anos') && (
+              <>
+                <FiltroSelect
+                  rotulo="Período base"
+                  valor={filtros.base}
+                  opcoes={anos.slice(1).filter(({ inicio }) => inicio < emVigor.comparado!).map(opcaoAno)}
+                  textoVazio={rotuloAno(anos[0])}
+                  className={larguras.anos}
+                  aoMudar={(valor) => alterarFiltro('base', valor)}
+                />
+                <FiltroSelect
+                  rotulo="Comparado com"
+                  valor={filtros.comparado}
+                  opcoes={anos.slice(0, -1).filter(({ inicio }) => inicio > emVigor.base!).map(opcaoAno)}
+                  textoVazio={rotuloAno(anos.at(-1))}
+                  className={larguras.anos}
+                  aoMudar={(valor) => alterarFiltro('comparado', valor)}
+                />
+              </>
             )}
             {campos.includes('municipio') && (
               <FiltroSelect

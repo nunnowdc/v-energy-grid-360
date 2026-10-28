@@ -69,6 +69,23 @@ test('manda o período, o município e a classe escolhidos', async () => {
   )
 })
 
+test('o período termina no mês escolhido em "Até"', async () => {
+  const fetch = responderCom(indicadores)
+  abrir('/?meses=3&ate=2025-12')
+
+  await screen.findByText('Receita faturada')
+  expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-10&fim=2025-12')
+})
+
+test('"Até" sem espaço para o período anterior volta para o último mês da base', async () => {
+  const fetch = responderCom(indicadores)
+  // 12 meses até jun/2023 precisariam do período anterior antes de jul/2022
+  abrir('/?ate=2023-06')
+
+  await screen.findByText('Receita faturada')
+  expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-07&fim=2026-06')
+})
+
 test('mostra os KPIs com a variação contra o período anterior', async () => {
   responderCom(indicadores)
   abrir('/?meses=3')
