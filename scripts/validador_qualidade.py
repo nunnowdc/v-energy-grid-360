@@ -49,41 +49,46 @@ def validar_banco_sqlite(conn: sqlite3.Connection) -> ResultadoValidacao:
 
     # Tabelas e suas chaves primárias
     pks = {
-        "dim_unidade_consumidora": "id_uc",
-        "dim_alimentador": "alimentador",
-        "dim_medidor": "id_medidor",
-        "dim_geracao_distribuida": "id_uc",
-        "dim_competencia": "competencia",
-        "fact_faturamento": "id_fatura",
-        "fact_leituras": "id_leitura",
-        "fact_ocorrencias": "id_ocorrencia",
-        "fact_atendimentos": "protocolo",
-        "fact_inspecoes": "id_inspecao",
-        "fila_inspecao": "prioridade",
-        "agg_continuidade_alimentador": "alimentador",
+        "dim_unidade_consumidora": ("id_uc",),
+        "dim_alimentador": ("alimentador",),
+        "dim_medidor": ("id_medidor",),
+        "dim_geracao_distribuida": ("id_uc",),
+        "dim_competencia": ("competencia",),
+        "fact_faturamento": ("id_fatura",),
+        "fact_leituras": ("id_leitura",),
+        "fact_ocorrencias": ("id_ocorrencia",),
+        "fact_atendimentos": ("protocolo",),
+        "fact_inspecoes": ("id_inspecao",),
+        "fila_inspecao": ("prioridade",),
+        "agg_continuidade_alimentador": ("alimentador", "competencia"),
+        "agg_continuidade_alimentador_anual": ("alimentador", "ano"),
     }
 
-    # Eixo 2: Unicidade e Não-Nulos de Chaves Primárias
-    for tabela, pk in pks.items():
+    # Eixo 2: Unicidade e Não-Nulos de Chaves Primárias / Grão Analítico
+    for tabela, colunas in pks.items():
         if not _tabela_existe_sqlite(cur, tabela):
             continue
 
         res.total_verificacoes += 1
-        # Nulos
-        cur.execute(f"SELECT COUNT(*) FROM {tabela} WHERE {pk} IS NULL OR trim({pk}) = ''")
+        cols_sql = ", ".join(colunas)
+        pk_desc = "(" + cols_sql + ")" if len(colunas) > 1 else colunas[0]
+
+        # Nulos em qualquer coluna da chave
+        cond_nulos = " OR ".join([f"({c} IS NULL OR trim(CAST({c} AS TEXT)) = '')" for c in colunas])
+        cur.execute(f"SELECT COUNT(*) FROM {tabela} WHERE {cond_nulos}")
         qtd_nulos = cur.fetchone()[0]
         if qtd_nulos > 0:
-            res.registrar_erro(f"Tabela {tabela}: {qtd_nulos} chaves primárias nulas na coluna {pk}.")
+            res.registrar_erro(f"Tabela {tabela}: {qtd_nulos} chaves nulas na chave {pk_desc}.")
 
-        # Duplicatas
+        # Duplicatas na chave (simples ou composta)
         cur.execute(f"""
             SELECT COUNT(*) FROM (
-                SELECT {pk} FROM {tabela} GROUP BY {pk} HAVING COUNT(*) > 1
+                SELECT {cols_sql} FROM {tabela} GROUP BY {cols_sql} HAVING COUNT(*) > 1
             )
         """)
         qtd_dup = cur.fetchone()[0]
         if qtd_dup > 0:
-            res.registrar_erro(f"Tabela {tabela}: Chave primária {pk} possui {qtd_dup} valores duplicados.")
+            res.registrar_erro(f"Tabela {tabela}: Chave {pk_desc} possui {qtd_dup} valores duplicados.")
 
     # Eixo 1: Integridade Referencial (Zero órfãos)
     relacionamentos_uc = [
@@ -202,34 +207,43 @@ def validar_banco_postgres(cursor) -> ResultadoValidacao:
     res = ResultadoValidacao()
 
     pks = {
-        "dim_unidade_consumidora": "id_uc",
-        "dim_alimentador": "alimentador",
-        "dim_medidor": "id_medidor",
-        "dim_geracao_distribuida": "id_uc",
-        "dim_competencia": "competencia",
-        "fact_faturamento": "id_fatura",
-        "fact_leituras": "id_leitura",
-        "fact_ocorrencias": "id_ocorrencia",
-        "fact_atendimentos": "protocolo",
-        "fact_inspecoes": "id_inspecao",
-        "fila_inspecao": "prioridade",
-        "agg_continuidade_alimentador": "alimentador",
+        "dim_unidade_consumidora": ("id_uc",),
+        "dim_alimentador": ("alimentador",),
+        "dim_medidor": ("id_medidor",),
+        "dim_geracao_distribuida": ("id_uc",),
+        "dim_competencia": ("competencia",),
+        "fact_faturamento": ("id_fatura",),
+        "fact_leituras": ("id_leitura",),
+        "fact_ocorrencias": ("id_ocorrencia",),
+        "fact_atendimentos": ("protocolo",),
+        "fact_inspecoes": ("id_inspecao",),
+        "fila_inspecao": ("prioridade",),
+        "agg_continuidade_alimentador": ("alimentador", "competencia"),
+        "agg_continuidade_alimentador_anual": ("alimentador", "ano"),
     }
 
-    # Eixo 2: Unicidade e Não-Nulos
-    for tabela, pk in pks.items():
+    # Eixo 2: Unicidade e Não-Nulos de Chaves Primárias / Grão Analítico
+    for tabela, colunas in pks.items():
         if not _tabela_existe_pg(cursor, tabela):
             continue
         res.total_verificacoes += 1
-        cursor.execute(f"SELECT COUNT(*) FROM {tabela} WHERE {pk} IS NULL;")
+        cols_sql = ", ".join(colunas)
+        pk_desc = "(" + cols_sql + ")" if len(colunas) > 1 else colunas[0]
+
+        cond_nulos = " OR ".join([f"{c} IS NULL" for c in colunas])
+        cursor.execute(f"SELECT COUNT(*) FROM {tabela} WHERE {cond_nulos};")
         qtd_nulos = cursor.fetchone()[0]
         if qtd_nulos > 0:
-            res.registrar_erro(f"Tabela {tabela}: {qtd_nulos} chaves primárias nulas na coluna {pk}.")
+            res.registrar_erro(f"Tabela {tabela}: {qtd_nulos} chaves nulas na chave {pk_desc}.")
 
-        cursor.execute(f"SELECT COUNT(*) FROM (SELECT {pk} FROM {tabela} GROUP BY {pk} HAVING COUNT(*) > 1) t;")
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM (
+                SELECT {cols_sql} FROM {tabela} GROUP BY {cols_sql} HAVING COUNT(*) > 1
+            ) t;
+        """)
         qtd_dup = cursor.fetchone()[0]
         if qtd_dup > 0:
-            res.registrar_erro(f"Tabela {tabela}: Chave primária {pk} possui {qtd_dup} valores duplicados.")
+            res.registrar_erro(f"Tabela {tabela}: Chave {pk_desc} possui {qtd_dup} valores duplicados.")
 
     # Eixo 1: Integridade Referencial
     relacionamentos_uc = [

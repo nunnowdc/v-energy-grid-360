@@ -78,13 +78,15 @@ def conexao_banco_valido():
             ('OCO001', 'UC001', 'ALIM_A', 45.0, '2024-01-05 10:00:00', '2024-01-05 10:45:00');
 
         CREATE TABLE agg_continuidade_alimentador (
-            alimentador TEXT PRIMARY KEY,
+            alimentador TEXT,
             competencia TEXT,
             dec REAL,
-            fec REAL
+            fec REAL,
+            PRIMARY KEY (alimentador, competencia)
         );
         INSERT INTO agg_continuidade_alimentador VALUES
             ('ALIM_A', '2024-01-01', 0.75, 1.0),
+            ('ALIM_A', '2024-02-01', 0.50, 1.0),
             ('ALIM_B', '2024-01-01', 0.0, 0.0);
     """)
     conn.commit()
