@@ -27,6 +27,10 @@ from dotenv import load_dotenv
 load_dotenv()
 # Configuração de diretórios
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from scripts.validador_qualidade import validar_banco_sqlite, validar_banco_postgres
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 SQLITE_DB_PATH = os.path.join(DATA_DIR, "v_energy_gold.db")
 
@@ -469,6 +473,22 @@ def carregar_postgres(mapa_csv, args):
         tempo = time.time() - t0
         print(f"OK ({qtd:,} linhas em {tempo:.2f}s)")
 
+    # 3. Data Quality Gate (Validação Automatizada)
+    if not getattr(args, "skip_quality_check", False):
+        print("\n[3/3] Executando Data Quality Gate...")
+        res = validar_banco_postgres(cursor)
+        print(f"-> Total de verificações executadas: {res.total_verificacoes}")
+        if not res.sucesso:
+            print("\n❌ FALHA NO DATA QUALITY GATE! A carga violou o Contrato de Dados da Gold:")
+            for erro in res.erros:
+                print(f"   ❌ {erro}")
+            print("\n⛔ Operação abortada para proteger o Portal Web. O banco não foi liberado.")
+            conn.close()
+            sys.exit(1)
+        print("✅ Data Quality Gate aprovado com sucesso! Nenhuma inconsistência detectada.")
+    else:
+        print("\n⚠️ AVISO: Data Quality Gate ignorado via flag --skip-quality-check.")
+
     conn.close()
     tempo_total = time.time() - inicio_total
     print(f"\n✨ Carga concluída com sucesso no PostgreSQL!")
@@ -476,7 +496,7 @@ def carregar_postgres(mapa_csv, args):
     print(f"-> Tempo total de processamento: {tempo_total:.2f} segundos")
 
 
-def carregar_sqlite(mapa_csv):
+def carregar_sqlite(mapa_csv, args=None):
     """Executa a carga em massa no SQLite local (data/v_energy_gold.db)."""
     import sqlite3
     import csv
@@ -526,6 +546,24 @@ def carregar_sqlite(mapa_csv):
             tempo = time.time() - t0
             print(f"OK ({qtd:,} linhas em {tempo:.2f}s)")
 
+    # 3. Data Quality Gate (Validação Automatizada)
+    if not getattr(args, "skip_quality_check", False):
+        print("\n-> Executando Data Quality Gate no SQLite...")
+        res = validar_banco_sqlite(conn)
+        print(f"-> Total de verificações executadas: {res.total_verificacoes}")
+        if not res.sucesso:
+            print("\n❌ FALHA NO DATA QUALITY GATE! A carga violou o Contrato de Dados da Gold:")
+            for erro in res.erros:
+                print(f"   ❌ {erro}")
+            print("\n⛔ Operação abortada para proteger o Portal Web.")
+            conn.close()
+            if os.path.exists(SQLITE_DB_PATH):
+                os.remove(SQLITE_DB_PATH)
+            sys.exit(1)
+        print("✅ Data Quality Gate aprovado com sucesso! Nenhuma inconsistência detectada.")
+    else:
+        print("\n⚠️ AVISO: Data Quality Gate ignorado via flag --skip-quality-check.")
+
     conn.close()
     tempo_total = time.time() - inicio_total
     print(f"\n✨ Carga concluída com sucesso no SQLite!")
@@ -536,6 +574,7 @@ def carregar_sqlite(mapa_csv):
 def main():
     parser = argparse.ArgumentParser(description="Seed do Banco de Dados Local da V-Energy Grid 360")
     parser.add_argument("--sqlite", action="store_true", help="Carrega no banco SQLite local em vez do PostgreSQL")
+    parser.add_argument("--skip-quality-check", action="store_true", help="Ignora a validação automatizada de qualidade de dados")
     parser.add_argument("--url", type=str, default=None, help="Database URL (ex: postgresql://user:pass@localhost:5432/v_energy)")
     parser.add_argument("--host", type=str, default=os.getenv("PGHOST", "localhost"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PGPORT", 5432)))
@@ -562,7 +601,7 @@ def main():
 
     # 2. Executa a carga no destino solicitado
     if args.sqlite:
-        carregar_sqlite(mapa_tabelas)
+        carregar_sqlite(mapa_tabelas, args)
     else:
         carregar_postgres(mapa_tabelas, args)
 
