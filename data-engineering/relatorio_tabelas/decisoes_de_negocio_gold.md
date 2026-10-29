@@ -4,11 +4,11 @@ Este documento consolida todas as decisões de modelagem dimensional, engenharia
 
 **Data de consolidação:** 25/10/2026  
 **Escopo do Pipeline:**
-- [`04_gold_dimensoes.py`](../04_gold_dimensoes.py)
-- [`04_gold_fatos.py`](../04_gold_fatos.py)
-- [`05_gold_continuidade.py`](../05_gold_continuidade.py)
-- [`05_gold_receita.py`](../05_gold_receita.py)
-- [`05_gold_perdas.py`](../05_gold_perdas.py)
+- [`04_gold_dimensoes.py`](../gold/04_gold_dimensoes.py)
+- [`04_gold_fatos.py`](../gold/04_gold_fatos.py)
+- [`05_gold_continuidade.py`](../gold/05_gold_continuidade.py)
+- [`05_gold_receita.py`](../gold/05_gold_receita.py)
+- [`05_gold_perdas.py`](../gold/05_gold_perdas.py)
 
 ---
 
