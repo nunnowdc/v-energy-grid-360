@@ -359,27 +359,37 @@ DDL_POSTGRES = {
 }
 
 
-def garantir_extracao_csvs():
+def garantir_extracao_csvs(reset_data=False):
     """Localiza o arquivo .zip da release e descompacta na pasta data/ se necessário."""
     os.makedirs(DATA_DIR, exist_ok=True)
-    
-    # Procura por CSVs já existentes
-    csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
-    if csvs:
-        print(f"-> Localizados {len(csvs)} arquivos CSV na pasta de dados.")
-        return csvs
 
-    # Se não houver CSVs, procura por arquivos .zip
+    if reset_data:
+        print("\n-> Flag --reset-data ativada: limpando CSVs e ZIPs antigos da pasta data/...")
+        for arq in glob.glob(os.path.join(DATA_DIR, "**", "*"), recursive=True):
+            if os.path.isfile(arq) and (arq.endswith(".csv") or arq.endswith(".zip")):
+                try:
+                    os.remove(arq)
+                except Exception:
+                    pass
+        print("-> Pasta data/ limpa com sucesso.")
+
+    if not reset_data:
+        # Procura por CSVs já existentes
+        csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
+        if csvs:
+            print(f"-> Localizados {len(csvs)} arquivos CSV na pasta de dados.")
+            return csvs
+
+    # Se não houver CSVs ou se reset_data=True, procura/baixa o release mais recente
     zips = glob.glob(os.path.join(DATA_DIR, "*.zip")) + glob.glob(os.path.join(ROOT_DIR, "*.zip"))
-    
-    if not zips:
-        print("\n[!] Nenhum CSV ou arquivo .zip encontrado na pasta 'data/'.")
-        print("    Tentando baixar release mais recente via GitHub CLI ('gh')...")
+
+    if not zips or reset_data:
+        print("\n[!] Baixando release mais recente via GitHub CLI ('gh')...")
         try:
-            subprocess.run(["gh", "release", "download", "--pattern", "*.zip", "--dir", DATA_DIR], check=True)
+            subprocess.run(["gh", "release", "download", "--pattern", "*.zip", "--dir", DATA_DIR, "--clobber"], check=True)
             zips = glob.glob(os.path.join(DATA_DIR, "*.zip"))
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"    Erro ao executar 'gh release download': {e}")
 
     if not zips:
         print("\n[X] Arquivo .zip da release não encontrado automaticamente.")
@@ -391,7 +401,7 @@ def garantir_extracao_csvs():
     with zipfile.ZipFile(zip_alvo, "r") as zf:
         zf.extractall(DATA_DIR)
     print("-> Extração concluída com sucesso.")
-    
+
     csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
     return csvs
 
@@ -575,6 +585,7 @@ def main():
     parser = argparse.ArgumentParser(description="Seed do Banco de Dados Local da V-Energy Grid 360")
     parser.add_argument("--sqlite", action="store_true", help="Carrega no banco SQLite local em vez do PostgreSQL")
     parser.add_argument("--skip-quality-check", action="store_true", help="Ignora a validação automatizada de qualidade de dados")
+    parser.add_argument("--reset-data", "--update-release", action="store_true", dest="reset_data", help="Limpa a pasta data/ e força o download do release mais recente do GitHub")
     parser.add_argument("--url", type=str, default=None, help="Database URL (ex: postgresql://user:pass@localhost:5432/v_energy)")
     parser.add_argument("--host", type=str, default=os.getenv("PGHOST", "localhost"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PGPORT", 5432)))
@@ -589,7 +600,7 @@ def main():
     print("=" * 70)
 
     # 1. Garante extração dos CSVs
-    lista_csvs = garantir_extracao_csvs()
+    lista_csvs = garantir_extracao_csvs(reset_data=args.reset_data)
     mapa_tabelas = mapear_arquivos_csv(lista_csvs)
 
     if not mapa_tabelas:
