@@ -116,7 +116,7 @@ Analisada a célula "7. Saneamento de Inspeções" do notebook `/v-energy/bronze
 - [x] **Tratamento de `inspetor`:** Saneado com `trim` e `upper`, reduzindo de 107 grafias com espaços para exatamente 40 inspetores reais.
 - [x] **Tratamento de `tipo_irregularidade`:** Placeholder `-` e strings vazias convertidos para `null`.
 - [x] **Consistência cruzada e Quarentena:** Validação embutida onde irregularidade confirmada exige tipo preenchido e kWh recuperado > 0, e sem irregularidade exige kWh recuperado = 0. Violações são direcionadas para a tabela de quarentena `silver_inspecoes_quarentena` (motivo `INCOERENCIA_RESULTADO_KWH`).
-- [x] **Implementação na Silver:** Implementado no notebook [`02_silver_inspecoes.py`](../02_silver_inspecoes.py).
+- [x] **Implementação na Silver:** Implementado no notebook [`02_silver_inspecoes.py`](../silver/02_silver_inspecoes.py).
 - [ ] Confirmar com o dono dos dados que a planilha "dez" é um lote consolidado ago–dez (e se os nomes "ago-set"/"out-nov" também são lotes).
 - [ ] Cruzar as 871 UCs irregulares com faturas, leituras, GD e medidores: fraude coincide com geração distribuída? com medidor trocado na campanha set/2025–mar/2026? Qual o perfil de consumo dessas UCs?
 - [ ] Taxa de confirmação por inspetor (possível viés de critério) — não analisada.

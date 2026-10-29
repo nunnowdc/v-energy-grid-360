@@ -6,7 +6,7 @@ import type { MudancaOrdem, OrdemInspecao } from '@/hooks/use-ordens-inspecao'
 // DADOS DE EXEMPLO para a Fila de inspeção. Não vêm da base real: as UCs são
 // inventadas (UC900001 em diante, fora da faixa da base), espalhadas pelos bairros
 // das opções dos filtros, e as regras seguem o motor de score da Gold
-// (data-engineering/05_gold_perdas.py)
+// (data-engineering/gold/05_gold_perdas.py)
 
 // Gerador de números sempre igual, para a fila não mudar a cada recarga
 function sorteador(semente: number) {

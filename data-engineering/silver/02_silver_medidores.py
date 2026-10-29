@@ -20,7 +20,7 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./00_utils
+# MAGIC %run ../00_utils
 
 # COMMAND ----------
 
