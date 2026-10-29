@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router'
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import {
   aplicarFiltro,
+  aplicarFiltros,
   lerFiltros,
   nomesFiltros,
   removerFiltros,
@@ -22,9 +23,14 @@ export function useFiltros() {
     setParams((atual) => aplicarFiltro(atual, nome, valor, opcoes), { replace: true })
   }
 
+  // Vários de uma vez (ex.: começo e fim do período), numa troca só da URL
+  function alterarFiltros(valores: Partial<Record<NomeFiltro, string | undefined>>) {
+    setParams((atual) => aplicarFiltros(atual, valores, opcoes), { replace: true })
+  }
+
   function limparFiltros() {
     setParams((atual) => removerFiltros(atual), { replace: true })
   }
 
-  return { filtros, temFiltro, alterarFiltro, limparFiltros }
+  return { filtros, temFiltro, alterarFiltro, alterarFiltros, limparFiltros }
 }

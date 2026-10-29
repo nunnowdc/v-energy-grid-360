@@ -8,10 +8,10 @@ from fastapi.testclient import TestClient
 
 
 class RevenueGoldFake:
-    def get_periods(self) -> list[tuple[str, str]]:
-        return [("2022-07 a 2023-06", "2025-07 a 2026-06")]
+    def get_calendar(self) -> tuple[str, str]:
+        return ("2022-07", "2026-06")
 
-    def get_total(self) -> dict[str, object]:
+    def get_total(self, periods=None) -> dict[str, object]:
         return {
             "receita_p0": 150.0,
             "receita_p1": 180.0,
@@ -23,7 +23,7 @@ class RevenueGoldFake:
             "efeito_preco": 40.0,
         }
 
-    def get_by_gd(self) -> list[dict[str, object]]:
+    def get_by_gd(self, periods=None) -> list[dict[str, object]]:
         return [
             {
                 "possui_gd": False,
@@ -49,7 +49,7 @@ class RevenueGoldFake:
             },
         ]
 
-    def get_by_municipio(self) -> list[dict[str, object]]:
+    def get_by_municipio(self, periods=None) -> list[dict[str, object]]:
         return [
             {"nome": "Recife", **self.get_by_gd()[0]},
             {"nome": "Olinda", **self.get_by_gd()[1]},
@@ -113,14 +113,14 @@ def test_receita_preco_nulo_e_grupo_gd_sem_celulas() -> None:
     from app.controllers.metrics import get_revenue_repository
 
     class SparseGold(RevenueGoldFake):
-        def get_total(self) -> dict[str, object]:
+        def get_total(self, periods=None) -> dict[str, object]:
             return {
                 **super().get_total(),
                 "kwh_p0": 0.0,
                 "kwh_p1": None,
             }
 
-        def get_by_gd(self) -> list[dict[str, object]]:
+        def get_by_gd(self, periods=None) -> list[dict[str, object]]:
             return [
                 {
                     **super().get_by_gd()[0],
@@ -129,7 +129,7 @@ def test_receita_preco_nulo_e_grupo_gd_sem_celulas() -> None:
                 }
             ]
 
-        def get_by_municipio(self) -> list[dict[str, object]]:
+        def get_by_municipio(self, periods=None) -> list[dict[str, object]]:
             return [{"nome": "Recife", **self.get_by_gd()[0]}]
 
     app.dependency_overrides[get_revenue_repository] = lambda: nullcontext(SparseGold())
@@ -159,7 +159,7 @@ def test_receita_preco_nulo_com_consumo_negativo() -> None:
     from app.controllers.metrics import get_revenue_repository
 
     class NegativeGold(RevenueGoldFake):
-        def get_total(self) -> dict[str, object]:
+        def get_total(self, periods=None) -> dict[str, object]:
             return {**super().get_total(), "kwh_p0": -5.0}
 
     app.dependency_overrides[get_revenue_repository] = lambda: nullcontext(
@@ -178,7 +178,7 @@ def test_receita_municipios_ordenados_por_perda_e_nome() -> None:
     from app.controllers.metrics import get_revenue_repository
 
     class RankedGold(RevenueGoldFake):
-        def get_by_municipio(self) -> list[dict[str, object]]:
+        def get_by_municipio(self, periods=None) -> list[dict[str, object]]:
             base = super().get_by_gd()[1]
             return [
                 {"nome": "Sem consumo", **base, "kwh_p1": None},
@@ -221,7 +221,7 @@ def test_receita_falha_gold_nao_vira_resposta_vazia_e_libera_contexto() -> None:
         try:
 
             class FailingGold(RevenueGoldFake):
-                def get_periods(self) -> list[tuple[str, str]]:
+                def get_calendar(self) -> tuple[str, str]:
                     raise OperationalError("SELECT secret", {}, Exception("offline"))
 
             yield FailingGold()
@@ -249,6 +249,7 @@ def test_receita_municipio_filtra_total_gd_e_detalha_bairros() -> None:
 
         def get_total(
             self,
+            periods=None,
             municipio: str | None = None,
             bairro: str | None = None,
             classe: str | None = None,
@@ -259,6 +260,7 @@ def test_receita_municipio_filtra_total_gd_e_detalha_bairros() -> None:
 
         def get_by_gd(
             self,
+            periods=None,
             municipio: str | None = None,
             bairro: str | None = None,
             classe: str | None = None,
@@ -269,6 +271,7 @@ def test_receita_municipio_filtra_total_gd_e_detalha_bairros() -> None:
 
         def get_detail(
             self,
+            periods,
             level: str,
             municipio: str | None = None,
             bairro: str | None = None,
@@ -330,6 +333,7 @@ class ScopedRevenueGold(RevenueGoldFake):
 
     def get_total(
         self,
+        periods=None,
         municipio: str | None = None,
         bairro: str | None = None,
         classe: str | None = None,
@@ -340,6 +344,7 @@ class ScopedRevenueGold(RevenueGoldFake):
 
     def get_by_gd(
         self,
+        periods=None,
         municipio: str | None = None,
         bairro: str | None = None,
         classe: str | None = None,
@@ -350,6 +355,7 @@ class ScopedRevenueGold(RevenueGoldFake):
 
     def get_detail(
         self,
+        periods,
         level: str,
         municipio: str | None = None,
         bairro: str | None = None,
@@ -521,6 +527,7 @@ def test_receita_recorte_valido_sem_celulas_retorna_nulos() -> None:
     class EmptySliceGold(ScopedRevenueGold):
         def get_total(
             self,
+            periods=None,
             municipio: str | None = None,
             bairro: str | None = None,
             classe: str | None = None,
@@ -529,6 +536,7 @@ def test_receita_recorte_valido_sem_celulas_retorna_nulos() -> None:
 
         def get_by_gd(
             self,
+            periods=None,
             municipio: str | None = None,
             bairro: str | None = None,
             classe: str | None = None,
@@ -537,6 +545,7 @@ def test_receita_recorte_valido_sem_celulas_retorna_nulos() -> None:
 
         def get_detail(
             self,
+            periods,
             level: str,
             municipio: str | None = None,
             bairro: str | None = None,
@@ -579,6 +588,7 @@ def test_receita_detalhamento_filtrado_ordena_perda_empate_e_nulos() -> None:
     class RankedFilteredGold(ScopedRevenueGold):
         def get_detail(
             self,
+            periods,
             level: str,
             municipio: str | None = None,
             bairro: str | None = None,
@@ -611,7 +621,7 @@ def test_receita_detalhamento_filtrado_ordena_perda_empate_e_nulos() -> None:
     ]
 
 
-def test_receita_openapi_documenta_os_tres_filtros() -> None:
+def test_receita_openapi_documenta_os_filtros_e_os_periodos() -> None:
     operation = (
         TestClient(app)
         .get("/api/openapi.json")
@@ -621,6 +631,10 @@ def test_receita_openapi_documenta_os_tres_filtros() -> None:
         "municipio",
         "bairro",
         "classe",
+        "inicio_p0",
+        "fim_p0",
+        "inicio_p1",
+        "fim_p1",
     }
 
 
@@ -647,26 +661,24 @@ def test_receita_openapi_documenta_duas_causas_de_503() -> None:
 
 
 @pytest.mark.parametrize(
-    "periods",
+    "calendar",
     [
-        [],
-        [(None, "2025-07 a 2026-06")],
-        [("2022-07 a 2023-06", None)],
-        [("2022-07 a 2023-06", "2024-07 a 2025-06")],
-        [
-            ("2022-07 a 2023-06", "2025-07 a 2026-06"),
-            ("2022-07 a 2023-06", "2024-07 a 2025-06"),
-        ],
+        (None, None),
+        (None, "2026-06"),
+        ("2022-07", None),
+        ("2022-07", "2024-05"),
+        ("2022-13", "2026-06"),
+        (202207, 202606),
     ],
 )
 def test_receita_metadados_gold_invalidos_retorna_503_antes_do_recorte(
-    periods: list[tuple[object, object]],
+    calendar: tuple[object, object],
 ) -> None:
     from app.controllers.metrics import get_revenue_repository
 
     class InvalidMetadataGold(ScopedRevenueGold):
-        def get_periods(self) -> list[tuple[object, object]]:
-            return periods
+        def get_calendar(self) -> tuple[object, object]:
+            return calendar
 
         def has_municipio(self, municipio: str) -> bool:
             pytest.fail("catálogo não deve ser consultado antes dos metadados")
@@ -710,7 +722,7 @@ def test_receita_indisponibilidade_gold_retorna_503_sem_vazamento(
     else:
 
         class TimedOutGold(RevenueGoldFake):
-            def get_total(self) -> dict[str, object]:
+            def get_total(self, periods=None) -> dict[str, object]:
                 raise TimeoutError("SELECT segredo excedeu o tempo")
 
         app.dependency_overrides[get_revenue_repository] = lambda: nullcontext(
@@ -737,7 +749,7 @@ def test_receita_falha_inesperada_retorna_500_sem_vazamento(failure: str) -> Non
     from sqlalchemy.exc import ProgrammingError
 
     class BrokenGold(RevenueGoldFake):
-        def get_total(self) -> dict[str, object]:
+        def get_total(self, periods=None) -> dict[str, object]:
             if failure == "schema":
                 raise ProgrammingError(
                     "SELECT segredo", {}, Exception("coluna ausente")
@@ -775,7 +787,7 @@ def test_receita_contexto_de_conexao_fecha_apos_sucesso_e_falha() -> None:
             self.closed = True
 
     class FailingGold(RevenueGoldFake):
-        def get_total(self) -> dict[str, object]:
+        def get_total(self, periods=None) -> dict[str, object]:
             raise ValueError("falha de composição")
 
     success = TrackedContext(RevenueGoldFake())
@@ -797,7 +809,7 @@ def test_receita_resposta_gold_incompativel_com_schema_retorna_500_generico() ->
     from app.controllers.metrics import get_revenue_repository
 
     class InvalidMeasureGold(RevenueGoldFake):
-        def get_total(self) -> dict[str, object]:
+        def get_total(self, periods=None) -> dict[str, object]:
             return {**super().get_total(), "receita_p0": "valor-inválido"}
 
     app.dependency_overrides[get_revenue_repository] = lambda: nullcontext(
@@ -813,3 +825,122 @@ def test_receita_resposta_gold_incompativel_com_schema_retorna_500_generico() ->
     assert response.status_code == 500
     assert response.json() == {"detail": "Erro interno"}
     assert "valor-inválido" not in response.text
+
+
+class PeriodsRevenueGold(RevenueGoldFake):
+    """Guarda os períodos que chegam a cada consulta."""
+
+    def __init__(self) -> None:
+        self.received: list[object] = []
+
+    def get_total(self, periods=None) -> dict[str, object]:
+        self.received.append(periods)
+        return super().get_total()
+
+    def get_by_gd(self, periods=None) -> list[dict[str, object]]:
+        self.received.append(periods)
+        return super().get_by_gd()
+
+    def get_by_municipio(self, periods=None) -> list[dict[str, object]]:
+        self.received.append(periods)
+        # Monta pelas linhas do falso base, sem passar pelo get_by_gd que registra
+        groups = RevenueGoldFake.get_by_gd(self)
+        return [{"nome": "Recife", **groups[0]}, {"nome": "Olinda", **groups[1]}]
+
+
+def _periods_response(params: dict[str, str]) -> tuple[object, PeriodsRevenueGold]:
+    from app.controllers.metrics import get_revenue_repository
+
+    gold = PeriodsRevenueGold()
+    app.dependency_overrides[get_revenue_repository] = lambda: nullcontext(gold)
+    try:
+        response = TestClient(app).get("/api/metrics/revenue-variance", params=params)
+    finally:
+        app.dependency_overrides.clear()
+    return response, gold
+
+
+def test_receita_sem_periodos_compara_primeiro_ano_com_ultimos_12_meses() -> None:
+    from app.repositories.revenue import RevenuePeriods
+
+    response, gold = _periods_response({})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["periodo_p0"] == {"inicio": "2022-07", "fim": "2023-06"}
+    assert body["periodo_p1"] == {"inicio": "2025-07", "fim": "2026-06"}
+    assert (
+        gold.received
+        == [RevenuePeriods("2022-07", "2023-06", "2025-07", "2026-06")] * 3
+    )
+
+
+def test_receita_periodos_escolhidos_chegam_as_consultas() -> None:
+    from app.repositories.revenue import RevenuePeriods
+
+    response, gold = _periods_response(
+        _quatro("2023-01", "2023-03", "2025-07", "2025-09")
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["periodo_p0"] == {"inicio": "2023-01", "fim": "2023-03"}
+    assert body["periodo_p1"] == {"inicio": "2025-07", "fim": "2025-09"}
+    assert (
+        gold.received
+        == [RevenuePeriods("2023-01", "2023-03", "2025-07", "2025-09")] * 3
+    )
+
+
+def test_receita_periodos_vazios_equivalem_a_omissao() -> None:
+    without_periods, _ = _periods_response({})
+    empty_periods, _ = _periods_response(_quatro("", "", "", ""))
+
+    assert empty_periods.status_code == 200
+    assert empty_periods.json() == without_periods.json()
+
+
+def _quatro(inicio_p0: str, fim_p0: str, inicio_p1: str, fim_p1: str) -> dict[str, str]:
+    return {
+        "inicio_p0": inicio_p0,
+        "fim_p0": fim_p0,
+        "inicio_p1": inicio_p1,
+        "fim_p1": fim_p1,
+    }
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        # Faltando algum dos quatro meses
+        {"inicio_p0": "2022-07", "fim_p0": "2023-06"},
+        {"inicio_p0": "2022-07", "fim_p0": "2023-06", "inicio_p1": "2025-07"},
+        # Mês mal escrito
+        _quatro("2022-7", "2023-06", "2025-07", "2026-06"),
+        _quatro("2022-07", "2023-06", "2025-07", "2026-13"),
+        # Tamanhos diferentes, base invertido ou maior que 24 meses
+        _quatro("2022-07", "2023-06", "2025-07", "2026-05"),
+        _quatro("2023-06", "2022-07", "2025-07", "2026-06"),
+        _quatro("2022-07", "2024-07", "2024-08", "2026-08"),
+        # Antes do primeiro mês ou depois do último mês da base
+        _quatro("2022-06", "2023-05", "2025-07", "2026-06"),
+        _quatro("2022-07", "2023-06", "2025-08", "2026-07"),
+        # Comparado antes do base ou sobreposto a ele
+        _quatro("2025-07", "2026-06", "2022-07", "2023-06"),
+        _quatro("2022-07", "2023-06", "2023-06", "2024-05"),
+    ],
+)
+def test_receita_rejeita_periodos_invalidos(params: dict[str, str]) -> None:
+    response, gold = _periods_response(params)
+
+    assert response.status_code == 422
+    assert set(response.json()) == {"detail"}
+    assert gold.received == []
+
+
+def test_receita_rejeita_periodo_repetido() -> None:
+    response = TestClient(app).get(
+        "/api/metrics/revenue-variance?inicio_p0=2022-07&inicio_p0=2023-07"
+        "&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06"
+    )
+    assert response.status_code == 422

@@ -2,6 +2,8 @@ import { classesConsumo, type ClasseConsumo } from '@/config/classes'
 import { rotuloCausa } from '@/config/causas'
 import type { DashboardAgente } from '@/hooks/use-agente-ia'
 import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
+import { formatarPeriodo } from '@/lib/formatacao'
+import { comparacaoDoPeriodo, type Periodo } from '@/lib/periodos'
 
 // Tela do dashboard que mostra o assunto de uma resposta do agente
 export type TelaDaResposta = {
@@ -11,8 +13,13 @@ export type TelaDaResposta = {
   filtros: string[]
 }
 
-type CampoFiltro = 'municipio' | 'bairro' | 'classe' | 'alimentador' | 'causa'
-type Valores = Partial<Record<CampoFiltro, string | null>>
+type CampoTexto = 'municipio' | 'bairro' | 'classe' | 'alimentador' | 'causa'
+// 'comparacao': a tela tem "Período base" e "Comparado com"
+type CampoFiltro = 'comparacao' | CampoTexto
+type Valores = Partial<Record<CampoTexto, string | null>> & {
+  periodo?: Periodo | null
+  periodo_base?: Periodo | null
+}
 
 // Na ordem de prioridade: "maior DEC do alimentador" é Continuidade, mesmo
 // falando de consumo. O assunto só serve para respostas sem consulta (glossário,
@@ -21,7 +28,7 @@ const telas: { tela: DashboardAgente['tela']; to: string; campos: CampoFiltro[];
   {
     tela: 'continuidade',
     to: '/continuidade',
-    campos: ['municipio', 'alimentador', 'causa'],
+    campos: ['comparacao', 'municipio', 'alimentador', 'causa'],
     assunto: /\b(dec|fec)\b|continuidade|interrup|ocorrencia|alimentador|queda de (luz|energia)|falta de (luz|energia)/,
   },
   {
@@ -34,13 +41,13 @@ const telas: { tela: DashboardAgente['tela']; to: string; campos: CampoFiltro[];
     // Receita mostra a variação; a receita de cada mês está nos Indicadores
     tela: 'receita',
     to: '/receita',
-    campos: ['municipio', 'bairro', 'classe'],
+    campos: ['comparacao', 'municipio', 'bairro', 'classe'],
     assunto: /efeito (preco|volume)|variacao d[ae] receita|ponte da receita|preco medio|tarifa/,
   },
   {
     tela: 'indicadores',
     to: '/',
-    campos: ['municipio', 'classe'],
+    campos: ['comparacao', 'municipio', 'classe'],
     assunto: /fatura|receita|consumo|kwh|unidades? consumidoras?|\bucs\b|inadimpl|indicador/,
   },
 ]
@@ -91,7 +98,7 @@ function visao360(idUc: string): TelaDaResposta {
 function montar(tela: (typeof telas)[number], valores: Valores, opcoes?: OpcoesFiltros): TelaDaResposta {
   const params = new URLSearchParams()
   const filtros: string[] = []
-  function aplicar(campo: CampoFiltro, valor: string | undefined, rotulo = valor) {
+  function aplicar(campo: CampoTexto, valor: string | undefined, rotulo = valor) {
     if (valor && tela.campos.includes(campo)) {
       params.set(campo, valor)
       filtros.push(rotulo!)
@@ -129,6 +136,22 @@ function montar(tela: (typeof telas)[number], valores: Valores, opcoes?: OpcoesF
 
     const causa = igual(valores.causa, opcoes.causas)
     aplicar('causa', causa, causa && rotuloCausa(causa))
+
+    // O período consultado vai para o "Comparado com", que é o que os KPIs mostram;
+    // o base fica com os mesmos meses do ano anterior, se a consulta não comparou dois
+    const comparacao =
+      tela.campos.includes('comparacao') && valores.periodo
+        ? comparacaoDoPeriodo(opcoes.competencias, valores.periodo, valores.periodo_base ?? undefined)
+        : undefined
+    if (comparacao) {
+      const { base, comparado } = comparacao
+      params.set('base_de', base.de)
+      params.set('base_ate', base.ate)
+      params.set('comparado_de', comparado.de)
+      filtros.push(
+        `${formatarPeriodo(comparado.de, comparado.ate)} comparado com ${formatarPeriodo(base.de, base.ate)}`,
+      )
+    }
   }
 
   const busca = params.toString()

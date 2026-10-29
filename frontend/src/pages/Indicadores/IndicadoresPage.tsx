@@ -1,3 +1,4 @@
+import AvisoSazonalidade from '@/components/AvisoSazonalidade/AvisoSazonalidade'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -32,6 +33,7 @@ function Kpis({ dados }: { dados: IndicadoresGerais }) {
         <span className="font-semibold text-foreground">{formatarPeriodo(atual.inicio, atual.fim)}</span>, comparado
         com {formatarPeriodo(anterior.inicio, anterior.fim)}
       </p>
+      <AvisoSazonalidade base={anterior} comparado={atual} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <CartaoKpi
           titulo="Receita faturada"
@@ -94,7 +96,7 @@ function IndicadoresPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['periodo', 'municipio', 'classe']} />} />
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'classe']} />} />
 
       <EstadoConsulta
         consulta={consulta}
