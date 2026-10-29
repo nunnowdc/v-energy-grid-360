@@ -17,6 +17,7 @@ from app.services.metrics import (
     InvalidMetricsParametersError,
     get_general_metrics,
     validate_metrics_period,
+    validate_previous_period,
 )
 from app.services.revenue import (
     InvalidRevenueFilterError,
@@ -72,8 +73,17 @@ def read_general_metrics(
     fim: str | None = None,
     municipio: str | None = None,
     classe: str | None = None,
+    inicio_anterior: str | None = None,
+    fim_anterior: str | None = None,
 ) -> GeneralMetricsResponse:
-    allowed = {"inicio", "fim", "municipio", "classe"}
+    allowed = {
+        "inicio",
+        "fim",
+        "municipio",
+        "classe",
+        "inicio_anterior",
+        "fim_anterior",
+    }
 
     if any(
         key not in allowed or len(request.query_params.getlist(key)) != 1
@@ -82,10 +92,19 @@ def read_general_metrics(
         raise HTTPException(status_code=422, detail="Parâmetro inválido ou repetido")
 
     try:
-        validate_metrics_period(inicio, fim)
+        start, _, size = validate_metrics_period(inicio, fim)
+        validate_previous_period(inicio_anterior, fim_anterior, start, size)
 
         with repository_context as repository:
-            result = get_general_metrics(repository, inicio, fim, municipio, classe)
+            result = get_general_metrics(
+                repository,
+                inicio,
+                fim,
+                municipio,
+                classe,
+                inicio_anterior,
+                fim_anterior,
+            )
             return GeneralMetricsResponse.model_validate(result)
 
     except CalendarUnavailableError as exc:

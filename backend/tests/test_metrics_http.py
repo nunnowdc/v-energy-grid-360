@@ -796,6 +796,8 @@ def test_openapi_documenta_erros_e_contrato_de_indicadores() -> None:
         "fim",
         "municipio",
         "classe",
+        "inicio_anterior",
+        "fim_anterior",
     }
     assert all(not item["required"] for item in operation["parameters"])
     assert {"200", "422", "503", "500"} <= set(operation["responses"])
@@ -935,3 +937,78 @@ def test_janela_valida_com_gold_indisponivel_retorna_503_generico() -> None:
 
     assert response.status_code == 503
     assert response.json() == {"detail": "Gold indisponível"}
+
+
+@pytest.mark.parametrize(
+    ("params", "previous"),
+    [
+        # Sem escolha: o imediatamente anterior
+        ({"inicio": "2025-10", "fim": "2025-12"}, ("2025-07", "2025-09")),
+        # Mesmos meses do ano anterior
+        (
+            {
+                "inicio": "2025-10",
+                "fim": "2025-12",
+                "inicio_anterior": "2024-10",
+                "fim_anterior": "2024-12",
+            },
+            ("2024-10", "2024-12"),
+        ),
+    ],
+)
+def test_periodo_de_comparacao_escolhido(
+    params: dict[str, str], previous: tuple[str, str]
+) -> None:
+    response = get_response(params)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["atual"]["inicio"], body["atual"]["fim"]) == ("2025-10", "2025-12")
+    assert (body["anterior"]["inicio"], body["anterior"]["fim"]) == previous
+    serie = [row["mes_referencia"] for row in body["mensal"]["anterior"]]
+    assert (serie[0], serie[-1], len(serie)) == (*previous, 3)
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        # Só um dos dois meses da comparação
+        {"inicio": "2025-10", "fim": "2025-12", "inicio_anterior": "2024-10"},
+        # Comparação sem o período atual
+        {"inicio_anterior": "2024-10", "fim_anterior": "2024-12"},
+        # Tamanhos diferentes
+        {
+            "inicio": "2025-10",
+            "fim": "2025-12",
+            "inicio_anterior": "2024-10",
+            "fim_anterior": "2024-11",
+        },
+        # Comparação depois do atual ou sobreposta a ele
+        {
+            "inicio": "2025-04",
+            "fim": "2025-06",
+            "inicio_anterior": "2025-10",
+            "fim_anterior": "2025-12",
+        },
+        {
+            "inicio": "2025-10",
+            "fim": "2025-12",
+            "inicio_anterior": "2025-08",
+            "fim_anterior": "2025-10",
+        },
+    ],
+)
+def test_periodo_de_comparacao_invalido_retorna_422(params: dict[str, str]) -> None:
+    assert get_response(params).status_code == 422
+
+
+def test_periodo_de_comparacao_fora_do_calendario_retorna_503() -> None:
+    response = get_response(
+        {
+            "inicio": "2025-10",
+            "fim": "2025-12",
+            "inicio_anterior": "2023-10",
+            "fim_anterior": "2023-12",
+        }
+    )
+    assert response.status_code == 503
