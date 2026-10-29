@@ -137,5 +137,5 @@ Fechadas com o `perfil_geracao_distribuida_Adryan.md`:
 - [x] **Quarentena de potências/razões impossíveis (S-GD-05):** Casos onde `kwh_por_kwp_mes > 150` (UC104176 e UC112709) são direcionados para `silver_geracao_distribuida_quarentena` com o motivo `POTENCIA_INCONSISTENTE`.
 - [x] **Identificação de energia estimada (S-GD-04):** Aplicação da flag `energia_estimada = true` quando `abs(energia - kWp * 110) < 0.05` para permitir ajuste ou expurgo no diagnóstico de receita.
 - [x] **Quarentena de conexão pré-ligação (S-GD-06):** As 5 UCs conectadas antes da ligação cadastral são direcionadas para quarentena com `GD_ANTES_DA_LIGACAO`.
-- [x] **Implementação na Silver:** Implementado no notebook [`02_silver_geracao_distribuida.py`](../02_silver_geracao_distribuida.py).
+- [x] **Implementação na Silver:** Implementado no notebook [`02_silver_geracao_distribuida.py`](../silver/02_silver_geracao_distribuida.py).
 - [ ] Contagem exata de linhas com energia = kWp × 110.

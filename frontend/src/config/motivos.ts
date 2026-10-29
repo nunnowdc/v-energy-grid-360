@@ -1,5 +1,5 @@
 // Regras da fila de inspeção como a Gold escreve (sem acento) e como a tela mostra.
-// Fonte: data-engineering/05_gold_perdas.py, motor de regras do score
+// Fonte: data-engineering/gold/05_gold_perdas.py, motor de regras do score
 const textosMotivos: Record<string, string> = {
   'Queda de consumo >= 50%': 'Queda de consumo ≥ 50%',
   'Queda de consumo >= 30%': 'Queda de consumo ≥ 30%',

@@ -12,7 +12,7 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./00_utils
+# MAGIC %run ../00_utils
 
 # COMMAND ----------
 
@@ -61,7 +61,7 @@ oc = le_silver("ocorrencias_rede")
 fact_oc = oc.select("id_ocorrencia", "id_uc", "alimentador", "tipo", "causa",
                     "data_abertura", "data_encerramento",
                     F.date_trunc("month", "data_abertura").cast("date").alias("competencia"),
-                    "duracao_min", F.round(F.col("duracao_min") / 60, 4).alias("duracao_h"),
+                    "duracao_min", (F.col("duracao_min") / 60).alias("duracao_h"),
                     "dia_critico", "duracao_truncada", (F.col("tipo") == "OSCILACAO").alias("eh_oscilacao"))
 n = grava_gold(fact_oc, "fact_ocorrencias")
 confere("fact_ocorrencias", n, 180000)
