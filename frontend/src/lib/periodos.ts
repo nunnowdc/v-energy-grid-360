@@ -13,7 +13,7 @@ export type AtalhoPeriodo = { rotulo: string; periodo: Periodo }
 export type PadraoComparacao = 'inicio-da-base' | 'ano-anterior'
 
 // Com o outro período ao lado, até 24 meses cabem nos 48 meses da base
-export const MAXIMO_MESES = 24
+const MAXIMO_MESES = 24
 const MESES_PADRAO = 12
 
 const posicoes = (competencias: string[], { de, ate }: Periodo) => {
@@ -55,7 +55,7 @@ export function basePadrao(competencias: string[], padrao: PadraoComparacao): Pe
 }
 
 // Os comparados com os mesmos meses do ano do base, do mais antigo ao mais recente
-export function comparadosComMesmosMeses(competencias: string[], base: Periodo): Periodo[] {
+function comparadosComMesmosMeses(competencias: string[], base: Periodo): Periodo[] {
   const { inicio, tamanho } = posicoes(competencias, base)
   const comparados: Periodo[] = []
   for (let posicao = inicio + 12; posicao < competencias.length; posicao += 12) {

@@ -211,7 +211,7 @@ def _meses_da_comparacao(parte: str, simbolo: str, valor: exp.Expression) -> Set
         try:
             numero = int(literal.this)
         except ValueError:
-            raise _TempoNaoLido(valor.sql())
+            raise _TempoNaoLido(valor.sql()) from None
     da_parte, comparar = _PARTE_DO_MES[parte], _COMPARAR[simbolo]
     return {mes for mes in _MESES if comparar(da_parte(mes), numero)}
 
