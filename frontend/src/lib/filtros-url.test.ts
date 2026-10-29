@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { anosDaBase, aplicarFiltro, janelaDoPeriodo, lerFiltros, mesesFinais, removerFiltros } from '@/lib/filtros-url'
+import {
+  aplicarFiltro,
+  aplicarFiltros,
+  lerFiltros,
+  periodoEscolhido,
+  periodosDaReceita,
+  removerFiltros,
+} from '@/lib/filtros-url'
 import { opcoesFiltrosExemplo as opcoes } from '@/mocks/opcoes-filtros'
 
 const url = (texto: string) => new URLSearchParams(texto)
@@ -8,11 +15,12 @@ describe('lerFiltros', () => {
   test('lê os valores válidos', () => {
     expect(
       lerFiltros(
-        url('meses=6&municipio=Recife&bairro=Pina&classe=RURAL&alimentador=ALM-REC-001&causa=VEGETACAO'),
+        url('de=2025-01&ate=2025-06&municipio=Recife&bairro=Pina&classe=RURAL&alimentador=ALM-REC-001&causa=VEGETACAO'),
         opcoes,
       ),
     ).toEqual({
-      meses: 6,
+      de: '2025-01',
+      ate: '2025-06',
       municipio: 'Recife',
       bairro: 'Pina',
       classe: 'RURAL',
@@ -23,9 +31,10 @@ describe('lerFiltros', () => {
 
   test('descarta valores que não existem', () => {
     expect(
-      lerFiltros(url('meses=5&municipio=Narnia&classe=XYZ&alimentador=ALM-X&causa=METEORO'), opcoes),
+      lerFiltros(url('de=2025-06&ate=2025-01&municipio=Narnia&classe=XYZ&alimentador=ALM-X&causa=METEORO'), opcoes),
     ).toEqual({
-      meses: undefined,
+      de: undefined,
+      ate: undefined,
       municipio: undefined,
       bairro: undefined,
       classe: undefined,
@@ -45,29 +54,32 @@ describe('lerFiltros', () => {
     expect(lerFiltros(url('alimentador=ALM-REC-001'), opcoes).alimentador).toBe('ALM-REC-001')
   })
 
-  test('"Até" vale se antes dele couber o período anterior, de mesmo tamanho', () => {
-    expect(lerFiltros(url('meses=3&ate=2022-12'), opcoes).ate).toBe('2022-12')
-    expect(lerFiltros(url('meses=3&ate=2022-11'), opcoes).ate).toBeUndefined()
-    expect(lerFiltros(url('ate=2024-06'), opcoes).ate).toBe('2024-06')
-    expect(lerFiltros(url('ate=2024-05'), opcoes).ate).toBeUndefined()
-    expect(lerFiltros(url('ate=2030-01'), opcoes).ate).toBeUndefined()
+  test('o período só vale com o anterior, de mesmo tamanho, dentro da base', () => {
+    expect(lerFiltros(url('de=2022-10&ate=2022-12'), opcoes)).toMatchObject({ de: '2022-10', ate: '2022-12' })
+    // jul a set/2022 não tem os 3 meses anteriores na base
+    expect(lerFiltros(url('de=2022-07&ate=2022-09'), opcoes)).toMatchObject({ de: undefined, ate: undefined })
+    // Só um dos dois meses, ou mais de 24 meses
+    expect(lerFiltros(url('de=2025-01'), opcoes)).toMatchObject({ de: undefined, ate: undefined })
+    expect(lerFiltros(url('de=2024-06&ate=2026-06'), opcoes)).toMatchObject({ de: undefined, ate: undefined })
   })
 
-  test('os anos da Receita são começos de ano da base, com o comparado depois do base', () => {
-    expect(lerFiltros(url('base=2023-07&comparado=2024-07'), opcoes)).toMatchObject({
-      base: '2023-07',
-      comparado: '2024-07',
+  test('na Receita, base inválido volta tudo ao padrão e comparado inválido volta só ele', () => {
+    expect(lerFiltros(url('base_de=2023-01&base_ate=2023-03&comparado_de=2025-07'), opcoes)).toMatchObject({
+      base_de: '2023-01',
+      base_ate: '2023-03',
+      comparado_de: '2025-07',
     })
-    // Só um escolhido: o outro fica no padrão
-    expect(lerFiltros(url('base=2024-07'), opcoes)).toMatchObject({ base: '2024-07', comparado: undefined })
-    // Mês que não começa um ano da base
-    expect(lerFiltros(url('base=2023-01'), opcoes).base).toBeUndefined()
-    // Comparado antes do base, ou igual a ele: volta tudo para o padrão
-    expect(lerFiltros(url('base=2024-07&comparado=2023-07'), opcoes)).toMatchObject({
-      base: undefined,
-      comparado: undefined,
+    // Comparado antes do fim do base
+    expect(lerFiltros(url('base_de=2023-01&base_ate=2023-03&comparado_de=2023-02'), opcoes)).toMatchObject({
+      base_de: '2023-01',
+      comparado_de: undefined,
     })
-    expect(lerFiltros(url('base=2025-07'), opcoes)).toMatchObject({ base: undefined, comparado: undefined })
+    // Base sem espaço depois dele para um comparado de mesmo tamanho
+    expect(lerFiltros(url('base_de=2025-01&base_ate=2025-12&comparado_de=2026-01'), opcoes)).toMatchObject({
+      base_de: undefined,
+      base_ate: undefined,
+      comparado_de: undefined,
+    })
   })
 
   test('sem as opções carregadas, aceita os textos como vieram', () => {
@@ -100,9 +112,11 @@ describe('aplicarFiltro e removerFiltros', () => {
     )
   })
 
-  test('trocar o tamanho do período tira o "Até" que deixou de caber', () => {
-    expect(aplicarFiltro(url('ate=2024-06'), 'meses', '3', opcoes).toString()).toBe('ate=2024-06&meses=3')
-    expect(aplicarFiltro(url('meses=3&ate=2023-06'), 'meses', undefined, opcoes).toString()).toBe('')
+  test('vários filtros de uma vez, como o começo e o fim do período', () => {
+    expect(aplicarFiltros(url('classe=RURAL'), { de: '2025-01', ate: '2025-06' }).toString()).toBe(
+      'classe=RURAL&de=2025-01&ate=2025-06',
+    )
+    expect(aplicarFiltros(url('de=2025-01&ate=2025-06'), { de: undefined, ate: undefined }).toString()).toBe('')
   })
 
   test('valor vazio remove o filtro', () => {
@@ -110,39 +124,36 @@ describe('aplicarFiltro e removerFiltros', () => {
   })
 
   test('limpar mantém os parâmetros que não são filtro', () => {
-    expect(removerFiltros(url('aba=faturas&municipio=Recife&meses=3&causa=VEGETACAO')).toString()).toBe('aba=faturas')
+    expect(removerFiltros(url('aba=faturas&municipio=Recife&de=2026-04&ate=2026-06&base_de=2023-01&causa=VEGETACAO')).toString()).toBe('aba=faturas')
   })
 })
 
-describe('janelaDoPeriodo', () => {
-  test('termina no último mês da base, não na data de hoje', () => {
-    expect(janelaDoPeriodo(opcoes.competencias)).toEqual({ inicio: '2025-07', fim: '2026-06' })
-    expect(janelaDoPeriodo(opcoes.competencias, 3)).toEqual({ inicio: '2026-04', fim: '2026-06' })
+describe('períodos em vigor', () => {
+  test('sem escolha, os últimos 12 meses da base, não da data de hoje', () => {
+    expect(periodoEscolhido(opcoes.competencias, {})).toEqual({ de: '2025-07', ate: '2026-06' })
+    expect(periodoEscolhido(opcoes.competencias, { de: '2025-01', ate: '2025-03' })).toEqual({
+      de: '2025-01',
+      ate: '2025-03',
+    })
   })
 
-  test('com "Até", termina no mês escolhido', () => {
-    expect(janelaDoPeriodo(opcoes.competencias, 6, '2024-12')).toEqual({ inicio: '2024-07', fim: '2024-12' })
+  test('Receita sem escolha: primeiro ano da base contra os mesmos meses do último ano', () => {
+    expect(periodosDaReceita(opcoes.competencias, {})).toEqual({
+      base: { de: '2022-07', ate: '2023-06' },
+      comparado: { de: '2025-07', ate: '2026-06' },
+    })
   })
 
-  test('o fim mais antigo deixa espaço para o período anterior', () => {
-    expect(mesesFinais(opcoes.competencias, 12)[0]).toBe('2024-06')
-    expect(mesesFinais(opcoes.competencias, 3)[0]).toBe('2022-12')
-  })
-})
-
-describe('anosDaBase', () => {
-  test('anos de 12 meses contados do fim da base', () => {
-    expect(anosDaBase(opcoes.competencias)).toEqual([
-      { inicio: '2022-07', fim: '2023-06' },
-      { inicio: '2023-07', fim: '2024-06' },
-      { inicio: '2024-07', fim: '2025-06' },
-      { inicio: '2025-07', fim: '2026-06' },
-    ])
-    // Base que não fecha em anos inteiros: o pedaço que sobra no começo fica de fora
-    expect(anosDaBase(opcoes.competencias.slice(3)).map(({ inicio }) => inicio)).toEqual([
-      '2023-07',
-      '2024-07',
-      '2025-07',
-    ])
+  test('com só o base escolhido, o comparado tem o mesmo tamanho e os mesmos meses', () => {
+    expect(periodosDaReceita(opcoes.competencias, { base_de: '2023-01', base_ate: '2023-03' })).toEqual({
+      base: { de: '2023-01', ate: '2023-03' },
+      comparado: { de: '2026-01', ate: '2026-03' },
+    })
+    expect(
+      periodosDaReceita(opcoes.competencias, { base_de: '2023-01', base_ate: '2023-03', comparado_de: '2025-07' }),
+    ).toEqual({
+      base: { de: '2023-01', ate: '2023-03' },
+      comparado: { de: '2025-07', ate: '2025-09' },
+    })
   })
 })

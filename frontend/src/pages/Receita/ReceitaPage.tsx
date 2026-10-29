@@ -1,4 +1,4 @@
-import { Lightbulb } from 'lucide-react'
+import { Info, Lightbulb } from 'lucide-react'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -11,6 +11,7 @@ import Variacao from '@/components/Variacao/Variacao'
 import { useFiltros } from '@/hooks/use-filtros'
 import { temDados, useReceita, type DecomposicaoCompleta, type VariacaoReceita } from '@/hooks/use-receita'
 import { variacaoPercentual } from '@/lib/comparacao'
+import { mesmosMesesDoAno } from '@/lib/periodos'
 import {
   formatarMoeda,
   formatarMoedaCompacta,
@@ -37,6 +38,16 @@ function Kpis({ dados, total }: { dados: VariacaoReceita; total: DecomposicaoCom
         × período comparado{' '}
         <span className="font-semibold text-foreground">{formatarPeriodo(periodo_p1.inicio, periodo_p1.fim)}</span>
       </p>
+      {!mesmosMesesDoAno(
+        { de: periodo_p0.inicio, ate: periodo_p0.fim },
+        { de: periodo_p1.inicio, ate: periodo_p1.fim },
+      ) && (
+        <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+          <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          Os períodos cobrem meses diferentes do ano: parte da variação de volume pode ser da estação (o consumo muda
+          ao longo do ano), não uma mudança real.
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CartaoKpi titulo="Receita no período base" valor={formatarMoedaCompacta(total.receita_p0)} />
         <CartaoKpi
@@ -182,7 +193,7 @@ function ReceitaPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['anos', 'municipio', 'bairro', 'classe']} />} />
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'bairro', 'classe']} />} />
 
       <EstadoConsulta
         consulta={consulta}

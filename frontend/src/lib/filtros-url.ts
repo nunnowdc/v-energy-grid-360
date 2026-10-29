@@ -1,20 +1,27 @@
 import { ehClasseConsumo, type ClasseConsumo } from '@/config/classes'
 import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
+import {
+  basePadrao,
+  baseValida,
+  comparadoPadrao,
+  comparadoValido,
+  periodoComAnterior,
+  periodoDeTamanho,
+  periodoPadrao,
+  tamanhoDoPeriodo,
+  type Periodo,
+} from '@/lib/periodos'
 
-// Tamanhos de período aceitos pelo backend nos Indicadores: 3, 6 ou 12 meses
-export const mesesPeriodo = [12, 6, 3] as const
-export type MesesPeriodo = (typeof mesesPeriodo)[number]
-export const MESES_PADRAO: MesesPeriodo = 12
-
-// Filtro ausente = sem filtro (todos). Sem período = últimos 12 meses da base
+// Filtro ausente = sem filtro (todos). Meses no formato yyyy-MM
 export type Filtros = {
-  meses?: MesesPeriodo
-  // Último mês (yyyy-MM) do período dos Indicadores. Sem ele, o último mês da base
+  // Período dos Indicadores e da Continuidade. Sem ele, os últimos 12 meses da base
+  de?: string
   ate?: string
-  // Primeiro mês (yyyy-MM) do ano base e do ano comparado da Receita. Sem eles,
-  // o primeiro ano da base contra os últimos 12 meses
-  base?: string
-  comparado?: string
+  // Receita: período base e começo do comparado, que tem o mesmo tamanho do base.
+  // Sem eles, o primeiro ano da base contra os mesmos meses do último ano
+  base_de?: string
+  base_ate?: string
+  comparado_de?: string
   municipio?: string
   bairro?: string
   classe?: ClasseConsumo
@@ -25,19 +32,17 @@ export type Filtros = {
 export type NomeFiltro = keyof Filtros
 
 export const nomesFiltros: NomeFiltro[] = [
-  'meses',
+  'de',
   'ate',
-  'base',
-  'comparado',
+  'base_de',
+  'base_ate',
+  'comparado_de',
   'municipio',
   'bairro',
   'classe',
   'alimentador',
   'causa',
 ]
-
-// Um ano da Receita: 12 meses seguidos (yyyy-MM)
-export type AnoDaBase = { inicio: string; fim: string }
 
 const MES = /^\d{4}-(0[1-9]|1[0-2])$/
 
@@ -47,12 +52,10 @@ export function lerFiltros(params: URLSearchParams, opcoes?: OpcoesFiltros): Fil
   const municipio = lerMunicipio(params.get('municipio'), opcoes)
   const bairro = municipio ? lerBairro(params.get('bairro'), municipio, opcoes) : undefined
   const classe = params.get('classe')
-  const meses = lerMeses(params.get('meses'))
 
   return {
-    meses,
-    ate: lerAte(params.get('ate'), meses, opcoes),
-    ...lerAnos(params.get('base'), params.get('comparado'), opcoes),
+    ...lerPeriodo(params.get('de'), params.get('ate'), opcoes),
+    ...lerReceita(params.get('base_de'), params.get('base_ate'), params.get('comparado_de'), opcoes),
     municipio,
     bairro,
     classe: ehClasseConsumo(classe) ? classe : undefined,
@@ -76,12 +79,6 @@ export function aplicarFiltro(
     proximo.delete(nome)
   }
 
-  // O fim escolhido sai se, com o novo tamanho, não couber o período anterior
-  const ate = proximo.get('ate')
-  if (nome === 'meses' && ate && opcoes && !mesesFinais(opcoes.competencias, lerMeses(valor ?? null)).includes(ate)) {
-    proximo.delete('ate')
-  }
-
   if (nome === 'municipio') {
     // O bairro pertence ao município: trocar o município zera o bairro
     proximo.delete('bairro')
@@ -95,6 +92,18 @@ export function aplicarFiltro(
   return proximo
 }
 
+// Vários filtros de uma vez, ex.: o começo e o fim de um período
+export function aplicarFiltros(
+  params: URLSearchParams,
+  valores: Partial<Record<NomeFiltro, string | undefined>>,
+  opcoes?: OpcoesFiltros,
+) {
+  return (Object.entries(valores) as [NomeFiltro, string | undefined][]).reduce(
+    (atual, [nome, valor]) => aplicarFiltro(atual, nome, valor, opcoes),
+    params,
+  )
+}
+
 // Remove só os filtros, mantendo outros parâmetros da URL
 export function removerFiltros(params: URLSearchParams) {
   const proximo = new URLSearchParams(params)
@@ -104,69 +113,56 @@ export function removerFiltros(params: URLSearchParams) {
   return proximo
 }
 
-// Primeiro e último mês (yyyy-MM) dos N meses que terminam em "ate".
-// Sem "ate", a âncora é o último mês da base, nunca a data de hoje
-export function janelaDoPeriodo(competencias: string[], meses: MesesPeriodo = MESES_PADRAO, ate?: string) {
-  const fim = ate === undefined ? competencias.length : competencias.indexOf(ate) + 1
-  const janela = fim < meses ? [] : competencias.slice(fim - meses, fim)
-  return { inicio: janela[0], fim: janela.at(-1) }
+// Período em vigor nos Indicadores e na Continuidade: o escolhido ou o padrão
+export function periodoEscolhido(competencias: string[], { de, ate }: Pick<Filtros, 'de' | 'ate'>) {
+  return de && ate ? { de, ate } : periodoPadrao(competencias)
 }
 
-// Meses em que o período pode terminar: antes dele precisa caber o período
-// anterior, de mesmo tamanho, que é a comparação dos Indicadores
-export function mesesFinais(competencias: string[], meses: MesesPeriodo = MESES_PADRAO) {
-  return competencias.slice(2 * meses - 1)
-}
-
-// Anos da Receita, contados do fim da base para trás (… jul/2024–jun/2025,
-// jul/2025–jun/2026): os dois lados da comparação têm sempre os mesmos meses do ano
-export function anosDaBase(competencias: string[]): AnoDaBase[] {
-  const anos: AnoDaBase[] = []
-  for (let fim = competencias.length; fim >= 12; fim -= 12) {
-    anos.unshift({ inicio: competencias[fim - 12], fim: competencias[fim - 1] })
-  }
-  return anos
-}
-
-// Ano base e ano comparado em vigor: sem escolha, o primeiro e o último ano
-export function anosDaReceita(competencias: string[], { base, comparado }: Pick<Filtros, 'base' | 'comparado'>) {
-  const anos = anosDaBase(competencias)
-  return { base: base ?? anos[0]?.inicio, comparado: comparado ?? anos.at(-1)?.inicio }
-}
-
-function lerMeses(valor: string | null) {
-  return mesesPeriodo.find((meses) => String(meses) === valor)
-}
-
-function lerAte(valor: string | null, meses: MesesPeriodo | undefined, opcoes?: OpcoesFiltros) {
-  if (!valor) {
+// Base e comparado em vigor na Receita: os escolhidos ou os padrões
+export function periodosDaReceita(
+  competencias: string[],
+  { base_de, base_ate, comparado_de }: Pick<Filtros, 'base_de' | 'base_ate' | 'comparado_de'>,
+): { base: Periodo; comparado: Periodo } | undefined {
+  const base = base_de && base_ate ? { de: base_de, ate: base_ate } : basePadrao(competencias)
+  if (!base) {
     return undefined
   }
-  if (opcoes) {
-    return mesesFinais(opcoes.competencias, meses).includes(valor) ? valor : undefined
-  }
-  return MES.test(valor) ? valor : undefined
+  const comparado = comparado_de
+    ? periodoDeTamanho(competencias, comparado_de, tamanhoDoPeriodo(competencias, base))
+    : comparadoPadrao(competencias, base)
+  return comparado ? { base, comparado } : undefined
 }
 
-// Cada um tem que ser o começo de um ano da base, e o comparado vem depois do base.
-// Uma combinação impossível volta para o padrão
-function lerAnos(base: string | null, comparado: string | null, opcoes?: OpcoesFiltros) {
+// Os dois meses ou nenhum. Com as opções, o período anterior tem que caber na base
+function lerPeriodo(de: string | null, ate: string | null, opcoes?: OpcoesFiltros) {
+  const nenhum = { de: undefined, ate: undefined }
+  if (!de || !ate || !MES.test(de) || !MES.test(ate) || de > ate) {
+    return nenhum
+  }
+  if (opcoes && !periodoComAnterior(opcoes.competencias, { de, ate })) {
+    return nenhum
+  }
+  return { de, ate }
+}
+
+// Base inválido volta tudo para o padrão; comparado inválido volta só ele
+function lerReceita(baseDe: string | null, baseAte: string | null, comparadoDe: string | null, opcoes?: OpcoesFiltros) {
+  const baseLida =
+    baseDe && baseAte && MES.test(baseDe) && MES.test(baseAte) && baseDe <= baseAte
+      ? { de: baseDe, ate: baseAte }
+      : undefined
+  const comparadoLido = comparadoDe && MES.test(comparadoDe) ? comparadoDe : undefined
   if (!opcoes) {
-    return {
-      base: base && MES.test(base) ? base : undefined,
-      comparado: comparado && MES.test(comparado) ? comparado : undefined,
-    }
+    return { base_de: baseLida?.de, base_ate: baseLida?.ate, comparado_de: comparadoLido }
   }
-  const inicios = anosDaBase(opcoes.competencias).map(({ inicio }) => inicio)
-  const escolhidos = {
-    base: base && inicios.includes(base) ? base : undefined,
-    comparado: comparado && inicios.includes(comparado) ? comparado : undefined,
-  }
-  const emVigor = anosDaReceita(opcoes.competencias, escolhidos)
-  if (!emVigor.base || !emVigor.comparado || emVigor.base >= emVigor.comparado) {
-    return { base: undefined, comparado: undefined }
-  }
-  return escolhidos
+
+  const base = baseLida && baseValida(opcoes.competencias, baseLida) ? baseLida : undefined
+  const baseEmVigor = base ?? basePadrao(opcoes.competencias)
+  const comparado =
+    comparadoLido && baseEmVigor && comparadoValido(opcoes.competencias, baseEmVigor, comparadoLido)
+      ? comparadoLido
+      : undefined
+  return { base_de: base?.de, base_ate: base?.ate, comparado_de: comparado }
 }
 
 function lerMunicipio(valor: string | null, opcoes?: OpcoesFiltros) {

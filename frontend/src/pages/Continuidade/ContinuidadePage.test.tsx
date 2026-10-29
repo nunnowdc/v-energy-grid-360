@@ -61,7 +61,7 @@ test('clicar num alimentador do ranking filtra a tela por ele', async () => {
 })
 
 test('a causa filtra só as ocorrências', async () => {
-  abrir('/continuidade?meses=3&causa=VEGETACAO')
+  abrir('/continuidade?de=2026-04&ate=2026-06&causa=VEGETACAO')
 
   expect(await screen.findByText('Só vegetação')).toBeInTheDocument()
   expect(enderecos()[0]).toBe('/api/network/continuity?inicio=2026-04&fim=2026-06&causa=VEGETACAO')

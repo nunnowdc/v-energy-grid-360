@@ -94,7 +94,7 @@ function IndicadoresPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['periodo', 'ate', 'municipio', 'classe']} />} />
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['periodo', 'municipio', 'classe']} />} />
 
       <EstadoConsulta
         consulta={consulta}

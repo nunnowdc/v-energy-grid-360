@@ -1,36 +1,39 @@
 import { X } from 'lucide-react'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltroSelect from '@/components/FiltroSelect/FiltroSelect'
+import SeletorPeriodo from '@/components/SeletorPeriodo/SeletorPeriodo'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { rotuloCausa } from '@/config/causas'
 import { classesConsumo } from '@/config/classes'
 import { useFiltros } from '@/hooks/use-filtros'
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
-import { formatarCompetencia, formatarPeriodo } from '@/lib/formatacao'
+import { periodoEscolhido, periodosDaReceita } from '@/lib/filtros-url'
 import {
-  anosDaBase,
-  anosDaReceita,
-  MESES_PADRAO,
-  mesesFinais,
-  mesesPeriodo,
-  type AnoDaBase,
-} from '@/lib/filtros-url'
+  atalhosDaBase,
+  atalhosDoComparado,
+  atalhosDoPeriodo,
+  basePadrao,
+  baseValida,
+  comparadoPadrao,
+  comparadoValido,
+  periodoComAnterior,
+  periodoPadrao,
+  tamanhoDoPeriodo,
+  type Periodo,
+} from '@/lib/periodos'
 
-// "ate" é o mês em que o período termina; "anos" são o ano base e o ano comparado da Receita
-export type CampoFiltro = 'periodo' | 'ate' | 'anos' | 'municipio' | 'bairro' | 'classe' | 'alimentador' | 'causa'
+// "periodo": um período comparado com o anterior, de mesmo tamanho (Indicadores e Continuidade).
+// "comparacao": período base e período comparado da Receita
+export type CampoFiltro = 'periodo' | 'comparacao' | 'municipio' | 'bairro' | 'classe' | 'alimentador' | 'causa'
 
-// "Últimos 12 meses" é o padrão (sem parâmetro na URL); as outras janelas vêm depois
-const opcoesPeriodo = mesesPeriodo
-  .filter((meses) => meses !== MESES_PADRAO)
-  .map((meses) => ({ valor: String(meses), rotulo: `Últimos ${meses} meses` }))
+const iguais = (a?: Periodo, b?: Periodo) => a?.de === b?.de && a?.ate === b?.ate
 
 // Larguras fixas: escolher outro valor não muda o tamanho nem a posição dos filtros.
 // Cabem os valores mais comuns; um valor maior é cortado com "…". No celular, cada filtro ocupa a linha toda
 const larguras: Record<CampoFiltro, string> = {
-  periodo: 'sm:w-56',
-  ate: 'sm:w-36',
-  anos: 'sm:w-72',
+  periodo: 'sm:w-64',
+  comparacao: 'sm:w-72',
   municipio: 'sm:w-64',
   bairro: 'sm:w-56',
   classe: 'sm:w-64',
@@ -46,7 +49,7 @@ type FiltrosGlobaisProps = {
 // Barra de filtros das telas. Cada mudança vai para a URL e já é aplicada
 function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
   const opcoes = useOpcoesFiltros()
-  const { filtros, temFiltro, alterarFiltro, limparFiltros } = useFiltros()
+  const { filtros, temFiltro, alterarFiltro, alterarFiltros, limparFiltros } = useFiltros()
 
   return (
     <EstadoConsulta consulta={opcoes} esqueleto={<Skeleton className="h-9 w-full max-w-md" />}>
@@ -57,55 +60,66 @@ function FiltrosGlobais({ campos }: FiltrosGlobaisProps) {
         const alimentadores = dados.alimentadores.filter(
           ({ municipios }) => !filtros.municipio || municipios.includes(filtros.municipio),
         )
-        // O último mês da base é o padrão de "Até"; os outros vêm do mais recente para o mais antigo
-        const ultimoMes = dados.competencias.at(-1)
-        const outrosFins = mesesFinais(dados.competencias, filtros.meses).slice(0, -1).reverse()
-        // Cada lista só oferece os anos que deixam o comparado depois do base
-        const anos = anosDaBase(dados.competencias)
-        const emVigor = anosDaReceita(dados.competencias, filtros)
-        const rotuloAno = (ano?: AnoDaBase) => (ano ? formatarPeriodo(ano.inicio, ano.fim) : '—')
-        const opcaoAno = (ano: AnoDaBase) => ({ valor: ano.inicio, rotulo: rotuloAno(ano) })
+        const { competencias } = dados
+        const periodo = periodoEscolhido(competencias, filtros)
+        const receita = periodosDaReceita(competencias, filtros)
+
+        // O padrão não vai para a URL: escolher os últimos 12 meses limpa o filtro
+        function mudarPeriodo(novo: Periodo) {
+          const padrao = iguais(novo, periodoPadrao(competencias))
+          alterarFiltros({ de: padrao ? undefined : novo.de, ate: padrao ? undefined : novo.ate })
+        }
+
+        // O comparado escolhido fica (com o tamanho do novo base) se ainda couber; senão, volta ao padrão
+        function mudarBase(novo: Periodo) {
+          const padrao = iguais(novo, basePadrao(competencias))
+          const comparado = filtros.comparado_de
+          alterarFiltros({
+            base_de: padrao ? undefined : novo.de,
+            base_ate: padrao ? undefined : novo.ate,
+            comparado_de: comparado && comparadoValido(competencias, novo, comparado) ? comparado : undefined,
+          })
+        }
+
+        function mudarComparado(novo: Periodo) {
+          const padrao = iguais(novo, comparadoPadrao(competencias, receita!.base))
+          alterarFiltro('comparado_de', padrao ? undefined : novo.de)
+        }
 
         return (
           <div className="flex flex-wrap items-center gap-2">
-            {campos.includes('periodo') && (
-              <FiltroSelect
+            {campos.includes('periodo') && periodo && (
+              <SeletorPeriodo
                 rotulo="Período"
-                // "meses=12" na URL é o mesmo que o padrão, que é a opção vazia
-                valor={filtros.meses && filtros.meses !== MESES_PADRAO ? String(filtros.meses) : undefined}
-                opcoes={opcoesPeriodo}
-                textoVazio={`Últimos ${MESES_PADRAO} meses`}
+                competencias={competencias}
+                valor={periodo}
+                valido={(escolhido) => periodoComAnterior(competencias, escolhido)}
+                atalhos={atalhosDoPeriodo(competencias)}
                 className={larguras.periodo}
-                aoMudar={(valor) => alterarFiltro('meses', valor)}
+                aoMudar={mudarPeriodo}
               />
             )}
-            {campos.includes('ate') && (
-              <FiltroSelect
-                rotulo="Até"
-                valor={filtros.ate}
-                opcoes={outrosFins.map((mes) => ({ valor: mes, rotulo: formatarCompetencia(mes) }))}
-                textoVazio={ultimoMes ? formatarCompetencia(ultimoMes) : '—'}
-                className={larguras.ate}
-                aoMudar={(valor) => alterarFiltro('ate', valor)}
-              />
-            )}
-            {campos.includes('anos') && (
+            {campos.includes('comparacao') && receita && (
               <>
-                <FiltroSelect
+                <SeletorPeriodo
                   rotulo="Período base"
-                  valor={filtros.base}
-                  opcoes={anos.slice(1).filter(({ inicio }) => inicio < emVigor.comparado!).map(opcaoAno)}
-                  textoVazio={rotuloAno(anos[0])}
-                  className={larguras.anos}
-                  aoMudar={(valor) => alterarFiltro('base', valor)}
+                  competencias={competencias}
+                  valor={receita.base}
+                  valido={(escolhido) => baseValida(competencias, escolhido)}
+                  atalhos={atalhosDaBase(competencias)}
+                  className={larguras.comparacao}
+                  aoMudar={mudarBase}
                 />
-                <FiltroSelect
+                <SeletorPeriodo
                   rotulo="Comparado com"
-                  valor={filtros.comparado}
-                  opcoes={anos.slice(0, -1).filter(({ inicio }) => inicio > emVigor.base!).map(opcaoAno)}
-                  textoVazio={rotuloAno(anos.at(-1))}
-                  className={larguras.anos}
-                  aoMudar={(valor) => alterarFiltro('comparado', valor)}
+                  competencias={competencias}
+                  valor={receita.comparado}
+                  valido={(escolhido) => comparadoValido(competencias, receita.base, escolhido.de)}
+                  tamanhoFixo={tamanhoDoPeriodo(competencias, receita.base)}
+                  atalhos={atalhosDoComparado(competencias, receita.base)}
+                  tituloAtalhos="Mesmos meses do ano"
+                  className={larguras.comparacao}
+                  aoMudar={mudarComparado}
                 />
               </>
             )}

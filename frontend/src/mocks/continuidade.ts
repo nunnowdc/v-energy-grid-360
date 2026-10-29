@@ -1,6 +1,6 @@
 import type { AlimentadorContinuidade, ContinuidadeRede, MesContinuidade } from '@/hooks/use-continuidade'
 import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
-import { mesesPeriodo } from '@/lib/filtros-url'
+import { periodoComAnterior } from '@/lib/periodos'
 
 // DADOS DE EXEMPLO para GET /api/network/continuity. Os números não vêm da base
 // real: são inventados por alimentador, com mais interrupções na época de chuva
@@ -71,7 +71,7 @@ export function gerarContinuidade(
   const primeiro = competencias.indexOf(inicio ?? '')
   const ultimo = competencias.indexOf(fim ?? '')
   const tamanho = ultimo - primeiro + 1
-  if (primeiro < 0 || ultimo < 0 || !mesesPeriodo.some((meses) => meses === tamanho) || primeiro < tamanho) {
+  if (!periodoComAnterior(competencias, { de: inicio ?? '', ate: fim ?? '' })) {
     return undefined
   }
 

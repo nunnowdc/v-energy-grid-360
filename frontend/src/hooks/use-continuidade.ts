@@ -1,13 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { apiFetch } from '@/lib/api/api-fetch'
-import { janelaDoPeriodo, type Filtros } from '@/lib/filtros-url'
+import { periodoEscolhido, type Filtros } from '@/lib/filtros-url'
 
 // Formato proposto para GET /api/network/continuity?inicio=&fim=&municipio=&alimentador=&causa=
 // (ainda não existe no backend). Regras combinadas (docs/backend/impl_filtros.md):
 // - DEC e FEC são sempre do alimentador INTEIRO (agg_continuidade_alimentador), nunca do município
 // - município só escolhe quais alimentadores entram; causa só filtra as ocorrências
-// O período anterior tem o mesmo tamanho e termina no mês antes de "inicio"
+// O período tem de 1 a 24 meses; o anterior tem o mesmo tamanho e termina no mês antes de "inicio"
 
 export type AlimentadorContinuidade = {
   alimentador: string
@@ -43,15 +43,16 @@ export type ContinuidadeRede = {
   }
 }
 
-export function useContinuidade({ meses, municipio, alimentador, causa }: Filtros) {
+export function useContinuidade(filtros: Filtros) {
+  const { municipio, alimentador, causa } = filtros
   const { data: opcoes } = useOpcoesFiltros()
-  // O período é contado a partir do último mês da base, que vem das opções
-  const janela = opcoes ? janelaDoPeriodo(opcoes.competencias, meses) : undefined
+  // O escolhido ou os últimos 12 meses da base, que vêm das opções
+  const periodo = opcoes ? periodoEscolhido(opcoes.competencias, filtros) : undefined
 
   return useQuery({
-    queryKey: ['continuidade', janela?.inicio, janela?.fim, municipio ?? null, alimentador ?? null, causa ?? null],
+    queryKey: ['continuidade', periodo?.de, periodo?.ate, municipio ?? null, alimentador ?? null, causa ?? null],
     queryFn: ({ signal }) => {
-      const params = new URLSearchParams({ inicio: janela!.inicio, fim: janela!.fim! })
+      const params = new URLSearchParams({ inicio: periodo!.de, fim: periodo!.ate })
       if (municipio) {
         params.set('municipio', municipio)
       }
@@ -63,7 +64,7 @@ export function useContinuidade({ meses, municipio, alimentador, causa }: Filtro
       }
       return apiFetch<ContinuidadeRede>(`/network/continuity?${params}`, { signal })
     },
-    enabled: janela?.inicio !== undefined,
+    enabled: periodo !== undefined,
     // Ao trocar um filtro, os números anteriores ficam esmaecidos até os novos chegarem
     placeholderData: keepPreviousData,
   })

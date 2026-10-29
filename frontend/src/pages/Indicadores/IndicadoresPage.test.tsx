@@ -61,7 +61,7 @@ test('sem filtro, pede os últimos 12 meses da base', async () => {
 
 test('manda o período, o município e a classe escolhidos', async () => {
   const fetch = responderCom(indicadores)
-  abrir('/?meses=3&municipio=Recife&classe=RURAL')
+  abrir('/?de=2026-04&ate=2026-06&municipio=Recife&classe=RURAL')
 
   await screen.findByText('Receita faturada')
   expect(fetch.mock.calls[0][0]).toBe(
@@ -69,18 +69,18 @@ test('manda o período, o município e a classe escolhidos', async () => {
   )
 })
 
-test('o período termina no mês escolhido em "Até"', async () => {
+test('manda o período escolhido, de qualquer tamanho', async () => {
   const fetch = responderCom(indicadores)
-  abrir('/?meses=3&ate=2025-12')
+  abrir('/?de=2025-10&ate=2025-12')
 
   await screen.findByText('Receita faturada')
   expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-10&fim=2025-12')
 })
 
-test('"Até" sem espaço para o período anterior volta para o último mês da base', async () => {
+test('período sem espaço para o anterior volta para os últimos 12 meses', async () => {
   const fetch = responderCom(indicadores)
-  // 12 meses até jun/2023 precisariam do período anterior antes de jul/2022
-  abrir('/?ate=2023-06')
+  // jul/2022 a jun/2023 precisaria do ano anterior, que não está na base
+  abrir('/?de=2022-07&ate=2023-06')
 
   await screen.findByText('Receita faturada')
   expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-07&fim=2026-06')
@@ -88,10 +88,11 @@ test('"Até" sem espaço para o período anterior volta para o último mês da b
 
 test('mostra os KPIs com a variação contra o período anterior', async () => {
   responderCom(indicadores)
-  abrir('/?meses=3')
+  abrir('/?de=2026-04&ate=2026-06')
 
-  expect(await screen.findByText('abr/2026 – jun/2026')).toBeInTheDocument()
-  expect(screen.getByText(/comparado com jan\/2026 – mar\/2026/)).toBeInTheDocument()
+  // Espera os dados: o botão do período já mostra "abr/2026 – jun/2026" antes deles
+  expect(await screen.findByText(/comparado com jan\/2026 – mar\/2026/)).toBeInTheDocument()
+  expect(screen.getAllByText('abr/2026 – jun/2026')).toHaveLength(2)
   // Receita: 3,3 mi contra 3 mi = +10%
   expect(screen.getAllByText('+10,0%')).not.toHaveLength(0)
   // Atraso: 90 de 3.000 faturas, contra 60 antes = +50%

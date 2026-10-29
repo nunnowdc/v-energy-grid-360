@@ -321,7 +321,7 @@ test('a resposta leva o dashboard para a tela e os filtros que o agente escolheu
     ],
     auditorias: {},
   })
-  abrir({ url: '/continuidade?meses=6', comOpcoes: true })
+  abrir({ url: '/continuidade?de=2026-01&ate=2026-06', comOpcoes: true })
   perguntar('Qual o faturamento em Recife no ano de 2024?')
 
   await screen.findByText('Resposta a1')

@@ -96,6 +96,7 @@ src/
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
 │   ├── SeloConfianca/SeloConfianca.tsx    ← quanto dá para confiar na resposta do agente
+│   ├── SeletorPeriodo/SeletorPeriodo.tsx  ← filtro de período: botão que abre um calendário de meses
 │   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
 │   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
@@ -134,6 +135,7 @@ src/
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
+│   ├── periodos.ts          ← regras dos períodos escolhíveis (tamanho, comparação, atalhos)
 │   ├── tela-da-resposta.ts  ← tela e filtros do dashboard para uma resposta do agente
 │   └── utils.ts
 ├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
@@ -296,14 +298,14 @@ Para uma linha de indicadores, use o `EstadoConsulta` direto, com `CartaoKpi` e,
 Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos filtros:
 
 ```
-/continuidade?meses=6&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
+/continuidade?de=2026-01&ate=2026-06&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
 ```
 
 | Parâmetro | Formato | Sem o parâmetro |
 |---|---|---|
-| `meses` | `3`, `6` ou `12`: o tamanho do período | Últimos 12 meses |
-| `ate` | Último mês do período (`yyyy-MM`). Só vale se antes dele couber o período anterior, de mesmo tamanho | Último mês **da base**, nunca a data de hoje |
-| `base` e `comparado` | Primeiro mês (`yyyy-MM`) de um ano da base, para a Receita. O comparado vem depois do base | Primeiro ano da base × últimos 12 meses |
+| `de` e `ate` | Primeiro e último mês (`yyyy-MM`) do período dos Indicadores e da Continuidade: de 1 a 24 meses, com o período anterior, de mesmo tamanho, dentro da base | Últimos 12 meses **da base**, nunca da data de hoje |
+| `base_de` e `base_ate` | Período base da Receita: de 1 a 24 meses, deixando espaço depois dele para o comparado | Primeiro ano da base |
+| `comparado_de` | Primeiro mês do período comparado da Receita. O tamanho é o do base, e ele começa depois do fim do base | Os mesmos meses do base no ano mais recente que cabe |
 | `municipio` | Nome do município | Todos |
 | `bairro` | Nome do bairro (exige `municipio`) | Todos |
 | `classe` | `RESIDENCIAL`, `COMERCIAL`, `INDUSTRIAL`, `RURAL` ou `PODER_PUBLICO` | Todas |
@@ -314,13 +316,13 @@ Filtros de cada tela, combinados com o backend em `docs/backend/impl_filtros.md`
 
 | Tela | Filtros |
 |---|---|
-| Indicadores | Período, até, município, classe |
+| Indicadores | Período, município, classe |
 | Receita | Período base, comparado com, município, bairro, classe |
 | Fila de inspeção | Município, bairro, classe |
 | Continuidade | Período, município, alimentador, causa |
 | Visão 360 | Nenhum: a tela recebe o ID da UC |
 
-Para a API, o período vira `inicio` e `fim` (`yyyy-MM`) com `janelaDoPeriodo()` de `src/lib/filtros-url.ts`; o backend calcula sozinho a janela de comparação, com o mesmo tamanho. Na Receita, os anos são de 12 meses contados do fim da base (`anosDaBase()`), para os dois lados terem os mesmos meses do ano, e vão para a API como `inicio_p0` e `inicio_p1`. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
+Os períodos são escolhidos num pop-up (`SeletorPeriodo`): clica no primeiro e no último mês, ou num atalho (últimos 3, 6, 12 ou 24 meses, anos civis, anos jul–jun da base). Meses que não deixam espaço para a comparação ficam apagados. As regras ficam em `src/lib/periodos.ts`. Para a API, o período dos Indicadores e da Continuidade vira `inicio` e `fim`; o backend calcula sozinho o período anterior, com o mesmo tamanho. Na Receita, os dois períodos vão como `inicio_p0`, `fim_p0`, `inicio_p1` e `fim_p1`. O comparado sempre tem o tamanho do base, e escolher só o base leva o comparado para os mesmos meses do ano: com meses diferentes do ano (ex.: jan–mar × jul–set), a tela avisa que parte da variação de volume pode ser da estação. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
 
 Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora. Cada filtro aceita um valor só.
 
