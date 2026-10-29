@@ -52,10 +52,26 @@ class ValidadorSQLGlotPostgres:
     """Implementa ValidadorSQLInterface usando SQLGlot (parse real, default deny)."""
 
     def __init__(self, validador: SQLValidator | None = None) -> None:
-        self._validador = validador or SQLValidator(dialect="postgres")
+        self._validador = validador or SQLValidator(
+            dialect="postgres",
+            allowed_extra_functions=frozenset({"unaccent"}),
+        )
 
     def validar(self, sql: str) -> ResultadoValidacaoSQLSeguro:
         r: ValidationResult = self._validador.validate(sql)
+
+        # SQL aprovado, mas sem nenhuma tabela (ex.: SELECT SQL_INDISPONIVEL, SELECT 1).
+        # Não responde pergunta de negócio e não deve chegar ao banco. Erro do LLM, não ataque.
+        if r.allowed and not r.tables:
+            return ResultadoValidacaoSQLSeguro(
+                aprovado=False,
+                motivo_rejeicao="A consulta não referencia nenhuma tabela permitida.",
+                malicioso=False,
+                tabelas_detectadas=[],
+                codigo="NO_TABLES",
+                sql_normalizado=None,
+            )
+
         if r.allowed:
             return ResultadoValidacaoSQLSeguro(
                 aprovado=True,
