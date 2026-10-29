@@ -4,8 +4,10 @@ import {
   atalhosDoComparado,
   basePadrao,
   baseValida,
+  comparacaoDoPeriodo,
   comparadoPadrao,
   comparadoValido,
+  dentroDaBase,
   mesmosMesesDoAno,
 } from '@/lib/periodos'
 import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
@@ -66,5 +68,51 @@ describe('base e comparado', () => {
   test('mesmos meses do ano dos dois lados', () => {
     expect(mesmosMesesDoAno({ de: '2023-01', ate: '2023-03' }, { de: '2026-01', ate: '2026-03' })).toBe(true)
     expect(mesmosMesesDoAno({ de: '2023-01', ate: '2023-03' }, { de: '2025-07', ate: '2025-09' })).toBe(false)
+  })
+})
+
+describe('período consultado', () => {
+  test('é cortado aos meses da base', () => {
+    expect(dentroDaBase(competencias, { de: '2026-01', ate: '2026-12' })).toEqual({ de: '2026-01', ate: '2026-06' })
+    expect(dentroDaBase(competencias, { de: '2022-01', ate: '2022-12' })).toEqual({ de: '2022-07', ate: '2022-12' })
+    expect(dentroDaBase(competencias, { de: '2021-01', ate: '2021-12' })).toBeUndefined()
+  })
+
+  test('vira o comparado, com o base nos mesmos meses do ano anterior', () => {
+    expect(comparacaoDoPeriodo(competencias, { de: '2024-01', ate: '2024-12' })).toEqual({
+      base: { de: '2023-01', ate: '2023-12' },
+      comparado: { de: '2024-01', ate: '2024-12' },
+    })
+    // 2026 só tem até junho na base
+    expect(comparacaoDoPeriodo(competencias, { de: '2026-01', ate: '2026-12' })).toEqual({
+      base: { de: '2025-01', ate: '2025-06' },
+      comparado: { de: '2026-01', ate: '2026-06' },
+    })
+  })
+
+  test('sem o ano anterior na base, o base são os meses logo antes', () => {
+    expect(comparacaoDoPeriodo(competencias, { de: '2023-01', ate: '2023-03' })).toEqual({
+      base: { de: '2022-10', ate: '2022-12' },
+      comparado: { de: '2023-01', ate: '2023-03' },
+    })
+    // 24 meses: um ano antes cobriria metade do próprio período
+    expect(comparacaoDoPeriodo(competencias, { de: '2024-07', ate: '2026-06' })).toEqual({
+      base: { de: '2022-07', ate: '2024-06' },
+      comparado: { de: '2024-07', ate: '2026-06' },
+    })
+  })
+
+  test('com dois períodos na consulta, o mais antigo é o base', () => {
+    expect(
+      comparacaoDoPeriodo(competencias, { de: '2025-03', ate: '2025-03' }, { de: '2023-03', ate: '2023-03' }),
+    ).toEqual({ base: { de: '2023-03', ate: '2023-03' }, comparado: { de: '2025-03', ate: '2025-03' } })
+  })
+
+  test('sem base que caiba, não há comparação', () => {
+    // Nada antes do primeiro ano da base
+    expect(comparacaoDoPeriodo(competencias, { de: '2022-01', ate: '2022-12' })).toBeUndefined()
+    // Mais de 24 meses
+    expect(comparacaoDoPeriodo(competencias, { de: '2023-01', ate: '2025-12' })).toBeUndefined()
+    expect(comparacaoDoPeriodo(competencias, { de: '2030-01', ate: '2030-12' })).toBeUndefined()
   })
 })

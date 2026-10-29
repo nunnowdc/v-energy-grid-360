@@ -78,6 +78,49 @@ export function comparadoPadrao(competencias: string[], base: Periodo): Periodo 
   return ultimos && comparadoValido(competencias, base, ultimos.de) ? ultimos : undefined
 }
 
+// O período cortado aos meses da base ("2026" vira jan–jun/2026); undefined se
+// nenhum mês dele está na base
+export function dentroDaBase(competencias: string[], { de, ate }: Periodo): Periodo | undefined {
+  const primeiro = competencias[0]
+  const ultimo = competencias.at(-1)
+  if (!primeiro || !ultimo) {
+    return undefined
+  }
+  const inicio = de < primeiro ? primeiro : de
+  const fim = ate > ultimo ? ultimo : ate
+  return inicio <= fim && competencias.includes(inicio) && competencias.includes(fim)
+    ? { de: inicio, ate: fim }
+    : undefined
+}
+
+// Um período consultado (ex.: pelo agente) vira o comparado, que é o que os KPIs
+// mostram. O base é o informado ou, sem ele, os mesmos meses um ano antes; sem
+// espaço para isso, os meses logo antes. undefined quando nenhum cabe
+export function comparacaoDoPeriodo(
+  competencias: string[],
+  periodo: Periodo,
+  base?: Periodo,
+): { base: Periodo; comparado: Periodo } | undefined {
+  const comparado = dentroDaBase(competencias, periodo)
+  if (!comparado) {
+    return undefined
+  }
+  const { inicio, tamanho } = posicoes(competencias, comparado)
+  const candidatos = [
+    base && dentroDaBase(competencias, base),
+    periodoDeTamanho(competencias, competencias[inicio - 12] ?? '', tamanho),
+    periodoDeTamanho(competencias, competencias[inicio - tamanho] ?? '', tamanho),
+  ]
+  const escolhido = candidatos.find(
+    (candidato) =>
+      candidato &&
+      tamanhoDoPeriodo(competencias, candidato) === tamanho &&
+      baseValida(competencias, candidato) &&
+      comparadoValido(competencias, candidato, comparado.de),
+  )
+  return escolhido ? { base: escolhido, comparado } : undefined
+}
+
 export function atalhosDaBase(competencias: string[]): AtalhoPeriodo[] {
   // Anos de 12 meses no ritmo da base (jul–jun), contados do primeiro mês
   const anosDaBase = competencias
