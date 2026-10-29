@@ -51,30 +51,53 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-test('sem filtro, pede os últimos 12 meses da base', async () => {
+test('sem filtro, pede o último ano da base contra o anterior', async () => {
   const fetch = responderCom(indicadores)
   abrir('/')
 
   await screen.findByText('Receita faturada')
-  expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-07&fim=2026-06')
+  expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-07&fim=2026-06&inicio_anterior=2024-07&fim_anterior=2025-06')
 })
 
-test('manda o período, o município e a classe escolhidos', async () => {
+test('manda os períodos, o município e a classe escolhidos', async () => {
   const fetch = responderCom(indicadores)
-  abrir('/?meses=3&municipio=Recife&classe=RURAL')
+  // Base jan–mar/2026: não cabem os mesmos meses depois, então o comparado são os últimos 3 meses
+  abrir('/?base_de=2026-01&base_ate=2026-03&municipio=Recife&classe=RURAL')
 
   await screen.findByText('Receita faturada')
   expect(fetch.mock.calls[0][0]).toBe(
-    '/api/metrics/general?inicio=2026-04&fim=2026-06&municipio=Recife&classe=RURAL',
+    '/api/metrics/general?inicio=2026-04&fim=2026-06&inicio_anterior=2026-01&fim_anterior=2026-03&municipio=Recife&classe=RURAL',
   )
+})
+
+test('base escolhido leva o comparado para os mesmos meses do ano mais recente', async () => {
+  const fetch = responderCom(indicadores)
+  abrir('/?base_de=2024-10&base_ate=2024-12')
+
+  await screen.findByText('Receita faturada')
+  expect(fetch.mock.calls[0][0]).toBe(
+    '/api/metrics/general?inicio=2025-10&fim=2025-12&inicio_anterior=2024-10&fim_anterior=2024-12',
+  )
+})
+
+test('base sem espaço para o comparado volta ao padrão', async () => {
+  const fetch = responderCom(indicadores)
+  // Depois de 2025 inteiro não cabem mais 12 meses na base
+  abrir('/?base_de=2025-01&base_ate=2025-12')
+
+  await screen.findByText('Receita faturada')
+  expect(fetch.mock.calls[0][0]).toBe('/api/metrics/general?inicio=2025-07&fim=2026-06&inicio_anterior=2024-07&fim_anterior=2025-06')
 })
 
 test('mostra os KPIs com a variação contra o período anterior', async () => {
   responderCom(indicadores)
-  abrir('/?meses=3')
+  abrir('/?base_de=2026-01&base_ate=2026-03')
 
-  expect(await screen.findByText('abr/2026 – jun/2026')).toBeInTheDocument()
-  expect(screen.getByText(/comparado com jan\/2026 – mar\/2026/)).toBeInTheDocument()
+  // Espera os dados: o botão do período já mostra "abr/2026 – jun/2026" antes deles
+  expect(await screen.findByText(/comparado com jan\/2026 – mar\/2026/)).toBeInTheDocument()
+  expect(screen.getAllByText('abr/2026 – jun/2026')).toHaveLength(2)
+  // jan–mar contra abr–jun: meses diferentes do ano
+  expect(screen.getByText(/meses diferentes do ano/)).toBeInTheDocument()
   // Receita: 3,3 mi contra 3 mi = +10%
   expect(screen.getAllByText('+10,0%')).not.toHaveLength(0)
   // Atraso: 90 de 3.000 faturas, contra 60 antes = +50%

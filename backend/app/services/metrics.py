@@ -53,9 +53,37 @@ def validate_metrics_period(
     start = _parse_month(inicio)
     end = _parse_month(fim)
     size = _month_index(end) - _month_index(start) + 1
-    if size not in (3, 6, 12):
+    # De 1 a 24 meses: com o período anterior, cabe nos 48 meses da base
+    if not 1 <= size <= 24:
         raise InvalidMetricsParametersError("Período inválido")
     return start, end, size
+
+
+def validate_previous_period(
+    inicio_anterior: str | None,
+    fim_anterior: str | None,
+    start: date | None,
+    size: int,
+) -> date | None:
+    """Período de comparação escolhido: mesmo tamanho, terminando antes do atual."""
+    if (inicio_anterior is None) != (fim_anterior is None):
+        raise InvalidMetricsParametersError(
+            "Informe inicio_anterior e fim_anterior juntos"
+        )
+    if inicio_anterior is None:
+        return None
+    if start is None:
+        raise InvalidMetricsParametersError(
+            "O período de comparação exige inicio e fim"
+        )
+    previous_start = _parse_month(inicio_anterior)
+    previous_end = _parse_month(fim_anterior)
+    if (
+        _month_index(previous_end) - _month_index(previous_start) + 1 != size
+        or previous_end >= start
+    ):
+        raise InvalidMetricsParametersError("Período inválido")
+    return previous_start
 
 
 def get_general_metrics(
@@ -64,9 +92,17 @@ def get_general_metrics(
     fim: str | None,
     municipio: str | None = None,
     classe: str | None = None,
+    inicio_anterior: str | None = None,
+    fim_anterior: str | None = None,
 ) -> dict[str, object]:
-    """Forma duas janelas consecutivas sem recalcular medidas da Gold."""
+    """Compara duas janelas de mesmo tamanho sem recalcular medidas da Gold.
+
+    Sem período de comparação, usa o imediatamente anterior ao atual.
+    """
     start, end, size = validate_metrics_period(inicio, fim)
+    chosen_previous = validate_previous_period(
+        inicio_anterior, fim_anterior, start, size
+    )
     if municipio == "":
         municipio = None
     elif municipio is not None and (
@@ -95,17 +131,22 @@ def get_general_metrics(
 
     last = max(months)
     end = end or last
-    if end != last:
+    # O período pode terminar em qualquer mês da base; sem o anterior, de mesmo
+    # tamanho, no calendário, a resposta é 503 (conferido logo abaixo)
+    if end > last:
         raise InvalidMetricsParametersError("Período inválido")
     start = start or _month_at(_month_index(end) - size + 1)
     if _month_index(start) != _month_index(end) - size + 1:
         raise InvalidMetricsParametersError("Período inválido")
 
-    first_previous = _month_at(_month_index(start) - size)
-    last_previous = _month_at(_month_index(start) - 1)
+    first_previous = chosen_previous or _month_at(_month_index(start) - size)
+    last_previous = _month_at(_month_index(first_previous) + size - 1)
     required = {
         _month_at(index)
-        for index in range(_month_index(first_previous), _month_index(end) + 1)
+        for window_start in (first_previous, start)
+        for index in range(
+            _month_index(window_start), _month_index(window_start) + size
+        )
     }
     if not required.issubset(set(months)):
         raise CalendarUnavailableError

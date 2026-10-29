@@ -5,7 +5,7 @@ Executa ambos os indexadores em sequência:
   2. indexador_relatorios_eng_dados.py — relatórios técnicos de engenharia de dados
 
 Execute:
-  python -m ai_agent.src.rag.indexar_tudo
+  python -m src.rag.indexar_tudo
 """
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ import logging
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
 # Raiz do projeto (pasta ai-agent/, que contém src/ e o .env)
 RAIZ_PROJETO = Path(__file__).resolve().parents[2]
 if str(RAIZ_PROJETO) not in sys.path:

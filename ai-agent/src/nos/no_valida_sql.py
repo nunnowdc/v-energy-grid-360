@@ -23,6 +23,15 @@ def no_valida_sql(
     Valida a query SQL usando a interface do validador (Stub ou SQLGlot definitivo).
     Determina se o laço de retry deve continuar ou se deve haver recusa honesta.
     """
+    if state.get("motivo_recusa") == "llm_indisponivel":
+        logger.info("Nó 8 — Ignorado: LLM indisponível no Nó 7.")
+        return {
+            "motivo_recusa": "llm_indisponivel",
+            "passos_executados": [
+                "Nó 8 — Validação ignorada devido a LLM indisponível."
+            ],
+        }
+
     sql = state.get("sql_gerado", "")
     tentativas = state.get("tentativas_sql", 0)
 
@@ -68,6 +77,9 @@ def rota_pos_validacao(state: EstadoAgente) -> str:
     Função de roteamento condicional após o Nó 8.
     Decide entre: retry, recusa honesta ou execução.
     """
+    if state.get("motivo_recusa") == "llm_indisponivel":
+        return "recusa"
+
     erro = state.get("erro_validacao_ou_execucao")
     malicioso = state.get("malicioso", False)
     tentativas = state.get("tentativas_sql", 0)

@@ -7,7 +7,7 @@ import logging
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
-from ..provedores.cliente_llm import ClienteLLM
+from ..provedores.cliente_llm import ClienteLLM, ErroLLMIndisponivel
 
 logger = logging.getLogger("venergy.no_completa_followup")
 
@@ -65,13 +65,21 @@ def no_completa_followup(
         "PERGUNTA REESCRITA:"
     )
 
-    # Mock: retorna a própria pergunta como exemplo de bypass determinístico
-    resposta = llm.invoke(
-        prompt=prompt,
-        system_prompt=SYSTEM_PROMPT_FOLLOWUP,
-        temperatura=0.0,
-        resposta_mock=pergunta,
-    )
+    try:
+        resposta = llm.invoke(
+            prompt=prompt,
+            system_prompt=SYSTEM_PROMPT_FOLLOWUP,
+            temperatura=0.0,
+            resposta_mock=pergunta,
+        )
+    except ErroLLMIndisponivel:
+        logger.warning("Nó 2 — LLM indisponível; mantendo pergunta original.")
+        return {
+            "pergunta_autonoma": pergunta,
+            "passos_executados": [
+                "Nó 2 — Follow-up: LLM indisponível; pergunta original mantida."
+            ],
+        }
 
     pergunta_autonoma = resposta.texto.strip().strip('"').strip("'")
 

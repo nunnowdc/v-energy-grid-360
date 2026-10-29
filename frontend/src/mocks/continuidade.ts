@@ -1,6 +1,6 @@
 import type { AlimentadorContinuidade, ContinuidadeRede, MesContinuidade } from '@/hooks/use-continuidade'
 import type { OpcoesFiltros } from '@/hooks/use-opcoes-filtros'
-import { mesesPeriodo } from '@/lib/filtros-url'
+import { baseValida, comparadoValido, periodoDeTamanho, tamanhoDoPeriodo } from '@/lib/periodos'
 
 // DADOS DE EXEMPLO para GET /api/network/continuity. Os números não vêm da base
 // real: são inventados por alimentador, com mais interrupções na época de chuva
@@ -58,7 +58,9 @@ function mesDoAlimentador(opcoes: OpcoesFiltros, codigo: string, indice: number,
 const somarDec = (meses: MesAlimentador[], campo: 'dec' | 'fec' | 'dec_sem_dia_critico') =>
   meses.reduce((soma, mes) => soma + mes[campo], 0)
 
-// Devolve undefined quando o período não é um dos aceitos (o backend responde 422)
+// Devolve undefined quando os períodos não valem (o backend responde 422): mesmo
+// tamanho, de 1 a 24 meses, com o anterior terminando antes do atual. Sem o
+// anterior, usa o imediatamente anterior
 export function gerarContinuidade(
   opcoes: OpcoesFiltros,
   inicio: string | null,
@@ -66,17 +68,31 @@ export function gerarContinuidade(
   municipio?: string | null,
   alimentador?: string | null,
   causa?: string | null,
+  inicioAnterior?: string | null,
+  fimAnterior?: string | null,
 ): ContinuidadeRede | undefined {
   const { competencias } = opcoes
   const primeiro = competencias.indexOf(inicio ?? '')
   const ultimo = competencias.indexOf(fim ?? '')
   const tamanho = ultimo - primeiro + 1
-  if (primeiro < 0 || ultimo < 0 || !mesesPeriodo.some((meses) => meses === tamanho) || primeiro < tamanho) {
+  const anterior =
+    inicioAnterior || fimAnterior
+      ? { de: inicioAnterior ?? '', ate: fimAnterior ?? '' }
+      : periodoDeTamanho(competencias, competencias[primeiro - tamanho] ?? '', tamanho)
+  if (
+    primeiro < 0 ||
+    tamanho < 1 ||
+    !anterior ||
+    tamanhoDoPeriodo(competencias, anterior) !== tamanho ||
+    !baseValida(competencias, anterior) ||
+    !comparadoValido(competencias, anterior, competencias[primeiro])
+  ) {
     return undefined
   }
 
   const indicesAtual = Array.from({ length: tamanho }, (_, posicao) => primeiro + posicao)
-  const indicesAnterior = indicesAtual.map((indice) => indice - tamanho)
+  const primeiroAnterior = competencias.indexOf(anterior.de)
+  const indicesAnterior = Array.from({ length: tamanho }, (_, posicao) => primeiroAnterior + posicao)
 
   // Município só escolhe os alimentadores que entram; DEC e FEC são do alimentador inteiro
   const recorte = opcoes.alimentadores.filter(
@@ -119,7 +135,7 @@ export function gerarContinuidade(
 
   return {
     periodo: { inicio: competencias[primeiro], fim: competencias[ultimo] },
-    periodo_anterior: { inicio: competencias[primeiro - tamanho], fim: competencias[primeiro - 1] },
+    periodo_anterior: { inicio: anterior.de, fim: anterior.ate },
     ranking,
     serie: destaque
       ? {

@@ -9,7 +9,7 @@ from typing import Any, Dict, Literal
 from pydantic import BaseModel, Field
 
 from ..contratos.estado_agente import EstadoAgente
-from ..provedores.cliente_llm import ClienteLLM
+from ..provedores.cliente_llm import ClienteLLM, ErroLLMIndisponivel
 
 logger = logging.getLogger("venergy.no_roteador_consulta")
 
@@ -68,12 +68,24 @@ def no_roteador_consulta(
     """
     pergunta = state.get("pergunta_autonoma") or state.get("pergunta_original", "")
 
-    resposta = llm.invoke(
-        prompt=f"Pergunta: {pergunta}",
-        system_prompt=SYSTEM_PROMPT_ROTEADOR,
-        temperatura=0.0,
-        resposta_mock='{"rota": "sql", "confianca": 0.92, "motivo": "Consulta de dados operacionais da distribuidora"}',
-    )
+    try:
+        resposta = llm.invoke(
+            prompt=f"Pergunta: {pergunta}",
+            system_prompt=SYSTEM_PROMPT_ROTEADOR,
+            temperatura=0.0,
+            resposta_mock='{"rota": "sql", "confianca": 0.92, "motivo": "Consulta de dados operacionais da distribuidora"}',
+        )
+    except ErroLLMIndisponivel:
+        logger.warning("Nó 4 — LLM indisponível no roteamento. Falha fechada (recusa).")
+        return {
+            "rota": "recusa",
+            "confianca_rota": 0.0,
+            "motivo_rota": "Serviço de IA temporariamente indisponível.",
+            "motivo_recusa": "llm_indisponivel",
+            "passos_executados": [
+                "Nó 4 — Roteador: LLM indisponível; falha fechada com recusa honesta."
+            ],
+        }
 
     chamadas_llm = state.get("chamadas_llm", 0) + 1
     tokens_prompt = state.get("tokens_prompt", 0) + resposta.tokens_prompt

@@ -1,4 +1,5 @@
 import { Info } from 'lucide-react'
+import AvisoSazonalidade from '@/components/AvisoSazonalidade/AvisoSazonalidade'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -31,6 +32,7 @@ function Kpis({ dados, causa }: { dados: ContinuidadeRede; causa?: string }) {
         <span className="font-semibold text-foreground">{formatarPeriodo(periodo.inicio, periodo.fim)}</span>, comparado
         com {formatarPeriodo(periodo_anterior.inicio, periodo_anterior.fim)}
       </p>
+      <AvisoSazonalidade base={periodo_anterior} comparado={periodo} />
       <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
         <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         DEC e FEC são sempre do alimentador inteiro, inclusive das UCs de outros municípios. O município só escolhe
@@ -84,7 +86,7 @@ function ContinuidadePage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['periodo', 'municipio', 'alimentador', 'causa']} />} />
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'alimentador', 'causa']} />} />
 
       <EstadoConsulta
         consulta={consulta}

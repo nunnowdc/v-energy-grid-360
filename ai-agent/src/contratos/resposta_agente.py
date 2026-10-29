@@ -7,6 +7,12 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
+class PeriodoDashboard(BaseModel):
+    """Intervalo de meses, do primeiro ao último (yyyy-MM)."""
+    de: str
+    ate: str
+
+
 class FiltrosDashboard(BaseModel):
     """Valores filtrados na consulta, como estão no SQL ou no resultado (ex.: 'recife')."""
     municipio: Optional[str] = None
@@ -15,6 +21,14 @@ class FiltrosDashboard(BaseModel):
     alimentador: Optional[str] = None
     causa: Optional[str] = None
     id_uc: Optional[str] = None
+    periodo: Optional[PeriodoDashboard] = Field(
+        default=None,
+        description="Meses consultados. O portal mostra esse período nos KPIs (o 'Comparado com').",
+    )
+    periodo_base: Optional[PeriodoDashboard] = Field(
+        default=None,
+        description="Só quando a consulta compara dois períodos (ex.: 2023 e 2024): o mais antigo.",
+    )
 
 
 class TelaDashboard(BaseModel):

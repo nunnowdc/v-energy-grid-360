@@ -40,7 +40,7 @@ test('sem filtro, pede os últimos 12 meses e avisa que DEC e FEC são do alimen
 
   expect(await screen.findByText('Piores alimentadores')).toBeInTheDocument()
   await screen.findAllByRole('button', { name: /^ALM-/ })
-  expect(enderecos()).toEqual(['/api/network/continuity?inicio=2025-07&fim=2026-06'])
+  expect(enderecos()).toEqual(['/api/network/continuity?inicio=2025-07&fim=2026-06&inicio_anterior=2024-07&fim_anterior=2025-06'])
   expect(screen.getByText(/DEC e FEC são sempre do alimentador inteiro/)).toBeInTheDocument()
   // Os 8 alimentadores do exemplo cabem sem "Mostrar todos"
   expect(screen.getAllByRole('button', { name: /^ALM-/ })).toHaveLength(8)
@@ -55,16 +55,18 @@ test('clicar num alimentador do ranking filtra a tela por ele', async () => {
 
   await waitFor(() =>
     expect(enderecos()).toContain(
-      `/api/network/continuity?inicio=2025-07&fim=2026-06&municipio=Olinda&alimentador=${codigo}`,
+      `/api/network/continuity?inicio=2025-07&fim=2026-06&inicio_anterior=2024-07&fim_anterior=2025-06&municipio=Olinda&alimentador=${codigo}`,
     ),
   )
 })
 
 test('a causa filtra só as ocorrências', async () => {
-  abrir('/continuidade?meses=3&causa=VEGETACAO')
+  abrir('/continuidade?base_de=2026-01&base_ate=2026-03&causa=VEGETACAO')
 
   expect(await screen.findByText('Só vegetação')).toBeInTheDocument()
-  expect(enderecos()[0]).toBe('/api/network/continuity?inicio=2026-04&fim=2026-06&causa=VEGETACAO')
+  expect(enderecos()[0]).toBe(
+    '/api/network/continuity?inicio=2026-04&fim=2026-06&inicio_anterior=2026-01&fim_anterior=2026-03&causa=VEGETACAO',
+  )
   expect(screen.queryByText('Climática')).not.toBeInTheDocument()
   expect(screen.getAllByRole('button', { name: /^ALM-/ })).toHaveLength(8)
 })

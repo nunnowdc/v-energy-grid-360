@@ -50,10 +50,10 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 
 ### Dados e telas
 
-- **Receita:** compara o primeiro ano da base (jul/2022 a jun/2023) com os últimos 12 meses (jul/2025 a jun/2026), os dois períodos calculados na Gold. Os períodos aparecem só como texto, sem escolha livre no MVP.
+- **Receita:** sem escolha, compara o primeiro ano da base (jul/2022 a jun/2023) com os últimos 12 meses (jul/2025 a jun/2026), a pergunta do case. Os períodos podem ser trocados no filtro, e a conta é a mesma da Gold, refeita a partir da receita mensal.
 - **Volume:** é o consumo medido nas leituras, porque as faturas não trazem kWh.
 - **"Hoje":** é o último mês da base (jun/2026), nunca a data do computador.
-- **Períodos:** Indicadores e Continuidade mostram os últimos 3, 6 ou 12 meses da base (padrão 12). Os Indicadores comparam com os mesmos meses imediatamente anteriores.
+- **Períodos:** Indicadores, Receita e Continuidade comparam um "Período base" com um "Comparado com", de mesmo tamanho (1 a 24 meses), e os KPIs mostram sempre o comparado. Sem escolha, Indicadores e Continuidade mostram os últimos 12 meses contra os 12 anteriores. Quando os dois períodos cobrem meses diferentes do ano, a tela avisa que parte da variação pode ser da estação.
 - **Gold:** no MVP, é um retrato fixo carregado no PostgreSQL local, sem atualização.
 - **Decomposição preço × volume:** usa a fórmula publicada na Gold: efeito-volume = (kWh P1 − kWh P0) × preço P0, e efeito-preço = (preço P1 − preço P0) × kWh P1. A decomposição de Shapley do diagnóstico fica fora do MVP.
 - **Filtros:** um valor por filtro. A Continuidade filtra por alimentador e causa: o município limita os alimentadores mostrados, e a causa filtra só as ocorrências. DEC e FEC são sempre do alimentador inteiro, nunca de um município ou de uma causa.

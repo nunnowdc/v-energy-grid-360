@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Base de conhecimento vetorial (RAG regulatório e de esquemas Gold)
 CREATE TABLE IF NOT EXISTS tb_conhecimento_vetorial (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    categoria   VARCHAR(50)  NOT NULL,  -- 'glossario' | 'esquema' | 'prodist' | 'templates' | 'perfis_dados'
+    categoria   VARCHAR(50)  NOT NULL,  -- 'glossario' | 'esquema' | 'prodist' | 'templates' | 'perfis_dados' | 'dicionario_gold' | 'decisoes_negocio' | 'regras_setoriais' | 'lgpd' | 'outros_relatorios'
     titulo      VARCHAR(255) NOT NULL,
     conteudo    TEXT         NOT NULL,
     fonte       VARCHAR(150),
@@ -32,6 +32,10 @@ CREATE INDEX IF NOT EXISTS idx_conhecimento_categoria
 CREATE INDEX IF NOT EXISTS idx_conhecimento_embedding
     ON tb_conhecimento_vetorial USING ivfflat (embedding vector_cosine_ops)
     WITH (lists = 50);
+
+-- Índice único para idempotência de indexação (categoria, titulo, md5(conteudo))
+CREATE UNIQUE INDEX IF NOT EXISTS idx_conhecimento_unico_conteudo
+    ON tb_conhecimento_vetorial (categoria, titulo, md5(conteudo));
 
 -- Log de auditoria ponta a ponta
 CREATE TABLE IF NOT EXISTS tb_auditoria_agente (
@@ -52,6 +56,14 @@ CREATE TABLE IF NOT EXISTS tb_auditoria_agente (
     tokens_resposta       INTEGER      DEFAULT 0,
     erro_mensagem         TEXT,
     feedback_usuario      SMALLINT     -- NULL | 1 (útil) | -1 (inútil)
+    -- Novas colunas opcionais (adicionadas via migração)
+    -- tentativas_sql      INTEGER      DEFAULT 0,
+    -- chamadas_llm        INTEGER      DEFAULT 0,
+    -- malicioso           BOOLEAN      DEFAULT FALSE,
+    -- motivo_recusa       TEXT,
+    -- ids_chunks_rag      TEXT,
+    -- user_id             VARCHAR(100),
+    -- perfil              VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_auditoria_sessao

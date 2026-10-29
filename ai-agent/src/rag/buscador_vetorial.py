@@ -124,6 +124,8 @@ class BuscadorVetorial:
 
             with psycopg2.connect(self.db_url) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # Desativa o scan de índice para forçar busca exata por knn (ideal para base pequena).
+                    # Deve ser removido se a tabela crescer significativamente ou ao adotar índices HNSW / IVFFLAT calibrados.
                     cur.execute("SET enable_indexscan = off;")
                     cur.execute(sql, params)
                     rows = cur.fetchall()

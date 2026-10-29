@@ -16,6 +16,11 @@ from pydantic import BaseModel
 logger = logging.getLogger("venergy.cliente_llm")
 
 
+class ErroLLMIndisponivel(RuntimeError):
+    """Exceção levantada quando os provedores de LLM estão indisponíveis ou não configurados."""
+    pass
+
+
 class RespostaLLM(BaseModel):
     texto: str
     tokens_prompt: int = 0
@@ -33,9 +38,18 @@ class ClienteLLM:
         self,
         modelo_primario: Optional[str] = None,
         modelo_fallback: Optional[str] = None,
-        timeout_segundos: float = 12.0,
+        timeout_segundos: Optional[float] = None,
     ):
-        self.timeout = timeout_segundos
+        env_timeout = os.getenv("LLM_TIMEOUT_SEGUNDOS")
+        if timeout_segundos is not None:
+            self.timeout = float(timeout_segundos)
+        elif env_timeout is not None and env_timeout.strip():
+            try:
+                self.timeout = float(env_timeout)
+            except ValueError:
+                self.timeout = 30.0
+        else:
+            self.timeout = 30.0
         
         # Chaves de API e URLs base
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
@@ -61,7 +75,7 @@ class ClienteLLM:
             or self.modelo_primario
         )
 
-        # Modo Mock (ativado se explicitamente pedido ou se não houver chaves válidas)
+        # Modo Mock (ativado exclusivamente quando LLM_MOCK_MODE=true)
         self.forcar_mock = os.getenv("LLM_MOCK_MODE", "false").lower() in ("true", "1")
 
     def invoke(
@@ -72,12 +86,13 @@ class ClienteLLM:
         resposta_mock: Optional[str] = None,
     ) -> RespostaLLM:
         """
-        Executa chamada ao LLM tentando OpenRouter -> 9router -> Mock.
+        Executa chamada ao LLM tentando OpenRouter -> 9router.
+        Mock é utilizado exclusivamente quando LLM_MOCK_MODE=true.
         """
         inicio = time.time()
 
-        if self.forcar_mock or (not self.openrouter_key and not self.ninerouter_key):
-            texto = resposta_mock or "RESPOSTA MOCK DO AGENTE (Sem chaves de API configuradas)."
+        if self.forcar_mock:
+            texto = resposta_mock or "RESPOSTA MOCK DO AGENTE (Modo Mock ativo)."
             return RespostaLLM(
                 texto=texto,
                 tokens_prompt=len(prompt.split()),
@@ -86,10 +101,15 @@ class ClienteLLM:
                 latencia_ms=(time.time() - inicio) * 1000,
             )
 
+        if not self.openrouter_key and not self.ninerouter_key:
+            raise ErroLLMIndisponivel("nenhuma chave de provedor configurada")
+
         mensagens = []
         if system_prompt:
             mensagens.append({"role": "system", "content": system_prompt})
         mensagens.append({"role": "user", "content": prompt})
+
+        ultimo_erro: Optional[Exception] = None
 
         # 1. Tentativa Primária: OpenRouter
         if self.openrouter_key:
@@ -105,6 +125,7 @@ class ClienteLLM:
                 resp.latencia_ms = (time.time() - inicio) * 1000
                 return resp
             except Exception as e:
+                ultimo_erro = e
                 logger.warning("Falha na chamada ao OpenRouter: %s. Tentando 9router...", e)
 
         # 2. Tentativa Fallback: 9router
@@ -121,19 +142,11 @@ class ClienteLLM:
                 resp.latencia_ms = (time.time() - inicio) * 1000
                 return resp
             except Exception as e:
+                ultimo_erro = e
                 logger.error("Falha na chamada ao 9router (fallback): %s", e)
 
-        # 3. Fallback de Emergência
-        if resposta_mock:
-            return RespostaLLM(
-                texto=resposta_mock,
-                tokens_prompt=len(prompt.split()),
-                tokens_resposta=len(resposta_mock.split()),
-                provedor_utilizado="mock_fallback_emergencia",
-                latencia_ms=(time.time() - inicio) * 1000,
-            )
-
-        raise RuntimeError("Todos os provedores de LLM falharam e nenhuma resposta mock foi fornecida.")
+        erro_detalhe = f": {ultimo_erro}" if ultimo_erro else ""
+        raise ErroLLMIndisponivel(f"Todos os provedores de LLM falharam{erro_detalhe}")
 
     def _chamar_api(
         self,
