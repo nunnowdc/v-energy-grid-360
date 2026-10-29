@@ -53,7 +53,8 @@ def validate_metrics_period(
     start = _parse_month(inicio)
     end = _parse_month(fim)
     size = _month_index(end) - _month_index(start) + 1
-    if size not in (3, 6, 12):
+    # De 1 a 24 meses: com o período anterior, cabe nos 48 meses da base
+    if not 1 <= size <= 24:
         raise InvalidMetricsParametersError("Período inválido")
     return start, end, size
 

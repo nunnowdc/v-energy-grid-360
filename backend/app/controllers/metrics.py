@@ -149,19 +149,32 @@ def read_revenue_variance(
     bairro: str | None = Query(default=None),
     classe: str | None = Query(default=None),
     inicio_p0: str | None = Query(
-        default=None,
-        description="Primeiro mês (yyyy-MM) dos 12 meses do período base",
+        default=None, description="Primeiro mês (yyyy-MM) do período base"
+    ),
+    fim_p0: str | None = Query(
+        default=None, description="Último mês (yyyy-MM) do período base"
     ),
     inicio_p1: str | None = Query(
-        default=None,
-        description="Primeiro mês (yyyy-MM) dos 12 meses do período comparado",
+        default=None, description="Primeiro mês (yyyy-MM) do período comparado"
+    ),
+    fim_p1: str | None = Query(
+        default=None, description="Último mês (yyyy-MM) do período comparado"
     ),
 ) -> RevenueVarianceResponse:
     """Expõe a comparação Gold com recorte geográfico e períodos opcionais.
 
-    Sem períodos, compara o primeiro ano da base com os últimos 12 meses.
+    Os dois períodos têm o mesmo tamanho (1 a 24 meses) e o comparado vem depois
+    do base. Sem períodos, compara o primeiro ano da base com os últimos 12 meses.
     """
-    allowed = ("municipio", "bairro", "classe", "inicio_p0", "inicio_p1")
+    allowed = (
+        "municipio",
+        "bairro",
+        "classe",
+        "inicio_p0",
+        "fim_p0",
+        "inicio_p1",
+        "fim_p1",
+    )
 
     if any(key not in allowed for key in request.query_params) or any(
         len(request.query_params.getlist(key)) > 1 for key in allowed
@@ -177,7 +190,9 @@ def read_revenue_variance(
                     bairro or None,
                     classe or None,
                     inicio_p0 or None,
+                    fim_p0 or None,
                     inicio_p1 or None,
+                    fim_p1 or None,
                 )
             )
 

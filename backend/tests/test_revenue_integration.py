@@ -307,10 +307,16 @@ def test_receita_snapshot_gold_unico_e_efeitos_conciliados_sem_ajuste() -> None:
 @pytest.mark.skipif(
     not get_settings().database_url, reason="DATABASE_URL não configurada"
 )
-def test_receita_outro_par_de_anos_corresponde_a_serie_mensal_gold() -> None:
+def test_receita_outros_periodos_correspondem_a_serie_mensal_gold() -> None:
     response = TestClient(app).get(
         "/api/metrics/revenue-variance",
-        params={"municipio": "Recife", "inicio_p0": "2023-07", "inicio_p1": "2024-07"},
+        params={
+            "municipio": "Recife",
+            "inicio_p0": "2023-07",
+            "fim_p0": "2024-06",
+            "inicio_p1": "2024-07",
+            "fim_p1": "2025-06",
+        },
     )
     assert response.status_code == 200
     body = response.json()
@@ -353,3 +359,43 @@ def test_receita_outro_par_de_anos_corresponde_a_serie_mensal_gold() -> None:
             assert sum(part[field] or 0 for part in parts) == pytest.approx(
                 total[field], abs=0.01, rel=0
             )
+
+
+@pytest.mark.skipif(
+    not get_settings().database_url, reason="DATABASE_URL não configurada"
+)
+def test_receita_trimestres_de_anos_diferentes_conciliam_efeitos() -> None:
+    response = TestClient(app).get(
+        "/api/metrics/revenue-variance",
+        params={
+            "inicio_p0": "2023-01",
+            "fim_p0": "2023-03",
+            "inicio_p1": "2026-01",
+            "fim_p1": "2026-03",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    with get_connection() as connection:
+        expected = (
+            connection.execute(
+                text(
+                    "SELECT "
+                    "SUM(receita_faturada) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2023-01' AND '2023-03') AS receita_p0, "
+                    "SUM(receita_faturada) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2026-01' AND '2026-03') AS receita_p1 "
+                    "FROM agg_receita_mensal"
+                )
+            )
+            .mappings()
+            .one()
+        )
+
+    total = body["total"]
+    assert total["receita_p0"] == pytest.approx(expected["receita_p0"], abs=0.01)
+    assert total["receita_p1"] == pytest.approx(expected["receita_p1"], abs=0.01)
+    assert total["receita_p1"] - total["receita_p0"] == pytest.approx(
+        total["efeito_volume"] + total["efeito_preco"], abs=0.01, rel=0
+    )

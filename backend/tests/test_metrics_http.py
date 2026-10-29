@@ -240,8 +240,9 @@ def test_calendario_valido_sem_medidas_retorna_null() -> None:
         {"fim": "2025-12"},
         {"inicio": "", "fim": "2025-12"},
         {"inicio": "2025-13", "fim": "2025-12"},
-        {"inicio": "2025-11", "fim": "2025-12"},
-        {"inicio": "2025-10", "fim": "2025-11"},
+        # 25 meses: passa do máximo de 24
+        {"inicio": "2023-12", "fim": "2025-12"},
+        {"inicio": "2025-12", "fim": "2025-11"},
         {"inicio": "2026-01", "fim": "2025-12"},
         # Termina depois do último mês da base
         {"inicio": "2025-11", "fim": "2026-01"},
@@ -254,6 +255,9 @@ def test_periodo_invalido_retorna_422(params: dict[str, str]) -> None:
 @pytest.mark.parametrize(
     ("inicio", "fim", "previous_start", "previous_end"),
     [
+        # Qualquer tamanho de 1 a 24 meses
+        ("2025-12", "2025-12", "2025-11", "2025-11"),
+        ("2025-01", "2025-12", "2024-01", "2024-12"),
         ("2025-04", "2025-06", "2025-01", "2025-03"),
         ("2024-07", "2024-12", "2024-01", "2024-06"),
         ("2024-07", "2024-09", "2024-04", "2024-06"),
@@ -852,13 +856,13 @@ def test_contexto_fecha_em_falha_de_calendario_e_de_banco() -> None:
     assert all(context.closed for context in contexts)
 
 
-def test_periodo_de_dois_meses_com_calendario_vazio_retorna_422() -> None:
+def test_periodo_de_tamanho_invalido_com_calendario_vazio_retorna_422() -> None:
     class EmptyCalendarGold(MetricsGoldFake):
         def get_calendar(self) -> list[tuple[date, str]]:
             return []
 
     response = get_response(
-        {"inicio": "2025-10", "fim": "2025-11"}, EmptyCalendarGold()
+        {"inicio": "2023-12", "fim": "2025-12"}, EmptyCalendarGold()
     )
     assert response.status_code == 422
 
@@ -866,7 +870,7 @@ def test_periodo_de_dois_meses_com_calendario_vazio_retorna_422() -> None:
 @pytest.mark.parametrize(
     "params",
     [
-        {"inicio": "2025-10", "fim": "2025-11"},
+        {"inicio": "2023-12", "fim": "2025-12"},
         {"inicio": "2025-12", "fim": "2025-10"},
         {"inicio": "2025-13", "fim": "2025-12"},
         {"inicio": "2025-10"},

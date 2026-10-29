@@ -5,8 +5,9 @@ from collections.abc import Mapping
 
 from app.repositories.revenue import RevenuePeriods, RevenueRepository
 
-# Cada período tem 12 meses: mesmos meses do ano dos dois lados, sem sazonalidade
-_PERIOD_MONTHS = 12
+# Sem escolha, 12 meses de cada lado; escolhidos, até 24 meses, o mesmo tamanho nos dois
+_DEFAULT_MONTHS = 12
+_MAX_MONTHS = 24
 _MONTH_PATTERN = re.compile(r"^[0-9]{4}-(0[1-9]|1[0-2])$")
 _ADDITIVE_FIELDS = (
     "receita_p0",
@@ -57,7 +58,9 @@ def _month_text(index: int) -> str:
 def _periods(
     calendar: tuple[object, object],
     inicio_p0: str | None,
+    fim_p0: str | None,
     inicio_p1: str | None,
+    fim_p1: str | None,
 ) -> RevenuePeriods:
     """Sem escolha, compara o primeiro ano da base com os últimos 12 meses."""
     first, last = calendar
@@ -66,32 +69,37 @@ def _periods(
     ):
         raise RevenueMetadataUnavailableError
     first_index, last_index = _month_index(first), _month_index(last)
-    if last_index - first_index + 1 < 2 * _PERIOD_MONTHS:
+    if last_index - first_index + 1 < 2 * _DEFAULT_MONTHS:
         raise RevenueMetadataUnavailableError
 
-    if inicio_p0 is None and inicio_p1 is None:
-        start_p0, start_p1 = first_index, last_index - _PERIOD_MONTHS + 1
-    elif inicio_p0 is None or inicio_p1 is None:
-        raise InvalidRevenueFilterError("Informe inicio_p0 e inicio_p1 juntos")
-    elif not (
-        _MONTH_PATTERN.fullmatch(inicio_p0) and _MONTH_PATTERN.fullmatch(inicio_p1)
+    chosen = (inicio_p0, fim_p0, inicio_p1, fim_p1)
+    if all(month is None for month in chosen):
+        return RevenuePeriods(
+            p0_inicio=_month_text(first_index),
+            p0_fim=_month_text(first_index + _DEFAULT_MONTHS - 1),
+            p1_inicio=_month_text(last_index - _DEFAULT_MONTHS + 1),
+            p1_fim=_month_text(last_index),
+        )
+    if any(month is None for month in chosen):
+        raise InvalidRevenueFilterError(
+            "Informe inicio_p0, fim_p0, inicio_p1 e fim_p1 juntos"
+        )
+    if not all(_MONTH_PATTERN.fullmatch(month) for month in chosen):
+        raise InvalidRevenueFilterError("Período inválido")
+
+    start_p0, end_p0, start_p1, end_p1 = (_month_index(month) for month in chosen)
+    size = end_p0 - start_p0 + 1
+    # Mesmo tamanho dos dois lados, dentro da base, com o comparado depois do base
+    if (
+        not 1 <= size <= _MAX_MONTHS
+        or end_p1 - start_p1 + 1 != size
+        or start_p0 < first_index
+        or start_p1 <= end_p0
+        or end_p1 > last_index
     ):
         raise InvalidRevenueFilterError("Período inválido")
-    else:
-        start_p0, start_p1 = _month_index(inicio_p0), _month_index(inicio_p1)
-        # Os dois cabem na base e o comparado vem depois do base, sem sobrepor
-        if (
-            start_p0 < first_index
-            or start_p1 + _PERIOD_MONTHS - 1 > last_index
-            or start_p1 < start_p0 + _PERIOD_MONTHS
-        ):
-            raise InvalidRevenueFilterError("Período inválido")
-
     return RevenuePeriods(
-        p0_inicio=_month_text(start_p0),
-        p0_fim=_month_text(start_p0 + _PERIOD_MONTHS - 1),
-        p1_inicio=_month_text(start_p1),
-        p1_fim=_month_text(start_p1 + _PERIOD_MONTHS - 1),
+        *(_month_text(index) for index in (start_p0, end_p0, start_p1, end_p1))
     )
 
 
@@ -116,10 +124,12 @@ def get_revenue_variance(
     bairro: str | None = None,
     classe: str | None = None,
     inicio_p0: str | None = None,
+    fim_p0: str | None = None,
     inicio_p1: str | None = None,
+    fim_p1: str | None = None,
 ) -> dict[str, object]:
     """Organiza medidas Gold no mesmo recorte para total, GD e detalhe."""
-    periods = _periods(repository.get_calendar(), inicio_p0, inicio_p1)
+    periods = _periods(repository.get_calendar(), inicio_p0, fim_p0, inicio_p1, fim_p1)
     if bairro is not None and municipio is None:
         raise InvalidRevenueFilterError("Bairro exige município")
     if municipio is not None and not repository.has_municipio(municipio):

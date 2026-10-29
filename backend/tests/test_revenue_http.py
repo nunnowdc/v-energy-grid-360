@@ -632,7 +632,9 @@ def test_receita_openapi_documenta_os_filtros_e_os_periodos() -> None:
         "bairro",
         "classe",
         "inicio_p0",
+        "fim_p0",
         "inicio_p1",
+        "fim_p1",
     }
 
 
@@ -876,41 +878,56 @@ def test_receita_sem_periodos_compara_primeiro_ano_com_ultimos_12_meses() -> Non
 def test_receita_periodos_escolhidos_chegam_as_consultas() -> None:
     from app.repositories.revenue import RevenuePeriods
 
-    response, gold = _periods_response({"inicio_p0": "2023-07", "inicio_p1": "2024-07"})
+    response, gold = _periods_response(
+        _quatro("2023-01", "2023-03", "2025-07", "2025-09")
+    )
 
     assert response.status_code == 200
     body = response.json()
-    assert body["periodo_p0"] == {"inicio": "2023-07", "fim": "2024-06"}
-    assert body["periodo_p1"] == {"inicio": "2024-07", "fim": "2025-06"}
+    assert body["periodo_p0"] == {"inicio": "2023-01", "fim": "2023-03"}
+    assert body["periodo_p1"] == {"inicio": "2025-07", "fim": "2025-09"}
     assert (
         gold.received
-        == [RevenuePeriods("2023-07", "2024-06", "2024-07", "2025-06")] * 3
+        == [RevenuePeriods("2023-01", "2023-03", "2025-07", "2025-09")] * 3
     )
 
 
 def test_receita_periodos_vazios_equivalem_a_omissao() -> None:
     without_periods, _ = _periods_response({})
-    empty_periods, _ = _periods_response({"inicio_p0": "", "inicio_p1": ""})
+    empty_periods, _ = _periods_response(_quatro("", "", "", ""))
 
     assert empty_periods.status_code == 200
     assert empty_periods.json() == without_periods.json()
 
 
+def _quatro(inicio_p0: str, fim_p0: str, inicio_p1: str, fim_p1: str) -> dict[str, str]:
+    return {
+        "inicio_p0": inicio_p0,
+        "fim_p0": fim_p0,
+        "inicio_p1": inicio_p1,
+        "fim_p1": fim_p1,
+    }
+
+
 @pytest.mark.parametrize(
     "params",
     [
-        {"inicio_p0": "2022-07"},
-        {"inicio_p1": "2025-07"},
-        {"inicio_p0": "2022-7", "inicio_p1": "2025-07"},
-        {"inicio_p0": "2022-07", "inicio_p1": "2025-13"},
-        # Antes do primeiro mês da base
-        {"inicio_p0": "2022-06", "inicio_p1": "2025-07"},
-        # Comparado termina depois do último mês da base
-        {"inicio_p0": "2022-07", "inicio_p1": "2025-08"},
+        # Faltando algum dos quatro meses
+        {"inicio_p0": "2022-07", "fim_p0": "2023-06"},
+        {"inicio_p0": "2022-07", "fim_p0": "2023-06", "inicio_p1": "2025-07"},
+        # Mês mal escrito
+        _quatro("2022-7", "2023-06", "2025-07", "2026-06"),
+        _quatro("2022-07", "2023-06", "2025-07", "2026-13"),
+        # Tamanhos diferentes, base invertido ou maior que 24 meses
+        _quatro("2022-07", "2023-06", "2025-07", "2026-05"),
+        _quatro("2023-06", "2022-07", "2025-07", "2026-06"),
+        _quatro("2022-07", "2024-07", "2024-08", "2026-08"),
+        # Antes do primeiro mês ou depois do último mês da base
+        _quatro("2022-06", "2023-05", "2025-07", "2026-06"),
+        _quatro("2022-07", "2023-06", "2025-08", "2026-07"),
         # Comparado antes do base ou sobreposto a ele
-        {"inicio_p0": "2025-07", "inicio_p1": "2022-07"},
-        {"inicio_p0": "2022-07", "inicio_p1": "2023-06"},
-        {"inicio_p0": "2023-07", "inicio_p1": "2023-07"},
+        _quatro("2025-07", "2026-06", "2022-07", "2023-06"),
+        _quatro("2022-07", "2023-06", "2023-06", "2024-05"),
     ],
 )
 def test_receita_rejeita_periodos_invalidos(params: dict[str, str]) -> None:
@@ -923,6 +940,7 @@ def test_receita_rejeita_periodos_invalidos(params: dict[str, str]) -> None:
 
 def test_receita_rejeita_periodo_repetido() -> None:
     response = TestClient(app).get(
-        "/api/metrics/revenue-variance?inicio_p0=2022-07&inicio_p0=2023-07&inicio_p1=2025-07"
+        "/api/metrics/revenue-variance?inicio_p0=2022-07&inicio_p0=2023-07"
+        "&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06"
     )
     assert response.status_code == 422
