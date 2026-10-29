@@ -55,6 +55,7 @@ src/
 ├── components/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
+│   ├── AvisoSazonalidade/AvisoSazonalidade.tsx ← aviso quando os períodos comparados cobrem meses diferentes do ano
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
 │   ├── BotaoAgente/BotaoAgente.tsx        ← botão do cabeçalho que abre e fecha o agente de IA
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
@@ -298,14 +299,13 @@ Para uma linha de indicadores, use o `EstadoConsulta` direto, com `CartaoKpi` e,
 Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos filtros:
 
 ```
-/continuidade?de=2026-01&ate=2026-06&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
+/continuidade?base_de=2025-01&base_ate=2025-06&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
 ```
 
 | Parâmetro | Formato | Sem o parâmetro |
 |---|---|---|
-| `de` e `ate` | Primeiro e último mês (`yyyy-MM`) do período dos Indicadores e da Continuidade: de 1 a 24 meses, com o período anterior, de mesmo tamanho, dentro da base | Últimos 12 meses **da base**, nunca da data de hoje |
-| `base_de` e `base_ate` | Período base da Receita: de 1 a 24 meses, deixando espaço depois dele para o comparado | Primeiro ano da base |
-| `comparado_de` | Primeiro mês do período comparado da Receita. O tamanho é o do base, e ele começa depois do fim do base | Os mesmos meses do base no ano mais recente que cabe |
+| `base_de` e `base_ate` | Primeiro e último mês (`yyyy-MM`) do período base: de 1 a 24 meses, deixando espaço depois dele para o comparado | Indicadores e Continuidade: os 12 meses antes dos últimos 12. Receita: o primeiro ano da base. Sempre meses **da base**, nunca da data de hoje |
+| `comparado_de` | Primeiro mês do período comparado. O tamanho é o do base, e ele começa depois do fim do base | Os mesmos meses do base no ano mais recente que cabe |
 | `municipio` | Nome do município | Todos |
 | `bairro` | Nome do bairro (exige `municipio`) | Todos |
 | `classe` | `RESIDENCIAL`, `COMERCIAL`, `INDUSTRIAL`, `RURAL` ou `PODER_PUBLICO` | Todas |
@@ -316,13 +316,13 @@ Filtros de cada tela, combinados com o backend em `docs/backend/impl_filtros.md`
 
 | Tela | Filtros |
 |---|---|
-| Indicadores | Período, município, classe |
+| Indicadores | Período base, comparado com, município, classe |
 | Receita | Período base, comparado com, município, bairro, classe |
 | Fila de inspeção | Município, bairro, classe |
-| Continuidade | Período, município, alimentador, causa |
+| Continuidade | Período base, comparado com, município, alimentador, causa |
 | Visão 360 | Nenhum: a tela recebe o ID da UC |
 
-Os períodos são escolhidos num pop-up (`SeletorPeriodo`): clica no primeiro e no último mês, ou num atalho (últimos 3, 6, 12 ou 24 meses, anos civis, anos jul–jun da base). Meses que não deixam espaço para a comparação ficam apagados. As regras ficam em `src/lib/periodos.ts`. Para a API, o período dos Indicadores e da Continuidade vira `inicio` e `fim`; o backend calcula sozinho o período anterior, com o mesmo tamanho. Na Receita, os dois períodos vão como `inicio_p0`, `fim_p0`, `inicio_p1` e `fim_p1`. O comparado sempre tem o tamanho do base, e escolher só o base leva o comparado para os mesmos meses do ano: com meses diferentes do ano (ex.: jan–mar × jul–set), a tela avisa que parte da variação de volume pode ser da estação. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
+As três telas com período usam os mesmos dois botões, "Período base" e "Comparado com", que abrem um calendário de meses (`SeletorPeriodo`): no base, clica no primeiro e no último mês (ou num atalho: anos jul–jun da base e anos civis); no comparado, só no primeiro mês, porque ele tem sempre o tamanho do base. Meses que não deixam espaço para a comparação ficam apagados. Escolher só o base leva o comparado para os mesmos meses do ano mais recente; com meses diferentes do ano (ex.: jan–mar × jul–set), a tela avisa que parte da variação pode ser da estação (`AvisoSazonalidade`). As regras ficam em `src/lib/periodos.ts`. Para a API, os Indicadores e a Continuidade mandam o comparado como `inicio` e `fim` e o base como `inicio_anterior` e `fim_anterior`; a Receita manda `inicio_p0`, `fim_p0`, `inicio_p1` e `fim_p1`. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
 
 Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora. Cada filtro aceita um valor só.
 

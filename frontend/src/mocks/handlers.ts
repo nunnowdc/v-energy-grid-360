@@ -18,9 +18,11 @@ export const handlers = [
       params.get('municipio'),
       params.get('alimentador'),
       params.get('causa'),
+      params.get('inicio_anterior'),
+      params.get('fim_anterior'),
     )
     if (!continuidade) {
-      return HttpResponse.json({ detail: 'Use os últimos 3, 6 ou 12 meses da base.' }, { status: 422 })
+      return HttpResponse.json({ detail: 'Período inválido' }, { status: 422 })
     }
     return HttpResponse.json(continuidade)
   }),

@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { apiFetch } from '@/lib/api/api-fetch'
-import { periodosDaReceita, type Filtros } from '@/lib/filtros-url'
+import { periodosComparados, type Filtros } from '@/lib/filtros-url'
 
 // Formato de GET /api/metrics/revenue-variance?inicio_p0=&fim_p0=&inicio_p1=&fim_p1=&municipio=&bairro=&classe=,
 // igual ao backend/app/schemas/metrics.py. P0 e P1 têm o mesmo tamanho (1 a 24 meses) e P1 vem
@@ -60,7 +60,8 @@ export function useReceita(filtros: Filtros) {
   const { municipio, bairro, classe } = filtros
   const { data: opcoes } = useOpcoesFiltros()
   // Manda sempre os dois períodos, para a resposta ser a dos períodos que a barra de filtros mostra
-  const periodos = opcoes ? periodosDaReceita(opcoes.competencias, filtros) : undefined
+  // Sem escolha, o primeiro ano da base contra o último: a pergunta do case
+  const periodos = opcoes ? periodosComparados(opcoes.competencias, filtros, 'inicio-da-base') : undefined
 
   return useQuery({
     queryKey: ['receita', periodos?.base.de, periodos?.base.ate, periodos?.comparado.de, municipio ?? null, bairro ?? null, classe ?? null],

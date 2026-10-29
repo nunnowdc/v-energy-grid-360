@@ -5,20 +5,16 @@ import {
   baseValida,
   comparadoPadrao,
   comparadoValido,
-  periodoComAnterior,
   periodoDeTamanho,
-  periodoPadrao,
   tamanhoDoPeriodo,
+  type PadraoComparacao,
   type Periodo,
 } from '@/lib/periodos'
 
 // Filtro ausente = sem filtro (todos). Meses no formato yyyy-MM
 export type Filtros = {
-  // Período dos Indicadores e da Continuidade. Sem ele, os últimos 12 meses da base
-  de?: string
-  ate?: string
-  // Receita: período base e começo do comparado, que tem o mesmo tamanho do base.
-  // Sem eles, o primeiro ano da base contra os mesmos meses do último ano
+  // Período base e começo do comparado, que tem o mesmo tamanho do base.
+  // Sem eles, vale o padrão da tela (ver PadraoComparacao)
   base_de?: string
   base_ate?: string
   comparado_de?: string
@@ -32,8 +28,6 @@ export type Filtros = {
 export type NomeFiltro = keyof Filtros
 
 export const nomesFiltros: NomeFiltro[] = [
-  'de',
-  'ate',
   'base_de',
   'base_ate',
   'comparado_de',
@@ -54,8 +48,7 @@ export function lerFiltros(params: URLSearchParams, opcoes?: OpcoesFiltros): Fil
   const classe = params.get('classe')
 
   return {
-    ...lerPeriodo(params.get('de'), params.get('ate'), opcoes),
-    ...lerReceita(params.get('base_de'), params.get('base_ate'), params.get('comparado_de'), opcoes),
+    ...lerComparacao(params.get('base_de'), params.get('base_ate'), params.get('comparado_de'), opcoes),
     municipio,
     bairro,
     classe: ehClasseConsumo(classe) ? classe : undefined,
@@ -113,54 +106,35 @@ export function removerFiltros(params: URLSearchParams) {
   return proximo
 }
 
-// Período em vigor nos Indicadores e na Continuidade: o escolhido ou o padrão
-export function periodoEscolhido(competencias: string[], { de, ate }: Pick<Filtros, 'de' | 'ate'>) {
-  return de && ate ? { de, ate } : periodoPadrao(competencias)
-}
-
-// Base e comparado em vigor na Receita: os escolhidos ou os padrões
-export function periodosDaReceita(
+// Base e comparado em vigor: os escolhidos ou os padrões da tela. Um comparado
+// que não cabe com o base em vigor volta para o padrão
+export function periodosComparados(
   competencias: string[],
   { base_de, base_ate, comparado_de }: Pick<Filtros, 'base_de' | 'base_ate' | 'comparado_de'>,
+  padrao: PadraoComparacao,
 ): { base: Periodo; comparado: Periodo } | undefined {
-  const base = base_de && base_ate ? { de: base_de, ate: base_ate } : basePadrao(competencias)
+  const base = base_de && base_ate ? { de: base_de, ate: base_ate } : basePadrao(competencias, padrao)
   if (!base) {
     return undefined
   }
-  const comparado = comparado_de
-    ? periodoDeTamanho(competencias, comparado_de, tamanhoDoPeriodo(competencias, base))
-    : comparadoPadrao(competencias, base)
+  const comparado =
+    comparado_de && comparadoValido(competencias, base, comparado_de)
+      ? periodoDeTamanho(competencias, comparado_de, tamanhoDoPeriodo(competencias, base))
+      : comparadoPadrao(competencias, base)
   return comparado ? { base, comparado } : undefined
 }
 
-// Os dois meses ou nenhum. Com as opções, o período anterior tem que caber na base
-function lerPeriodo(de: string | null, ate: string | null, opcoes?: OpcoesFiltros) {
-  const nenhum = { de: undefined, ate: undefined }
-  if (!de || !ate || !MES.test(de) || !MES.test(ate) || de > ate) {
-    return nenhum
-  }
-  if (opcoes && !periodoComAnterior(opcoes.competencias, { de, ate })) {
-    return nenhum
-  }
-  return { de, ate }
-}
-
-// Base inválido volta tudo para o padrão; comparado inválido volta só ele
-function lerReceita(baseDe: string | null, baseAte: string | null, comparadoDe: string | null, opcoes?: OpcoesFiltros) {
+// Base inválido sai da URL lida; o comparado só depende do base em vigor, que
+// muda de tela para tela, e é conferido em periodosComparados()
+function lerComparacao(baseDe: string | null, baseAte: string | null, comparadoDe: string | null, opcoes?: OpcoesFiltros) {
   const baseLida =
     baseDe && baseAte && MES.test(baseDe) && MES.test(baseAte) && baseDe <= baseAte
       ? { de: baseDe, ate: baseAte }
       : undefined
-  const comparadoLido = comparadoDe && MES.test(comparadoDe) ? comparadoDe : undefined
-  if (!opcoes) {
-    return { base_de: baseLida?.de, base_ate: baseLida?.ate, comparado_de: comparadoLido }
-  }
-
-  const base = baseLida && baseValida(opcoes.competencias, baseLida) ? baseLida : undefined
-  const baseEmVigor = base ?? basePadrao(opcoes.competencias)
+  const base = baseLida && (!opcoes || baseValida(opcoes.competencias, baseLida)) ? baseLida : undefined
   const comparado =
-    comparadoLido && baseEmVigor && comparadoValido(opcoes.competencias, baseEmVigor, comparadoLido)
-      ? comparadoLido
+    comparadoDe && MES.test(comparadoDe) && (!opcoes || opcoes.competencias.includes(comparadoDe))
+      ? comparadoDe
       : undefined
   return { base_de: base?.de, base_ate: base?.ate, comparado_de: comparado }
 }

@@ -3,8 +3,7 @@ import {
   aplicarFiltro,
   aplicarFiltros,
   lerFiltros,
-  periodoEscolhido,
-  periodosDaReceita,
+  periodosComparados,
   removerFiltros,
 } from '@/lib/filtros-url'
 import { opcoesFiltrosExemplo as opcoes } from '@/mocks/opcoes-filtros'
@@ -15,12 +14,15 @@ describe('lerFiltros', () => {
   test('lê os valores válidos', () => {
     expect(
       lerFiltros(
-        url('de=2025-01&ate=2025-06&municipio=Recife&bairro=Pina&classe=RURAL&alimentador=ALM-REC-001&causa=VEGETACAO'),
+        url(
+          'base_de=2025-01&base_ate=2025-03&comparado_de=2026-01&municipio=Recife&bairro=Pina&classe=RURAL&alimentador=ALM-REC-001&causa=VEGETACAO',
+        ),
         opcoes,
       ),
     ).toEqual({
-      de: '2025-01',
-      ate: '2025-06',
+      base_de: '2025-01',
+      base_ate: '2025-03',
+      comparado_de: '2026-01',
       municipio: 'Recife',
       bairro: 'Pina',
       classe: 'RURAL',
@@ -31,10 +33,14 @@ describe('lerFiltros', () => {
 
   test('descarta valores que não existem', () => {
     expect(
-      lerFiltros(url('de=2025-06&ate=2025-01&municipio=Narnia&classe=XYZ&alimentador=ALM-X&causa=METEORO'), opcoes),
+      lerFiltros(
+        url('base_de=2025-06&base_ate=2025-01&comparado_de=2030-01&municipio=Narnia&classe=XYZ&alimentador=ALM-X&causa=METEORO'),
+        opcoes,
+      ),
     ).toEqual({
-      de: undefined,
-      ate: undefined,
+      base_de: undefined,
+      base_ate: undefined,
+      comparado_de: undefined,
       municipio: undefined,
       bairro: undefined,
       classe: undefined,
@@ -54,32 +60,18 @@ describe('lerFiltros', () => {
     expect(lerFiltros(url('alimentador=ALM-REC-001'), opcoes).alimentador).toBe('ALM-REC-001')
   })
 
-  test('o período só vale com o anterior, de mesmo tamanho, dentro da base', () => {
-    expect(lerFiltros(url('de=2022-10&ate=2022-12'), opcoes)).toMatchObject({ de: '2022-10', ate: '2022-12' })
-    // jul a set/2022 não tem os 3 meses anteriores na base
-    expect(lerFiltros(url('de=2022-07&ate=2022-09'), opcoes)).toMatchObject({ de: undefined, ate: undefined })
-    // Só um dos dois meses, ou mais de 24 meses
-    expect(lerFiltros(url('de=2025-01'), opcoes)).toMatchObject({ de: undefined, ate: undefined })
-    expect(lerFiltros(url('de=2024-06&ate=2026-06'), opcoes)).toMatchObject({ de: undefined, ate: undefined })
-  })
-
-  test('na Receita, base inválido volta tudo ao padrão e comparado inválido volta só ele', () => {
-    expect(lerFiltros(url('base_de=2023-01&base_ate=2023-03&comparado_de=2025-07'), opcoes)).toMatchObject({
+  test('o base precisa deixar espaço depois dele para um comparado de mesmo tamanho', () => {
+    expect(lerFiltros(url('base_de=2023-01&base_ate=2023-03'), opcoes)).toMatchObject({
       base_de: '2023-01',
       base_ate: '2023-03',
-      comparado_de: '2025-07',
     })
-    // Comparado antes do fim do base
-    expect(lerFiltros(url('base_de=2023-01&base_ate=2023-03&comparado_de=2023-02'), opcoes)).toMatchObject({
-      base_de: '2023-01',
-      comparado_de: undefined,
-    })
-    // Base sem espaço depois dele para um comparado de mesmo tamanho
-    expect(lerFiltros(url('base_de=2025-01&base_ate=2025-12&comparado_de=2026-01'), opcoes)).toMatchObject({
+    expect(lerFiltros(url('base_de=2025-01&base_ate=2025-12'), opcoes)).toMatchObject({
       base_de: undefined,
       base_ate: undefined,
-      comparado_de: undefined,
     })
+    // Só um dos dois meses, ou mais de 24 meses
+    expect(lerFiltros(url('base_de=2023-01'), opcoes).base_de).toBeUndefined()
+    expect(lerFiltros(url('base_de=2022-07&base_ate=2024-07'), opcoes).base_de).toBeUndefined()
   })
 
   test('sem as opções carregadas, aceita os textos como vieram', () => {
@@ -113,10 +105,10 @@ describe('aplicarFiltro e removerFiltros', () => {
   })
 
   test('vários filtros de uma vez, como o começo e o fim do período', () => {
-    expect(aplicarFiltros(url('classe=RURAL'), { de: '2025-01', ate: '2025-06' }).toString()).toBe(
-      'classe=RURAL&de=2025-01&ate=2025-06',
+    expect(aplicarFiltros(url('classe=RURAL'), { base_de: '2025-01', base_ate: '2025-06' }).toString()).toBe(
+      'classe=RURAL&base_de=2025-01&base_ate=2025-06',
     )
-    expect(aplicarFiltros(url('de=2025-01&ate=2025-06'), { de: undefined, ate: undefined }).toString()).toBe('')
+    expect(aplicarFiltros(url('base_de=2025-01&base_ate=2025-06'), { base_de: undefined, base_ate: undefined }).toString()).toBe('')
   })
 
   test('valor vazio remove o filtro', () => {
@@ -124,36 +116,42 @@ describe('aplicarFiltro e removerFiltros', () => {
   })
 
   test('limpar mantém os parâmetros que não são filtro', () => {
-    expect(removerFiltros(url('aba=faturas&municipio=Recife&de=2026-04&ate=2026-06&base_de=2023-01&causa=VEGETACAO')).toString()).toBe('aba=faturas')
+    expect(removerFiltros(url('aba=faturas&municipio=Recife&base_de=2023-01&base_ate=2023-03&comparado_de=2026-01&causa=VEGETACAO')).toString()).toBe('aba=faturas')
   })
 })
 
-describe('períodos em vigor', () => {
-  test('sem escolha, os últimos 12 meses da base, não da data de hoje', () => {
-    expect(periodoEscolhido(opcoes.competencias, {})).toEqual({ de: '2025-07', ate: '2026-06' })
-    expect(periodoEscolhido(opcoes.competencias, { de: '2025-01', ate: '2025-03' })).toEqual({
-      de: '2025-01',
-      ate: '2025-03',
+describe('periodosComparados', () => {
+  test('sem escolha, Indicadores e Continuidade mostram o último ano contra o anterior', () => {
+    expect(periodosComparados(opcoes.competencias, {}, 'ano-anterior')).toEqual({
+      base: { de: '2024-07', ate: '2025-06' },
+      comparado: { de: '2025-07', ate: '2026-06' },
     })
   })
 
-  test('Receita sem escolha: primeiro ano da base contra os mesmos meses do último ano', () => {
-    expect(periodosDaReceita(opcoes.competencias, {})).toEqual({
+  test('sem escolha, a Receita compara o primeiro ano da base com o último', () => {
+    expect(periodosComparados(opcoes.competencias, {}, 'inicio-da-base')).toEqual({
       base: { de: '2022-07', ate: '2023-06' },
       comparado: { de: '2025-07', ate: '2026-06' },
     })
   })
 
-  test('com só o base escolhido, o comparado tem o mesmo tamanho e os mesmos meses', () => {
-    expect(periodosDaReceita(opcoes.competencias, { base_de: '2023-01', base_ate: '2023-03' })).toEqual({
+  test('com o base escolhido, o comparado tem o mesmo tamanho e, sem escolha, os mesmos meses', () => {
+    const base = { base_de: '2023-01', base_ate: '2023-03' }
+    expect(periodosComparados(opcoes.competencias, base, 'ano-anterior')).toEqual({
       base: { de: '2023-01', ate: '2023-03' },
       comparado: { de: '2026-01', ate: '2026-03' },
     })
-    expect(
-      periodosDaReceita(opcoes.competencias, { base_de: '2023-01', base_ate: '2023-03', comparado_de: '2025-07' }),
-    ).toEqual({
+    expect(periodosComparados(opcoes.competencias, { ...base, comparado_de: '2025-07' }, 'ano-anterior')).toEqual({
       base: { de: '2023-01', ate: '2023-03' },
       comparado: { de: '2025-07', ate: '2025-09' },
     })
+  })
+
+  test('comparado que não cabe com o base volta para o padrão', () => {
+    // Começa antes do fim do base
+    expect(
+      periodosComparados(opcoes.competencias, { base_de: '2023-01', base_ate: '2023-03', comparado_de: '2023-02' }, 'ano-anterior')
+        ?.comparado,
+    ).toEqual({ de: '2026-01', ate: '2026-03' })
   })
 })

@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import { useLocation } from 'react-router'
 import { expect, test } from 'vitest'
 import FiltrosGlobais, { type CampoFiltro } from '@/components/FiltrosGlobais/FiltrosGlobais'
+import type { PadraoComparacao } from '@/lib/periodos'
 import { useFiltros } from '@/hooks/use-filtros'
 import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 import { renderizar } from '@/test/renderizar'
@@ -18,10 +19,10 @@ function Espiao() {
   )
 }
 
-function abrir(url: string, campos: CampoFiltro[]) {
+function abrir(url: string, campos: CampoFiltro[], padraoComparacao?: PadraoComparacao) {
   renderizar(
     <>
-      <FiltrosGlobais campos={campos} />
+      <FiltrosGlobais campos={campos} padraoComparacao={padraoComparacao} />
       <Espiao />
     </>,
     { url, opcoesFiltros: opcoesFiltrosExemplo },
@@ -114,61 +115,62 @@ test('alimentador depende do município, e causa aparece com o nome amigável', 
   expect(urlAtual()).toBe('?municipio=Olinda&causa=FALHA+DE+EQUIPAMENTO')
 })
 
-test('período: o calendário escolhe o primeiro e o último mês', () => {
-  abrir('/', ['periodo'])
-  expect(periodoDe('Período')).toBe('jul/2025 – jun/2026')
-
-  fireEvent.click(botaoPeriodo('Período'))
-  fireEvent.click(mes('jan/2025'))
-  expect(screen.getByText('Começa em jan/2025. Agora clique no último mês.')).toBeInTheDocument()
-  fireEvent.click(mes('jun/2025'))
-  expect(urlAtual()).toBe('?de=2025-01&ate=2025-06')
-  expect(periodoDe('Período')).toBe('jan/2025 – jun/2025')
-})
-
-test('período: meses sem o período anterior na base ficam apagados', () => {
-  abrir('/', ['periodo'])
-  fireEvent.click(botaoPeriodo('Período'))
-  fireEvent.click(screen.getByRole('button', { name: 'Ano anterior' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Ano anterior' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Ano anterior' }))
-  // Em 2022, julho é o primeiro mês da base: não há mês antes dele para comparar
-  expect(mes('jul/2022')).toBeDisabled()
-  expect(mes('ago/2022')).toBeEnabled()
-  expect(mes('jun/2022')).toBeDisabled()
-  expect(screen.getByRole('button', { name: 'Ano anterior' })).toBeDisabled()
-})
-
-test('período: o atalho do padrão tira o filtro da URL, e valores inválidos da URL são ignorados', () => {
-  abrir('/?de=2022-07&ate=2022-09&classe=INVENTADA&municipio=Narnia', ['periodo', 'municipio', 'classe'])
-  expect(periodoDe('Período')).toBe('jul/2025 – jun/2026')
-  expect(valorDe('Município')).toBe('Todos')
-  expect(JSON.parse(screen.getByTestId('filtros').textContent!)).toEqual({})
-
-  fireEvent.click(botaoPeriodo('Período'))
-  fireEvent.click(screen.getByRole('button', { name: 'Ano de 2024' }))
-  expect(urlAtual()).toContain('de=2024-01&ate=2024-12')
-
-  fireEvent.click(botaoPeriodo('Período'))
-  fireEvent.click(screen.getByRole('button', { name: 'Últimos 12 meses' }))
-  expect(urlAtual()).not.toContain('de=')
-})
-
-test('Receita: escolher o base leva o comparado para os mesmos meses, com o mesmo tamanho', () => {
-  abrir('/receita', ['comparacao'])
-  expect(periodoDe('Período base')).toBe('jul/2022 – jun/2023')
+test('comparação: sem escolha, o último ano contra o anterior; a Receita usa o primeiro ano', () => {
+  abrir('/', ['comparacao'])
+  expect(periodoDe('Período base')).toBe('jul/2024 – jun/2025')
   expect(periodoDe('Comparado com')).toBe('jul/2025 – jun/2026')
+})
 
+test('comparação: o calendário escolhe o base, e o comparado vai para os mesmos meses', () => {
+  abrir('/', ['comparacao'])
+
+  // Abre no ano do base em vigor (2024)
   fireEvent.click(botaoPeriodo('Período base'))
   fireEvent.click(screen.getByRole('button', { name: 'Próximo ano' }))
-  fireEvent.click(mes('jan/2023'))
-  fireEvent.click(mes('mar/2023'))
-  expect(urlAtual()).toBe('?base_de=2023-01&base_ate=2023-03')
+  fireEvent.click(mes('jan/2025'))
+  expect(screen.getByText('Começa em jan/2025. Agora clique no último mês.')).toBeInTheDocument()
+  fireEvent.click(mes('mar/2025'))
+  expect(urlAtual()).toBe('?base_de=2025-01&base_ate=2025-03')
+  expect(periodoDe('Período base')).toBe('jan/2025 – mar/2025')
   expect(periodoDe('Comparado com')).toBe('jan/2026 – mar/2026')
 })
 
-test('Receita: no comparado, um clique escolhe o começo e o tamanho vem do base', () => {
-  abrir('/receita?base_de=2023-01&base_ate=2023-03', ['comparacao'])
+test('comparação: meses sem espaço para o comparado ficam apagados', () => {
+  abrir('/', ['comparacao'])
+  fireEvent.click(botaoPeriodo('Período base'))
+  fireEvent.click(screen.getByRole('button', { name: 'Próximo ano' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Próximo ano' }))
+  // jun/2026 é o último mês da base: não sobra mês depois dele para comparar
+  expect(mes('mai/2026')).toBeEnabled()
+  expect(mes('jun/2026')).toBeDisabled()
+  expect(mes('jul/2026')).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Próximo ano' })).toBeDisabled()
+})
+
+test('comparação: o atalho do padrão tira o filtro da URL, e valores inválidos da URL são ignorados', () => {
+  abrir('/?base_de=2025-01&base_ate=2025-12&classe=INVENTADA&municipio=Narnia', ['comparacao', 'municipio', 'classe'])
+  expect(periodoDe('Período base')).toBe('jul/2024 – jun/2025')
+  expect(valorDe('Município')).toBe('Todos')
+  expect(JSON.parse(screen.getByTestId('filtros').textContent!)).toEqual({})
+
+  fireEvent.click(botaoPeriodo('Período base'))
+  fireEvent.click(screen.getByRole('button', { name: 'Ano de 2023' }))
+  expect(urlAtual()).toContain('base_de=2023-01&base_ate=2023-12')
+  expect(periodoDe('Comparado com')).toBe('jan/2025 – dez/2025')
+
+  fireEvent.click(botaoPeriodo('Período base'))
+  fireEvent.click(screen.getByRole('button', { name: 'jul/2024 – jun/2025' }))
+  expect(urlAtual()).not.toContain('base_de=')
+})
+
+test('Receita: sem escolha, o primeiro ano da base contra o último', () => {
+  abrir('/receita', ['comparacao'], 'inicio-da-base')
+  expect(periodoDe('Período base')).toBe('jul/2022 – jun/2023')
+  expect(periodoDe('Comparado com')).toBe('jul/2025 – jun/2026')
+})
+
+test('no comparado, um clique escolhe o começo e o tamanho vem do base', () => {
+  abrir('/receita?base_de=2023-01&base_ate=2023-03', ['comparacao'], 'inicio-da-base')
 
   fireEvent.click(botaoPeriodo('Comparado com'))
   expect(screen.getByText('Clique no primeiro mês: o período tem 3 meses, como o base.')).toBeInTheDocument()

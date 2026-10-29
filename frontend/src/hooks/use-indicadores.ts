@@ -2,11 +2,12 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { ClasseConsumo } from '@/config/classes'
 import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { apiFetch } from '@/lib/api/api-fetch'
-import { periodoEscolhido, type Filtros } from '@/lib/filtros-url'
+import { periodosComparados, type Filtros } from '@/lib/filtros-url'
 
-// Formato de GET /api/metrics/general?inicio=yyyy-MM&fim=yyyy-MM&municipio=&classe=, igual ao
-// backend/app/schemas/metrics.py. Tudo vem de agg_receita_mensal, somado no recorte pedido.
-// O período tem de 1 a 24 meses; o anterior tem o mesmo tamanho e termina no mês antes de "inicio"
+// Formato de GET /api/metrics/general?inicio=&fim=&inicio_anterior=&fim_anterior=&municipio=&classe=
+// (meses yyyy-MM), igual ao backend/app/schemas/metrics.py. Tudo vem de agg_receita_mensal, somado
+// no recorte pedido. Os dois períodos têm o mesmo tamanho (1 a 24 meses) e o anterior termina antes
+// de "inicio"; sem inicio_anterior e fim_anterior, o backend usa o imediatamente anterior
 
 // Totais de um período
 export type ResumoIndicadores = {
@@ -40,13 +41,20 @@ export type IndicadoresGerais = {
 export function useIndicadores(filtros: Filtros) {
   const { municipio, classe } = filtros
   const { data: opcoes } = useOpcoesFiltros()
-  // O escolhido ou os últimos 12 meses da base, que vêm das opções
-  const periodo = opcoes ? periodoEscolhido(opcoes.competencias, filtros) : undefined
+  // Os escolhidos ou o último ano da base contra o anterior. O período mostrado é o
+  // comparado; o base é a comparação ("período anterior" na API)
+  const periodos = opcoes ? periodosComparados(opcoes.competencias, filtros, 'ano-anterior') : undefined
 
   return useQuery({
-    queryKey: ['indicadores', periodo?.de, periodo?.ate, municipio ?? null, classe ?? null],
+    queryKey: ['indicadores', periodos?.base.de, periodos?.base.ate, periodos?.comparado.de, municipio ?? null, classe ?? null],
     queryFn: ({ signal }) => {
-      const params = new URLSearchParams({ inicio: periodo!.de, fim: periodo!.ate })
+      const { base, comparado } = periodos!
+      const params = new URLSearchParams({
+        inicio: comparado.de,
+        fim: comparado.ate,
+        inicio_anterior: base.de,
+        fim_anterior: base.ate,
+      })
       if (municipio) {
         params.set('municipio', municipio)
       }
@@ -55,7 +63,7 @@ export function useIndicadores(filtros: Filtros) {
       }
       return apiFetch<IndicadoresGerais>(`/metrics/general?${params}`, { signal })
     },
-    enabled: periodo !== undefined,
+    enabled: periodos !== undefined,
     // Ao trocar um filtro, os números anteriores ficam esmaecidos até os novos chegarem
     placeholderData: keepPreviousData,
   })

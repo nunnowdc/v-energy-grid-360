@@ -1,14 +1,18 @@
 import { formatarPeriodo } from '@/lib/formatacao'
 
 // Períodos escolhidos nos filtros: intervalos de meses (yyyy-MM) dentro da base.
-// Indicadores e Continuidade comparam com o período anterior, de mesmo tamanho;
-// a Receita compara um período base com um período comparado, também de mesmo tamanho
+// As telas comparam um período base com um período comparado, de mesmo tamanho,
+// que começa depois do fim do base
 
 export type Periodo = { de: string; ate: string }
 
 export type AtalhoPeriodo = { rotulo: string; periodo: Periodo }
 
-// Com a comparação do outro lado, até 24 meses cabem nos 48 meses da base
+// Comparação sem escolha: a Receita responde à pergunta do case (primeiro ano da
+// base × último ano); Indicadores e Continuidade mostram o último ano contra o anterior
+export type PadraoComparacao = 'inicio-da-base' | 'ano-anterior'
+
+// Com o outro período ao lado, até 24 meses cabem nos 48 meses da base
 export const MAXIMO_MESES = 24
 const MESES_PADRAO = 12
 
@@ -20,8 +24,6 @@ const posicoes = (competencias: string[], { de, ate }: Periodo) => {
 
 export const tamanhoDoPeriodo = (competencias: string[], periodo: Periodo) => posicoes(competencias, periodo).tamanho
 
-const dentroDoLimite = (inicio: number, fim: number) => inicio >= 0 && fim >= inicio && fim - inicio + 1 <= MAXIMO_MESES
-
 // N meses a partir de "de"; undefined se passar do fim da base
 export function periodoDeTamanho(competencias: string[], de: string, tamanho: number): Periodo | undefined {
   const inicio = competencias.indexOf(de)
@@ -32,38 +34,10 @@ export function periodoDeTamanho(competencias: string[], de: string, tamanho: nu
 // Mesmos meses do ano dos dois lados (jan–mar × jan–mar): sem efeito da estação
 export const mesmosMesesDoAno = (a: Periodo, b: Periodo) => a.de.slice(5) === b.de.slice(5)
 
-// ---------- Indicadores e Continuidade ----------
-
-// Antes do período precisa caber o anterior, de mesmo tamanho
-export function periodoComAnterior(competencias: string[], periodo: Periodo) {
-  const { inicio, fim, tamanho } = posicoes(competencias, periodo)
-  return dentroDoLimite(inicio, fim) && inicio >= tamanho
-}
-
-// Os últimos 12 meses da base, nunca contados da data de hoje
-export function periodoPadrao(competencias: string[]): Periodo | undefined {
-  const ultimos = competencias.slice(-MESES_PADRAO)
-  return ultimos.length === MESES_PADRAO ? { de: ultimos[0], ate: ultimos[MESES_PADRAO - 1] } : undefined
-}
-
-export function atalhosDoPeriodo(competencias: string[]): AtalhoPeriodo[] {
-  const ultimos = [3, 6, 12, 24].map((meses) => ({
-    rotulo: `Últimos ${meses} meses`,
-    periodo: { de: competencias.at(-meses) ?? '', ate: competencias.at(-1) ?? '' },
-  }))
-  const anosCivis = anosCompletos(competencias).map((ano) => ({
-    rotulo: `Ano de ${ano}`,
-    periodo: { de: `${ano}-01`, ate: `${ano}-12` },
-  }))
-  return [...ultimos, ...anosCivis].filter(({ periodo }) => periodoComAnterior(competencias, periodo))
-}
-
-// ---------- Receita ----------
-
-// Depois do base precisa caber o comparado, de mesmo tamanho
+// De 1 a 24 meses, e depois dele precisa caber o comparado, de mesmo tamanho
 export function baseValida(competencias: string[], base: Periodo) {
   const { inicio, fim, tamanho } = posicoes(competencias, base)
-  return dentroDoLimite(inicio, fim) && fim + tamanho <= competencias.length - 1
+  return inicio >= 0 && fim >= inicio && tamanho <= MAXIMO_MESES && fim + tamanho <= competencias.length - 1
 }
 
 // O comparado começa depois do fim do base e cabe na base
@@ -73,9 +47,10 @@ export function comparadoValido(competencias: string[], base: Periodo, de: strin
   return inicio > fim && inicio + tamanho - 1 <= competencias.length - 1
 }
 
-// O primeiro ano da base, a pergunta do case
-export function basePadrao(competencias: string[]): Periodo | undefined {
-  const base = periodoDeTamanho(competencias, competencias[0] ?? '', MESES_PADRAO)
+export function basePadrao(competencias: string[], padrao: PadraoComparacao): Periodo | undefined {
+  // Primeiro ano da base, ou os 12 meses antes dos últimos 12
+  const de = padrao === 'inicio-da-base' ? competencias[0] : competencias.at(-2 * MESES_PADRAO)
+  const base = de ? periodoDeTamanho(competencias, de, MESES_PADRAO) : undefined
   return base && baseValida(competencias, base) ? base : undefined
 }
 
@@ -122,8 +97,6 @@ export const atalhosDoComparado = (competencias: string[], base: Periodo): Atalh
     rotulo: formatarPeriodo(periodo.de, periodo.ate),
     periodo,
   }))
-
-// ---------- auxiliares ----------
 
 // Anos com os 12 meses (jan a dez) dentro da base
 function anosCompletos(competencias: string[]) {

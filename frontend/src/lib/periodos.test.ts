@@ -2,12 +2,11 @@ import { describe, expect, test } from 'vitest'
 import {
   atalhosDaBase,
   atalhosDoComparado,
-  atalhosDoPeriodo,
+  basePadrao,
   baseValida,
   comparadoPadrao,
   comparadoValido,
   mesmosMesesDoAno,
-  periodoComAnterior,
 } from '@/lib/periodos'
 import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 
@@ -15,35 +14,21 @@ import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 const { competencias } = opcoesFiltrosExemplo
 const rotulos = (atalhos: { rotulo: string }[]) => atalhos.map(({ rotulo }) => rotulo)
 
-describe('Indicadores e Continuidade', () => {
-  test('o período vale de 1 a 24 meses, com o anterior inteiro dentro da base', () => {
-    expect(periodoComAnterior(competencias, { de: '2026-06', ate: '2026-06' })).toBe(true)
-    expect(periodoComAnterior(competencias, { de: '2024-07', ate: '2026-06' })).toBe(true)
-    // 25 meses
-    expect(periodoComAnterior(competencias, { de: '2024-06', ate: '2026-06' })).toBe(false)
-    // O ano anterior a 2023 não está na base
-    expect(periodoComAnterior(competencias, { de: '2023-01', ate: '2023-12' })).toBe(false)
-    // Fora da base ou invertido
-    expect(periodoComAnterior(competencias, { de: '2026-06', ate: '2026-07' })).toBe(false)
-    expect(periodoComAnterior(competencias, { de: '2025-06', ate: '2025-01' })).toBe(false)
-  })
-
-  test('atalhos: últimos meses e anos civis que têm o ano anterior na base', () => {
-    expect(rotulos(atalhosDoPeriodo(competencias))).toEqual([
-      'Últimos 3 meses',
-      'Últimos 6 meses',
-      'Últimos 12 meses',
-      'Últimos 24 meses',
-      'Ano de 2024',
-      'Ano de 2025',
-    ])
+describe('padrões sem escolha', () => {
+  test('início da base (Receita) e ano anterior (Indicadores e Continuidade)', () => {
+    expect(basePadrao(competencias, 'inicio-da-base')).toEqual({ de: '2022-07', ate: '2023-06' })
+    expect(basePadrao(competencias, 'ano-anterior')).toEqual({ de: '2024-07', ate: '2025-06' })
   })
 })
 
-describe('Receita', () => {
-  test('o base precisa deixar espaço depois dele para um comparado de mesmo tamanho', () => {
+describe('base e comparado', () => {
+  test('o base tem de 1 a 24 meses e deixa espaço depois dele para um comparado de mesmo tamanho', () => {
     expect(baseValida(competencias, { de: '2022-07', ate: '2024-06' })).toBe(true)
+    expect(baseValida(competencias, { de: '2026-05', ate: '2026-05' })).toBe(true)
     expect(baseValida(competencias, { de: '2025-01', ate: '2025-12' })).toBe(false)
+    expect(baseValida(competencias, { de: '2026-06', ate: '2026-06' })).toBe(false)
+    // 25 meses
+    expect(baseValida(competencias, { de: '2022-07', ate: '2024-07' })).toBe(false)
   })
 
   test('o comparado começa depois do fim do base e cabe na base', () => {
