@@ -55,7 +55,7 @@ class RequisicaoFeedback(BaseModel):
 # --- Endpoints ---
 
 @router.post("/ask", response_model=RespostaChat, summary="Pergunta em linguagem natural ao agente")
-async def ask(req: RequisicaoChat) -> RespostaChat:
+def ask(req: RequisicaoChat) -> RespostaChat:
     """
     Recebe uma pergunta do portal React, executa o agente LangGraph e retorna
     a resposta, o SQL gerado e o audit_id para inspeção de trilha.
@@ -65,6 +65,8 @@ async def ask(req: RequisicaoChat) -> RespostaChat:
             pergunta=req.message,
             historico=req.history,
             sessao_id=req.session_id,
+            user_id=req.user_id,
+            contexto_tela=req.context,
         )
     except Exception as e:
         logger.error("Erro no endpoint /ai/ask: %s", e, exc_info=True)
@@ -82,7 +84,7 @@ async def ask(req: RequisicaoChat) -> RespostaChat:
 
 
 @router.get("/insights/{tela}/{entidade_id}", summary="Insight proativo pré-calculado para a tela")
-async def get_insight(tela: str, entidade_id: str) -> Dict[str, Any]:
+def get_insight(tela: str, entidade_id: str) -> Dict[str, Any]:
     """
     Retorna o insight pré-calculado e validado numericamente para uma tela específica do portal.
     Resposta em < 30ms via cache na tabela tb_insights_tela.
@@ -97,7 +99,7 @@ async def get_insight(tela: str, entidade_id: str) -> Dict[str, Any]:
 
 
 @router.get("/audit/{audit_id}", summary="Trilha de auditoria detalhada de uma resposta")
-async def get_audit(audit_id: str) -> Dict[str, Any]:
+def get_audit(audit_id: str) -> Dict[str, Any]:
     """
     Retorna os detalhes completos de auditoria de uma execução para a gaveta de
     inspeção 'Como a IA chegou nisso?' no portal React.
@@ -124,7 +126,7 @@ async def get_audit(audit_id: str) -> Dict[str, Any]:
 
 
 @router.post("/feedback", summary="Registro de feedback do usuário sobre uma resposta")
-async def post_feedback(req: RequisicaoFeedback) -> Dict[str, str]:
+def post_feedback(req: RequisicaoFeedback) -> Dict[str, str]:
     """
     Recebe 👍 (1) ou 👎 (-1) do usuário e registra na tabela de auditoria
     para alimentar as métricas de avaliação automatizada (REQ-AI-08).

@@ -21,6 +21,19 @@ import { formatarEnergia, formatarNumero } from '@/lib/formatacao'
 const plural = (quantidade: number, singular: string, varios: string) =>
   `${formatarNumero(quantidade)} ${quantidade === 1 ? singular : varios}`
 
+// No 409 o backend não gera nenhuma ordem do lote e lista as UCs que já têm ordem aberta
+const ucsComOrdem = (erro: Error): string[] =>
+  erro instanceof ErroApi && erro.status === 409 ? (erro.message.match(/UC\d{6}/g) ?? []) : []
+
+function textoErroGerar(erro: Error) {
+  const comOrdem = ucsComOrdem(erro)
+  if (comOrdem.length > 0) {
+    const uma = comOrdem.length === 1
+    return `Nenhuma ordem foi gerada: ${comOrdem.join(', ')} já ${uma ? 'tem' : 'têm'} ordem aberta e ${uma ? 'saiu' : 'saíram'} da seleção.`
+  }
+  return erro instanceof ErroApi ? erro.message : 'Não foi possível gerar as ordens. Tente de novo.'
+}
+
 function Kpis({ fila, ordens }: { fila: FilaInspecao; ordens: OrdemInspecao[] }) {
   const emAndamento = ordens.filter((ordem) => ordem.status === 'ABERTA' || ordem.status === 'EM_CAMPO').length
   const concluidas = ordens.filter((ordem) => ordem.status === 'CONCLUIDA')
@@ -64,7 +77,7 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set())
   const [aviso, setAviso] = useState<string>()
   const fila = useFilaInspecao(filtros, pagina)
-  const ordens = useOrdensInspecao()
+  const ordens = useOrdensInspecao(filtros)
   const gerar = useGerarOrdens()
 
   function marcar(idUc: string, marcada: boolean) {
@@ -85,6 +98,11 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
       onSuccess: ({ ordens: novas }) => {
         setSelecionadas(new Set())
         setAviso(`${plural(novas.length, 'ordem de inspeção gerada', 'ordens de inspeção geradas')}.`)
+      },
+      // Quem já tem ordem sai da seleção; as outras ficam marcadas para gerar de novo
+      onError: (erro) => {
+        const comOrdem = ucsComOrdem(erro)
+        setSelecionadas((atual) => new Set([...atual].filter((idUc) => !comOrdem.includes(idUc))))
       },
     })
   }
@@ -132,13 +150,7 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
                     {aviso} Acompanhe na aba Ordens de inspeção.
                   </p>
                 )}
-                {gerar.isError && (
-                  <p className="text-sm text-destructive">
-                    {gerar.error instanceof ErroApi
-                      ? gerar.error.message
-                      : 'Não foi possível gerar as ordens. Tente de novo.'}
-                  </p>
-                )}
+                {gerar.isError && <p className="text-sm text-destructive">{textoErroGerar(gerar.error)}</p>}
               </div>
               <EstadoConsulta
                 consulta={fila}

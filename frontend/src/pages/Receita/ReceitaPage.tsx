@@ -1,4 +1,5 @@
 import { Lightbulb } from 'lucide-react'
+import AvisoSazonalidade from '@/components/AvisoSazonalidade/AvisoSazonalidade'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -36,8 +37,8 @@ function Kpis({ dados, total }: { dados: VariacaoReceita; total: DecomposicaoCom
         Período base <span className="font-semibold text-foreground">{formatarPeriodo(periodo_p0.inicio, periodo_p0.fim)}</span>{' '}
         × período comparado{' '}
         <span className="font-semibold text-foreground">{formatarPeriodo(periodo_p1.inicio, periodo_p1.fim)}</span>
-        <span> · períodos fixos da base</span>
       </p>
+      <AvisoSazonalidade base={periodo_p0} comparado={periodo_p1} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CartaoKpi titulo="Receita no período base" valor={formatarMoedaCompacta(total.receita_p0)} />
         <CartaoKpi
@@ -183,7 +184,7 @@ function ReceitaPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['municipio', 'bairro', 'classe']} />} />
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'bairro', 'classe']} padraoComparacao="inicio-da-base" />} />
 
       <EstadoConsulta
         consulta={consulta}

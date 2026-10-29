@@ -78,28 +78,51 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-test('mostra os períodos fixos, os KPIs e a parte das UCs com geração própria', async () => {
+test('sem escolha, compara o primeiro ano com os últimos 12 meses e mostra os KPIs', async () => {
   const fetch = responderCom(receita)
   abrir('/receita')
 
-  expect(await screen.findByText('jul/2022 – jun/2023')).toBeInTheDocument()
-  expect(enderecosChamados(fetch)).toEqual(['/api/metrics/revenue-variance'])
-  expect(screen.getByText('jul/2025 – jun/2026')).toBeInTheDocument()
+  expect(await screen.findByText('Consumo medido -4,0%')).toBeInTheDocument()
+  expect(enderecosChamados(fetch)).toEqual(['/api/metrics/revenue-variance?inicio_p0=2022-07&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06'])
+  // Mesmos meses do ano dos dois lados: sem aviso de sazonalidade
+  expect(screen.queryByText(/meses diferentes do ano/)).not.toBeInTheDocument()
+  // Na barra de filtros e na frase acima dos cards
+  expect(screen.getAllByText('jul/2022 – jun/2023')).toHaveLength(2)
+  expect(screen.getAllByText('jul/2025 – jun/2026')).toHaveLength(2)
   // Receita: 110 mi contra 100 mi
   expect(screen.getAllByText('+10,0%', { exact: false })).not.toHaveLength(0)
-  expect(screen.getByText('Consumo medido -4,0%')).toBeInTheDocument()
   // 3 mi de 4 mi de efeito volume
   expect(screen.getByText('75% do efeito volume vem das UCs com geração própria.')).toBeInTheDocument()
 })
 
 test('manda os filtros escolhidos', async () => {
   const fetch = responderCom(receita)
-  abrir('/receita?municipio=Olinda&bairro=Rio+Doce&classe=RURAL')
+  abrir('/receita?base_de=2023-01&base_ate=2023-03&comparado_de=2025-07&municipio=Olinda&bairro=Rio+Doce&classe=RURAL')
 
-  await screen.findByText('jul/2022 – jun/2023')
+  await screen.findByText('Consumo medido -4,0%')
   expect(enderecosChamados(fetch)).toEqual([
-    '/api/metrics/revenue-variance?municipio=Olinda&bairro=Rio+Doce&classe=RURAL',
+    '/api/metrics/revenue-variance?inicio_p0=2023-01&fim_p0=2023-03&inicio_p1=2025-07&fim_p1=2025-09&municipio=Olinda&bairro=Rio+Doce&classe=RURAL',
   ])
+})
+
+test('com só o base escolhido, o comparado vai para os mesmos meses do último ano', async () => {
+  const fetch = responderCom(receita)
+  abrir('/receita?base_de=2023-01&base_ate=2023-03')
+
+  await screen.findByText('Consumo medido -4,0%')
+  expect(enderecosChamados(fetch)).toEqual([
+    '/api/metrics/revenue-variance?inicio_p0=2023-01&fim_p0=2023-03&inicio_p1=2026-01&fim_p1=2026-03',
+  ])
+})
+
+test('períodos com meses diferentes do ano mostram o aviso de sazonalidade', async () => {
+  responderCom({
+    ...receita,
+    periodo_p0: { inicio: '2023-01', fim: '2023-03' },
+    periodo_p1: { inicio: '2025-07', fim: '2025-09' },
+  })
+  abrir('/receita?base_de=2023-01&base_ate=2023-03&comparado_de=2025-07')
+  expect(await screen.findByText(/meses diferentes do ano/)).toBeInTheDocument()
 })
 
 test('a tabela começa pela maior perda de volume e clicar numa linha detalha', async () => {
@@ -110,7 +133,7 @@ test('a tabela começa pela maior perda de volume e clicar numa linha detalha', 
   expect(linhas.map((linha) => linha.textContent)).toEqual(['Recife', 'Olinda'])
 
   fireEvent.click(linhas[0])
-  await waitFor(() => expect(enderecosChamados(fetch)).toContain('/api/metrics/revenue-variance?municipio=Recife'))
+  await waitFor(() => expect(enderecosChamados(fetch)).toContain('/api/metrics/revenue-variance?inicio_p0=2022-07&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06&municipio=Recife'))
 })
 
 test('a trilha volta um nível', async () => {
@@ -119,7 +142,7 @@ test('a trilha volta um nível', async () => {
 
   const trilha = await screen.findByRole('navigation', { name: 'Nível do detalhamento' })
   fireEvent.click(within(trilha).getByRole('button', { name: 'Recife' }))
-  await waitFor(() => expect(enderecosChamados(fetch)).toContain('/api/metrics/revenue-variance?municipio=Recife'))
+  await waitFor(() => expect(enderecosChamados(fetch)).toContain('/api/metrics/revenue-variance?inicio_p0=2022-07&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06&municipio=Recife'))
 })
 
 test('quando só as UCs com geração própria perdem volume, a frase conta isso', async () => {
