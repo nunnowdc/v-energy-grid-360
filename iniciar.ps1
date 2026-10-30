@@ -67,7 +67,9 @@ else {
         Escrever-Aviso 'O 9router não está instalado. Instale com "npm install -g 9router"; até lá, o agente de IA não responde.'
     }
     else {
-        Abrir-Janela 'V-Energy - 9router' $Raiz '9router.cmd --no-browser'
+        # O --host 127.0.0.1 deixa o 9router acessível só neste computador (o padrão
+        # dele é 0.0.0.0, aberto para a rede)
+        Abrir-Janela 'V-Energy - 9router' $Raiz '9router.cmd --no-browser --host 127.0.0.1'
         if (Esperar-Url $modelos9router 60) { Escrever-Ok 'Ligado em outra janela' }
         else { Escrever-Aviso 'O 9router não respondeu em 1 minuto. Veja a janela dele.' }
     }

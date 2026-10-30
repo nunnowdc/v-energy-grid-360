@@ -47,7 +47,7 @@ $PastaDados = Join-Path $Raiz 'data'
 Write-Host 'V-Energy Grid 360 · setup' -ForegroundColor Cyan
 
 if ($env:OS -ne 'Windows_NT') {
-    Falhar 'O setup é só para Windows. No macOS e no Linux, siga o passo a passo manual do README.'
+    Falhar 'O setup.ps1 é para Windows. No macOS e no Linux, use: bash setup.sh'
 }
 
 # Dentro do backend\.venv, alguns arquivos ficam uns 130 caracteres abaixo da raiz,
@@ -71,6 +71,12 @@ foreach ($candidato in @(@('python'), @('py', '-3'))) {
 }
 if (-not $PythonBase) {
     Falhar 'Python 3.11 ou superior não encontrado. Instale em https://www.python.org/downloads/ marcando "Add python.exe to PATH", feche e abra o VS Code e rode de novo.'
+}
+# Algumas dependências (psycopg2-binary, torch) só existem para o Python x64. Num
+# notebook com processador ARM (Snapdragon), o Python x64 roda por emulação
+$plataforma = Ler-Saida $PythonBase.Programa ($PythonBase.Extra + @('-c', 'import sysconfig; print(sysconfig.get_platform())'))
+if ($plataforma -ne 'win-amd64') {
+    Falhar "O Python $($PythonBase.Versao) instalado é o de $plataforma, e o projeto precisa do Python x64. Em https://www.python.org/downloads/windows/, baixe o `"Windows installer (64-bit)`" (mesmo em notebook com processador ARM, como os Snapdragon), instale marcando `"Add python.exe to PATH`" e rode de novo."
 }
 Escrever-Ok "Python $($PythonBase.Versao)"
 
@@ -315,7 +321,9 @@ Escrever-Titulo '9/9 Dependências do frontend'
 Push-Location -LiteralPath (Join-Path $Raiz 'frontend')
 try {
     Write-Host '   ... npm install' -ForegroundColor DarkGray
-    Executar 'Instalar as dependências do frontend' 'npm.cmd' @('install', '--no-audit', '--no-fund', '--loglevel', 'error')
+    # --no-save: instala as versões do package-lock.json sem regravar o arquivo (outra
+    # versão do npm mudaria o arquivo, e ele apareceria modificado no Git)
+    Executar 'Instalar as dependências do frontend' 'npm.cmd' @('install', '--no-save', '--no-audit', '--no-fund', '--loglevel', 'error')
 }
 finally {
     Pop-Location
