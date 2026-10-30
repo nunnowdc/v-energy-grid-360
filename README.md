@@ -1,30 +1,624 @@
 # V-Energy Grid 360
 
-Passo a passo para executar tudo.
+Portal interno da V-Energy: Indicadores, Receita, Visão 360, Fila de inspeção, Continuidade e um agente de IA que responde perguntas sobre os dados.
 
 ## Como executar
 
-### Frontend
+Este guia parte de um computador com Windows e o VS Code aberto, e vai até o portal rodando com dados e com o agente de IA respondendo. São dois caminhos:
 
-Pré-requisito: Node.js 20 ou superior.
+- **Jeito rápido (recomendado):** faça o passo 0 e rode dois scripts, `setup.ps1` e `iniciar.ps1`, que fazem todo o resto.
+- **Passo a passo manual:** os mesmos passos, um comando por vez. Serve para o macOS e o Linux, para entender o que o setup faz ou para refazer só uma parte.
 
-```bash
+Na primeira vez, leva de 20 a 40 minutos, quase tudo em downloads.
+
+O portal tem quatro partes:
+
+| Parte | Onde roda | Endereço |
+|---|---|---|
+| Banco PostgreSQL com pgvector (camada Gold, tabelas da IA e ordens de inspeção) | Container Docker `postgres-venergy` | `localhost:5433` |
+| Backend (FastAPI), que também roda o agente de IA | Terminal, na pasta `backend/` | `http://127.0.0.1:8000` |
+| Frontend (React) | Terminal, na pasta `frontend/` | `http://localhost:5173` |
+| 9router (opcional), roteador local de LLMs para o agente | Terminal | `http://localhost:20128` |
+
+Todos os comandos são para o **PowerShell** e partem da **raiz do repositório** (a pasta `v-energy-grid-360/`), a não ser quando o próprio passo tem um `cd`. No macOS e no Linux, a diferença aparece no comentário do comando.
+
+### 0. Antes de começar
+
+#### 0.1. Abra o terminal do VS Code
+
+1. No VS Code, abra **Terminal > New Terminal** (atalho `` Ctrl + ` ``).
+2. Confira se o terminal é o **PowerShell**: o nome aparece à direita, acima do terminal. Se for outro, clique na seta ao lado do `+` e escolha **PowerShell**.
+
+Sempre que instalar um programa novo, feche e abra o VS Code de novo, para o terminal enxergar o programa.
+
+#### 0.2. Instale os programas
+
+| Programa | Onde baixar | Na instalação |
+|---|---|---|
+| Git | https://git-scm.com/downloads | Pode aceitar todas as opções padrão |
+| Python 3.11 ou superior (o time usa o 3.12) | https://www.python.org/downloads/ | Na primeira tela, marque **Add python.exe to PATH** |
+| Node.js 20 ou superior (versão LTS) | https://nodejs.org/ | Pode aceitar todas as opções padrão |
+| Docker Desktop | https://www.docker.com/products/docker-desktop/ | Aceite o uso do WSL 2. Se ele pedir para instalar o WSL, abra o PowerShell **como administrador**, rode `wsl --install --no-distribution` e reinicie o computador |
+| DBeaver Community (opcional, recomendado) | https://dbeaver.io/download/ | Pode aceitar todas as opções padrão. Serve para ver as tabelas e rodar SQL com uma interface |
+
+Depois de instalar, abra o **Docker Desktop**, aceite os termos e espere aparecer **Engine running** no canto inferior esquerdo.
+
+Confira no terminal do VS Code (cada comando deve mostrar uma versão):
+
+```powershell
+git --version
+python --version
+node --version
+npm --version
+docker --version
+```
+
+- O `python --version` deve mostrar 3.11 ou mais, e o `node --version`, 20 ou mais.
+- Se o `python` abrir a Microsoft Store, desligue os atalhos dele em **Configurações > Aplicativos > Configurações avançadas de aplicativos > Aliases de execução de aplicativo** (as opções `python.exe` e `python3.exe`) e abra o VS Code de novo.
+
+#### 0.3. Baixe o repositório
+
+```powershell
+cd ~\Documents
+git clone https://github.com/nunnowdc/v-energy-grid-360.git
+```
+
+Clone numa pasta de caminho curto, como a `Documents`. O caminho até a pasta do repositório deve ter no máximo 120 caracteres: com mais que isso, o Windows não consegue carregar partes do Python dentro do `backend\.venv`.
+
+Abra a pasta no VS Code: **File > Open Folder...**, escolha `Documents\v-energy-grid-360` e abra um terminal novo (`` Ctrl + ` ``). Ele já começa na raiz do repositório, que é de onde partem os próximos comandos.
+
+A branch `main` é a versão entregue. Para trabalhar com o código mais recente do time, mude para a `dev`:
+
+```powershell
+git checkout dev
+```
+
+#### 0.4. Separe os dados da Gold
+
+Você precisa do zip da camada Gold (`exports_gold.zip`), que o time compartilha por um canal privado. Ele **não fica no GitHub**, porque tem dados pessoais de clientes.
+
+Copie o zip para a pasta `data/` do repositório. Ela é ignorada pelo Git, então nada do que estiver ali sobe para o GitHub.
+
+- **No jeito rápido**, é só isso: o setup extrai o zip sozinho.
+- **No passo a passo manual**, extraia o zip para `data/exports_gold/`:
+  1. no Explorador de Arquivos do Windows, clique com o botão direito no zip e escolha **Extrair Tudo...**;
+  2. em destino, escreva o caminho da pasta `data\exports_gold` do repositório (por exemplo, `C:\Users\SEU_USUARIO\Documents\v-energy-grid-360\data\exports_gold`) e clique em **Extrair**.
+
+  Se o Windows criar uma subpasta dentro de `exports_gold`, pode deixar: o script procura os CSVs em todas as subpastas de `data/`.
+
+### Jeito rápido: `setup.ps1` e `iniciar.ps1`
+
+Depois do passo 0, dois scripts na raiz do repositório fazem todo o resto. Eles funcionam em qualquer pasta e em qualquer computador com Windows. No macOS e no Linux, siga o passo a passo manual.
+
+Os dois comandos começam com `powershell -ExecutionPolicy Bypass -File`. Isso deixa o script rodar só daquela vez, sem mudar nenhuma configuração do Windows. Escrever `.\setup.ps1` direto pode dar o erro "a execução de scripts foi desabilitada neste sistema".
+
+#### Preparar: `setup.ps1`
+
+Rode uma vez para preparar tudo, e de novo depois de cada `git pull`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+O setup faz os passos 1, 2 e 4 a 9 do passo a passo manual:
+
+1. confere o Python, o Node.js e o Docker, e abre o Docker Desktop se ele estiver fechado;
+2. cria o container do banco e ativa as extensões;
+3. cria o ambiente Python e instala as dependências do backend e do agente;
+4. cria os três arquivos de configuração;
+5. extrai o zip da Gold e carrega a Gold no banco;
+6. cria as tabelas da IA e a base de conhecimento do RAG;
+7. cria a tabela das ordens de inspeção;
+8. instala as dependências do frontend.
+
+Como ele se comporta:
+
+- **Senha:** na primeira vez, ele pede uma senha para o banco. O mais simples é usar só letras e números. Depois, ele lê a senha dos arquivos de configuração.
+- **Tempo:** na primeira vez leva de 15 a 30 minutos, quase tudo em downloads (dependências do Python, imagem do banco, modelo do RAG). Nas próximas, um ou dois minutos.
+- **Rodar de novo é seguro:** o que já está pronto é pulado. O setup **nunca** apaga as ordens de inspeção nem muda um arquivo de configuração que já existe, só completa o `DATABASE_URL` se ele ainda estiver com o valor do exemplo.
+- **Se algo der errado,** ele para com `ERRO:` e diz o que fazer. Corrija e rode de novo: ele continua de onde parou.
+
+| Opção | Quando usar |
+|---|---|
+| `-RecarregarGold` | Chegou uma Gold nova: troque o zip de `data/` pelo novo e rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` |
+| `-Porta 5434` | Na primeira vez, se a porta 5433 já estiver em uso no seu computador |
+
+#### Ligar o agente de IA: uma vez
+
+O setup não tem como criar a chave do LLM. Siga o [passo 3](#3-provedor-de-ia-llm), que preenche o `backend\.env.local` com a chave do OpenRouter ou do 9router. Sem a chave, o portal funciona, mas o agente responde "O serviço de IA está temporariamente indisponível".
+
+#### Ligar o portal: `iniciar.ps1`
+
+Todo dia, para usar o portal:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
+```
+
+O `iniciar.ps1`:
+
+- liga o Docker Desktop e o banco, se estiverem desligados;
+- abre uma janela para o backend e outra para o frontend;
+- abre também uma janela para o 9router, se o agente usa ele e ele estiver desligado;
+- espera tudo responder e abre o portal no navegador, em http://localhost:5173.
+
+Se uma parte já estiver ligada, ele só avisa e não abre de novo.
+
+Para desligar, feche as janelas **V-Energy - backend** e **V-Energy - frontend** (ou aperte `Ctrl + C` nelas). O banco pode continuar ligado.
+
+Depois, confira se tudo funciona com o [passo 10](#10-confira-se-tudo-funciona).
+
+### Passo a passo manual
+
+São os mesmos passos que o `setup.ps1` e o `iniciar.ps1` fazem, um comando por vez.
+
+### 1. Banco de dados
+
+#### 1.1. Crie o container
+
+Escolha uma senha para o banco. Use só letras e números: assim ela entra nas URLs do passo 2 sem precisar de ajuste. Rode, trocando `SUA_SENHA` pela senha escolhida:
+
+```powershell
+docker run -d --name postgres-venergy -e POSTGRES_PASSWORD=SUA_SENHA -e POSTGRES_DB=v_energy -p 5433:5432 -v pgdata-v_energy:/var/lib/postgresql pgvector/pgvector:pg18
+```
+
+- Na primeira vez, o Docker baixa a imagem do PostgreSQL 18 com o pgvector. No fim, ele mostra um código longo, que é o ID do container.
+- A porta no seu computador é a **5433**, para não confundir com um PostgreSQL já instalado no Windows, que usa a 5432 e não tem o pgvector.
+- Os dados ficam no volume `pgdata-v_energy`. Desligar o container ou o computador não apaga nada.
+
+Confira se o container está ligado:
+
+```powershell
+docker ps
+```
+
+A linha do `postgres-venergy` deve mostrar `Up` e `0.0.0.0:5433->5432/tcp`.
+
+#### 1.2. Ative as extensões
+
+```powershell
+docker exec postgres-venergy psql -U postgres -d v_energy -c "CREATE EXTENSION IF NOT EXISTS vector;" -c "CREATE EXTENSION IF NOT EXISTS unaccent;"
+```
+
+Deve aparecer `CREATE EXTENSION` duas vezes:
+
+- `vector` é a busca por similaridade do RAG do agente;
+- `unaccent` deixa o agente comparar nomes sem acento ("Sao Lourenco" encontra "São Lourenço").
+
+#### 1.3. Conecte o DBeaver (opcional)
+
+Com o DBeaver você vê as tabelas e roda as consultas de conferência dos próximos passos.
+
+1. **Database > New Database Connection**, escolha **PostgreSQL** e clique em **Next**.
+2. Preencha:
+
+   | Campo | Valor |
+   |---|---|
+   | Host | `localhost` |
+   | Port | `5433` |
+   | Database | `v_energy` |
+   | Username | `postgres` |
+   | Password | a senha do passo 1.1 (marque **Save password**) |
+
+3. Clique em **Test Connection**. Na primeira vez, o DBeaver oferece baixar o driver do PostgreSQL: aceite. Deve aparecer **Connected**.
+4. Clique em **Finish**.
+
+Como usar:
+
+- **As tabelas** ficam em **v_energy > Schemas > public > Tables**. Depois de criar ou carregar tabelas, clique na conexão e aperte `F5` para atualizar a lista.
+- **Para escrever SQL**, selecione a conexão e abra **SQL Editor > New SQL script** (`Ctrl + ]`).
+- **Para rodar**, use `Ctrl + Enter` para a consulta onde está o cursor e `Alt + X` para o script inteiro.
+
+Sem o DBeaver, as mesmas consultas rodam pelo terminal:
+
+```powershell
+docker exec postgres-venergy psql -U postgres -d v_energy -c "SELECT count(*) FROM fact_faturamento;"
+```
+
+Para abrir um terminal SQL interativo, use `docker exec -it postgres-venergy psql -U postgres -d v_energy`, e saia com `\q`.
+
+### 2. Arquivos de configuração
+
+O projeto lê três arquivos de configuração. Todos ficam fora do Git: **nunca suba senhas nem chaves**.
+
+| Arquivo | Quem lê |
+|---|---|
+| `.env` (na raiz) | Scripts de carga e de preparação da IA (passos 5 e 6) |
+| `backend/.env.local` | Backend e agente de IA |
+| `frontend/.env.local` | Frontend |
+
+#### 2.1. `.env` da raiz
+
+No **Explorer** do VS Code, clique com o botão direito numa área vazia, abaixo dos arquivos, escolha **New File...** e dê o nome `.env`. Escreva nele uma linha, com a senha do passo 1.1, e salve (`Ctrl + S`):
+
+```dotenv
+DATABASE_URL=postgresql://postgres:SUA_SENHA@localhost:5433/v_energy
+```
+
+#### 2.2. `backend/.env.local`
+
+Crie o arquivo a partir do exemplo:
+
+```powershell
+cp backend/.env.example backend/.env.local
+```
+
+Abra o `backend/.env.local` e troque a linha do `DATABASE_URL` por esta, com a senha do passo 1.1:
+
+```dotenv
+DATABASE_URL=postgresql+psycopg://postgres:SUA_SENHA@localhost:5433/v_energy
+```
+
+Repare no `+psycopg`, que não existe no `.env` da raiz: é o nome do driver que o backend usa. As outras linhas podem ficar como estão. As chaves de LLM são preenchidas no passo 3.
+
+Se a senha tiver caracteres especiais, escreva-os codificados nas duas URLs:
+
+| Caractere | Escreva |
+|---|---|
+| `#` | `%23` |
+| `@` | `%40` |
+| `%` | `%25` |
+| `/` | `%2F` |
+| `:` | `%3A` |
+
+#### 2.3. `frontend/.env.local`
+
+```powershell
+cp frontend/.env.example frontend/.env.local
+```
+
+Os valores do exemplo já servem:
+
+- `VITE_PERFIL_TESTE` define o perfil do usuário de teste enquanto o login não existe. Os perfis são `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI`, e o `ADMIN_TI` vê todas as telas.
+- `VITE_USAR_DADOS_EXEMPLO=true` mostra dados de exemplo nas rotas que o backend ainda não tem (hoje, só a Continuidade).
+
+Depois de mudar qualquer `.env`, reinicie o que lê o arquivo (backend ou frontend).
+
+### 3. Provedor de IA (LLM)
+
+O agente de IA precisa de pelo menos um provedor de LLM. Sem nenhum, o resto do portal funciona normalmente, e o agente responde "O serviço de IA está temporariamente indisponível".
+
+O agente tenta primeiro o **OpenRouter** e, se ele falhar ou não estiver configurado, usa o **9router**. Configure um dos dois, ou os dois.
+
+#### Opção A: OpenRouter (na nuvem)
+
+1. Entre em https://openrouter.ai e crie uma conta.
+2. Em https://openrouter.ai/settings/keys, clique em **Create Key** e copie a chave. Ela só aparece uma vez.
+3. Em https://openrouter.ai/models, escolha um modelo e copie o ID dele, no formato `provedor/modelo`. Os modelos terminados em `:free` não gastam crédito, mas têm limite de pedidos por dia.
+4. No `backend/.env.local`, preencha:
+
+   ```dotenv
+   OPENROUTER_API_KEY=sua-chave-do-openrouter
+   MODELO_LLM_PRIMARIO=provedor/modelo
+   ```
+
+#### Opção B: 9router (roteador local, usado pelo time)
+
+O 9router roda na sua máquina, recebe os pedidos do agente e repassa para os provedores que você conectar. Quando um provedor falha ou fica sem cota, ele passa para o próximo.
+
+1. Instale (uma vez só):
+
+   ```powershell
+   npm install -g 9router
+   ```
+
+2. Ligue o 9router num **terminal só para ele** e deixe esse terminal aberto:
+
+   ```powershell
+   9router
+   ```
+
+3. Abra o painel em http://localhost:20128/dashboard.
+4. Em **Providers**, conecte pelo menos um provedor. Por exemplo, para o Gemini, crie uma chave gratuita em https://aistudio.google.com/apikey e adicione no painel.
+5. Em **Combos**, clique em **Create New**, dê o nome `venergy`, adicione os modelos em ordem de preferência e salve.
+6. Copie a API key que o painel mostra, junto do endereço `http://localhost:20128/v1`.
+7. No `backend/.env.local`, preencha:
+
+   ```dotenv
+   NINEROUTER_API_KEY=sua-chave-do-9router
+   NINEROUTER_BASE_URL=http://localhost:20128/v1/chat/completions
+   MODELO_LLM_FALLBACK=venergy
+   ```
+
+Para conferir se o 9router está respondendo, rode o comando abaixo. A lista deve incluir o `venergy`:
+
+```powershell
+curl.exe http://localhost:20128/v1/models
+```
+
+### 4. Ambiente Python
+
+Um ambiente virtual só, em `backend/.venv`, serve para o backend, o agente de IA e os scripts dos passos 5 e 6, porque o backend importa o agente da pasta `ai-agent/`.
+
+```powershell
+python -m venv backend/.venv
+backend\.venv\Scripts\Activate.ps1    # macOS/Linux: source backend/.venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r backend/requirements.txt -r ai-agent/requirements.txt
+```
+
+- Depois da segunda linha, o terminal mostra `(.venv)` no começo. É assim que você sabe que o ambiente está ativo.
+- Se o PowerShell disser que o `Activate.ps1` não pode ser carregado, libere os scripts uma vez com `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, abra um terminal novo e rode a segunda linha de novo.
+- A instalação leva de 5 a 15 minutos: o agente usa o `torch` e o `sentence-transformers`, que são grandes.
+- **Os passos 5 a 8 precisam do ambiente ativo.** Em todo terminal novo, ative de novo com `backend\.venv\Scripts\Activate.ps1`, a partir da raiz.
+- Opcional: no VS Code, `Ctrl + Shift + P` > **Python: Select Interpreter** > escolha o `backend\.venv`. Com a extensão Python instalada, os terminais novos já abrem com o ambiente ativo.
+
+Para conferir a instalação:
+
+```powershell
+python -c "import fastapi, langgraph, sentence_transformers; print('ok')"
+```
+
+### 5. Carga da Gold
+
+Com os CSVs extraídos em `data/exports_gold/` (passo 0.4) e o ambiente ativo:
+
+```powershell
+python scripts/carga_banco_local.py
+```
+
+- O script cria as 15 tabelas da Gold e carrega cerca de 5 milhões de linhas. Leva de 1 a 3 minutos.
+- Depois da carga, ele roda o **Data Quality Gate**: 29 verificações do contrato da Gold, como chaves únicas, nenhum registro órfão e totais que fecham. Deve aparecer `Data Quality Gate aprovado com sucesso!`.
+- No fim, aparece `Carga concluída com sucesso no PostgreSQL!` e `Total de linhas importadas: 4,997,681`.
+- Se aparecer `FALHA NO DATA QUALITY GATE`, a Gold está incompleta ou desatualizada. Peça ao time a versão mais recente e repita a carga.
+- Deixe só uma cópia dos CSVs da Gold em `data/`. Com duas, o script não avisa e pode carregar a antiga.
+- Não use as opções `--reset-data` e `--update-release`. Elas apagam **todos** os CSVs de `data/`, inclusive os dados brutos do case, e tentam baixar a Gold do GitHub.
+
+Para conferir (no DBeaver ou no terminal):
+
+```sql
+SELECT count(*) FROM fact_faturamento;   -- 2152336
+SELECT count(*) FROM dim_unidade_consumidora;   -- 45000
+```
+
+### 6. Tabelas e base de conhecimento da IA
+
+Com o ambiente ativo, a partir da raiz:
+
+```powershell
+python ai-agent/scripts/criar_tabelas_ia.py
+cd ai-agent
+python -m scripts.migracoes.migracao_colunas_opcionais_auditoria_agente
+python -m scripts.migracoes.migracao_templates_cache_filtro_texto_sem_acento
+python -m src.rag.indexar_tudo
+cd ..
+```
+
+| Comando | O que faz | Termina com |
+|---|---|---|
+| `criar_tabelas_ia.py` | Cria as 4 tabelas do agente: base de conhecimento (`tb_conhecimento_vetorial`), auditoria (`tb_auditoria_agente`), perguntas certificadas (`tb_cache_perguntas_certificadas`) e insights (`tb_insights_tela`) | `Tabelas criadas com sucesso.` |
+| `migracao_colunas_opcionais_auditoria_agente` | Acrescenta à auditoria o usuário, o perfil, as tentativas de SQL e os trechos do RAG usados | `Migração concluída com sucesso.` |
+| `migracao_templates_cache_filtro_texto_sem_acento` | Grava as perguntas certificadas, que respondem sem gerar SQL novo | `Migração concluída com sucesso.` |
+| `indexar_tudo` | Coloca os documentos do projeto (glossário, dicionário da Gold, regras do setor elétrico, relatórios da Engenharia de Dados) na base de conhecimento do RAG | `INDEXAÇÃO COMPLETA CONCLUÍDA COM SUCESSO` |
+
+- Na primeira vez, o `indexar_tudo` baixa o modelo de embeddings (cerca de 500 MB), então precisa de internet. As linhas `INFO` e os avisos do download são normais.
+- Os quatro comandos podem rodar de novo sem duplicar nada.
+
+Para conferir:
+
+```sql
+SELECT count(*) FROM tb_conhecimento_vetorial;   -- mais de 200 trechos
+```
+
+### 7. Tabela das ordens de inspeção
+
+Na Fila de inspeção, o analista de perdas gera ordens de inspeção para as UCs suspeitas e acompanha cada uma até a conclusão. As ordens ficam na tabela `ordens_inspecao`, que **não vem com a Gold**: crie uma vez, por um dos dois caminhos.
+
+**Pelo terminal:**
+
+```powershell
+docker cp backend/sql/ordens_inspecao.sql postgres-venergy:/tmp/ordens_inspecao.sql
+docker exec postgres-venergy psql -U postgres -d v_energy -v ON_ERROR_STOP=1 -f /tmp/ordens_inspecao.sql
+```
+
+O primeiro comando copia o arquivo para dentro do container, e o segundo executa o arquivo. A saída deve ser `BEGIN`, `CREATE TABLE`, `CREATE INDEX` e `COMMIT`.
+
+**Pelo DBeaver:**
+
+1. **File > Open File...** e escolha `backend/sql/ordens_inspecao.sql`.
+2. Na barra do editor, escolha a conexão `v_energy` como fonte de dados ativa (**Active datasource**, `Ctrl + 9`).
+3. Rode o script inteiro com `Alt + X`.
+
+<details>
+<summary>O que o script cria</summary>
+
+O arquivo [`backend/sql/ordens_inspecao.sql`](backend/sql/ordens_inspecao.sql) é a versão oficial. Se ele mudar, vale o arquivo.
+
+```sql
+BEGIN;
+
+CREATE TABLE ordens_inspecao (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_uc TEXT NOT NULL CHECK (id_uc ~ '^UC[0-9]{6}$'),
+    status TEXT NOT NULL CHECK (status IN ('ABERTA', 'EM_CAMPO', 'CONCLUIDA', 'CANCELADA')),
+    resultado TEXT,
+    criada_em TIMESTAMPTZ NOT NULL DEFAULT now(),
+    atualizada_em TIMESTAMPTZ NOT NULL DEFAULT now(),
+    concluida_em TIMESTAMPTZ,
+    CONSTRAINT ordem_conclusao_coerente CHECK (
+        (status = 'CONCLUIDA'
+         AND resultado IS NOT NULL
+         AND resultado IN ('IRREGULARIDADE_CONFIRMADA', 'SEM_IRREGULARIDADE')
+         AND concluida_em IS NOT NULL)
+        OR
+        (status <> 'CONCLUIDA' AND resultado IS NULL AND concluida_em IS NULL)
+    )
+);
+
+CREATE UNIQUE INDEX ordens_inspecao_uc_ativa_uidx
+    ON ordens_inspecao (id_uc)
+    WHERE status IN ('ABERTA', 'EM_CAMPO');
+
+COMMIT;
+```
+
+- **Situações:** cada ordem está `ABERTA`, `EM_CAMPO`, `CONCLUIDA` ou `CANCELADA`.
+- **Resultado:** só a ordem concluída tem resultado (`IRREGULARIDADE_CONFIRMADA` ou `SEM_IRREGULARIDADE`) e data de conclusão.
+- **Uma ativa por UC:** o índice único impede duas ordens abertas ou em campo para a mesma UC.
+- **Número:** o portal mostra o `id` como `OI-00001`, `OI-00002`...
+
+</details>
+
+- O script roda uma vez só. Se a tabela já existe, ele para com `relation "ordens_inspecao" already exists` e não muda nada. De propósito, ele não apaga nem recria a tabela (veja [`backend/README.md`](backend/README.md)).
+- No Git Bash (não no PowerShell), comece o segundo comando com `MSYS_NO_PATHCONV=1 `, senão ele troca o `/tmp/...` por um caminho do Windows.
+
+Para conferir (deve dar `0`, porque ainda não há ordens):
+
+```sql
+SELECT count(*) FROM ordens_inspecao;
+```
+
+**Para zerar as ordens** (por exemplo, depois de testar a Fila de inspeção), rode o comando abaixo. Ele apaga **todas** as ordens, sem volta, e a numeração recomeça em `OI-00001`. A fila de UCs suspeitas vem da Gold e não muda.
+
+```sql
+TRUNCATE ordens_inspecao RESTART IDENTITY;
+```
+
+Pelo terminal:
+
+```powershell
+docker exec postgres-venergy psql -U postgres -d v_energy -c "TRUNCATE ordens_inspecao RESTART IDENTITY;"
+```
+
+### 8. Backend
+
+Com o ambiente ativo:
+
+```powershell
+cd backend
+python -m app.main
+```
+
+- Quando aparecer `Uvicorn running on http://127.0.0.1:8000`, a API está no ar.
+- **Deixe esse terminal aberto.** Fechar o terminal, ou apertar `Ctrl + C`, desliga a API.
+- Para conferir, abra http://127.0.0.1:8000/api/health no navegador. Deve aparecer `{"status":"ok"}`.
+- As rotas ficam documentadas em http://127.0.0.1:8000/api/docs, onde também dá para testar cada uma.
+
+### 9. Frontend
+
+Abra **outro terminal** (clique no `+` do terminal do VS Code). Ele já começa na raiz:
+
+```powershell
 cd frontend
 npm install
 npm run dev
 ```
 
-### Backend
+- O `npm install` baixa as dependências e só é preciso na primeira vez e quando o `package-lock.json` mudar.
+- Quando aparecer `Local: http://localhost:5173/`, abra esse endereço no navegador.
+- **Deixe esse terminal aberto também.** O frontend chama o backend pela porta 8000, então os dois precisam estar ligados.
 
-Pré-requisito: Python 3.11 ou superior.
+### 10. Confira se tudo funciona
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate # No Windows: .venv\Scripts\activate
-python -m pip install -r requirements.txt
-python -m app.main
+Com o perfil `ADMIN_TI` (o padrão), todas as telas aparecem no menu:
+
+| Tela | O que deve aparecer |
+|---|---|
+| Indicadores | KPIs com valores, não "Algo deu errado no servidor" |
+| Receita | A ponte de receita entre os dois períodos e a tabela por município |
+| Visão 360 | Busque `UC100000`: aparecem o cadastro, o consumo e as faturas da UC |
+| Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7) |
+| Continuidade | Dados de exemplo, até a rota real existir no backend |
+| Agente de IA (botão no topo) | Pergunte "Qual o faturamento de Recife em 2024?": a resposta traz cerca de R$ 68,56 milhões (68.560.067,39), e a tela vai para os Indicadores de Recife em 2024 |
+
+### Dia a dia
+
+O jeito mais fácil é o `iniciar.ps1`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
 ```
+
+Sem ele, ligue as partes, cada uma no seu terminal:
+
+1. Abra o Docker Desktop. Se o container não ligar sozinho, rode `docker start postgres-venergy`.
+2. Se usa o 9router, rode `9router` num terminal e deixe aberto.
+3. **Backend:**
+
+   ```powershell
+   backend\.venv\Scripts\Activate.ps1    # macOS/Linux: source backend/.venv/bin/activate
+   cd backend
+   python -m app.main
+   ```
+
+4. **Frontend**, em outro terminal:
+
+   ```powershell
+   cd frontend
+   npm run dev
+   ```
+
+Para desligar, aperte `Ctrl + C` em cada terminal. O banco pode continuar ligado; se quiser desligar, rode `docker stop postgres-venergy`.
+
+Depois de um `git pull`:
+
+1. rode o `setup.ps1` de novo. Ele instala só as dependências que mudaram e pula o resto;
+2. reinicie o backend, porque ele não recarrega sozinho: feche a janela dele e rode o `iniciar.ps1`, ou aperte `Ctrl + C` e rode `python -m app.main` de novo.
+
+Sem o setup:
+
+- se o `frontend/package-lock.json` mudou, rode `npm install` em `frontend/`;
+- se um `requirements.txt` mudou, rode de novo a última linha do passo 4.
+
+### Gold nova
+
+Quando a Engenharia de Dados publicar uma Gold nova:
+
+- **Com o setup:** troque o zip de `data/` pelo novo, rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` e reinicie o backend.
+- **Sem o setup:**
+
+1. apague a pasta `data/exports_gold/`, com a Gold antiga;
+2. extraia o zip novo para `data/exports_gold/`, como no passo 0.4;
+3. com o ambiente ativo, rode de novo o passo 5;
+4. reinicie o backend.
+
+A carga apaga e recria só as 15 tabelas da Gold. As ordens de inspeção e as tabelas da IA continuam como estavam.
+
+### Recomeçar o banco do zero
+
+Os comandos abaixo apagam o banco inteiro: Gold, tabelas da IA e **todas as ordens de inspeção**.
+
+```powershell
+docker rm -f postgres-venergy
+docker volume rm pgdata-v_energy
+```
+
+Depois, rode o `setup.ps1` (ele cria o container de novo com a senha que já está no `.env`), ou refaça os passos 1, 5, 6 e 7. Os arquivos de configuração e o ambiente Python continuam valendo.
+
+### Testes
+
+Com o ambiente Python ativo:
+
+| Parte | Onde | Comando |
+|---|---|---|
+| Frontend | `frontend/` | `npm run lint`, `npm test` e `npm run build` |
+| Backend | `backend/` | `python -m pytest -q` (alguns testes usam o banco local; veja [`backend/README.md`](backend/README.md)) |
+| Agente de IA | raiz | `python -m pytest ai-agent/tests ai-agent/security/tests` (veja [`ai-agent/tests/README.md`](ai-agent/tests/README.md)) |
+| Validador de qualidade da Gold | raiz | `python -m pytest tests` (o Quality Gate em si já roda em toda carga, no passo 5) |
+
+### Problemas comuns
+
+| O que aparece | Causa | O que fazer |
+|---|---|---|
+| `a execução de scripts foi desabilitada neste sistema` ao rodar o setup ou o iniciar | O script foi chamado direto (`.\setup.ps1`) | Use o comando completo: `powershell -ExecutionPolicy Bypass -File .\setup.ps1` |
+| O setup para com `Não foi possível entrar no banco com essa senha` | A senha digitada, ou a do `.env`, é diferente da usada quando o container foi criado | Rode de novo com a senha certa. Se não lembrar, recomece o banco do zero |
+| O setup para com `port is already allocated` | A porta 5433 já está em uso | `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Porta 5434` |
+| O setup para com `O caminho da pasta do repositório é longo demais`, ou aparece `Filename too long` ou `DLL load failed` | O caminho até a pasta tem mais de 120 caracteres | Mova a pasta para um lugar mais curto (ex.: `Documents`) e rode o setup de novo |
+| `python` abre a Microsoft Store | O atalho do Windows vem antes do Python instalado | Passo 0.2: desligue os aliases de execução do Python |
+| `error during connect` ou `Cannot connect to the Docker daemon` | O Docker Desktop está fechado ou ainda iniciando | Abra o Docker Desktop e espere o **Engine running** |
+| `container name "/postgres-venergy" is already in use` | O container já existe | Ligue com `docker start postgres-venergy`, ou recomece do zero |
+| `port is already allocated` | A porta 5433 já está em uso | Troque para `-p 5434:5432` no `docker run` e use a 5434 nas duas URLs do passo 2 |
+| `password authentication failed` | A senha das URLs é diferente da do `docker run` | Confira o `.env` e o `backend/.env.local`. A senha só é gravada quando o volume é criado: para trocar, recomece do zero |
+| `extension "vector" is not available` | A URL aponta para outro PostgreSQL (porta 5432) | Use a porta 5433 nas duas URLs |
+| `Nenhum CSV correspondente às tabelas Gold foi identificado` | O zip não foi extraído | Extraia o zip para `data/exports_gold/` (passo 0.4) |
+| `FALHA NO DATA QUALITY GATE` | A Gold carregada está incompleta ou desatualizada | Peça a Gold mais recente ao time e repita o passo 5 |
+| `Activate.ps1 não pode ser carregado` | Política de execução do PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e um terminal novo |
+| `ModuleNotFoundError` ao rodar um script ou o backend | O ambiente Python não está ativo | `backend\.venv\Scripts\Activate.ps1` a partir da raiz |
+| `relation "ordens_inspecao" does not exist`, ou a Fila de inspeção dá erro ao listar ou gerar ordens | Falta a tabela das ordens | Passo 7 |
+| `function unaccent(...) does not exist` no passo a passo do agente | Falta a extensão `unaccent` | Passo 1.2 |
+| O agente responde "O serviço de IA está temporariamente indisponível" | Não há chave de LLM no `backend/.env.local`, ou o 9router está fechado | Passo 3, depois reinicie o backend |
+| As telas mostram "Algo deu errado no servidor" ou "Não foi possível conectar ao servidor" | O backend está desligado | Passo 8 |
+| `error while attempting to bind on address ('127.0.0.1', 8000)` | Já há um backend rodando em outro terminal | Feche o outro terminal ou aperte `Ctrl + C` nele |
 
 ## Suposições e decisões do time
 
