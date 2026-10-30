@@ -1,4 +1,4 @@
-"""
+﻿"""
 Testes unitários para cada nó isolado do pipeline LangGraph do V-Energy Grid 360.
 Valida contratos de entrada/saída, bypasses de economia de tokens e tratamento de exceções.
 """
@@ -52,6 +52,52 @@ def test_no_completa_followup_com_historico(fake_llm_factory):
     assert len(fake_llm.historico_chamadas) == 1
 
 
+
+
+def test_no_completa_followup_autonoma_com_historico_nao_chama_llm(fake_llm_factory):
+    """Pergunta autônoma com histórico presente NÃO deve herdar contexto nem chamar o LLM.
+
+    Cenário real: usuário perguntou sobre Olinda e agora faz uma pergunta
+    completamente diferente — sem nenhum marcador de follow-up.
+    """
+    fake_llm = fake_llm_factory()
+    pergunta = "Qual bairro mais perdeu volume residencial no último ano?"
+    estado = {
+        "pergunta_original": pergunta,
+        "historico_recente": [
+            {
+                "role": "user",
+                "content": "Quantas unidades com painel solar em Olinda tiveram queda de consumo acima de 30%?",
+            },
+            {"role": "assistant", "content": "Foram 142 unidades."},
+        ],
+        "chamadas_llm": 0,
+    }
+    resultado = no_completa_followup(estado, llm=fake_llm)
+
+    # Pergunta deve sair intacta — sem herdar "Olinda"
+    assert resultado["pergunta_autonoma"] == pergunta
+    # Zero chamadas de LLM (bypass por ausência de marcadores de follow-up)
+    assert len(fake_llm.historico_chamadas) == 0
+    assert "chamadas_llm" not in resultado  # campo não é incrementado no bypass
+
+
+def test_no_completa_followup_marcador_esse_chama_llm(fake_llm_factory):
+    """Pergunta com pronome demonstrativo ('nesse período') deve acionar o LLM."""
+    pergunta_reescrita = "Quanto a receita cresceu no último ano?"
+    fake_llm = fake_llm_factory(resposta_padrao=pergunta_reescrita)
+    estado = {
+        "pergunta_original": "Quanto a receita cresceu nesse período?",
+        "historico_recente": [
+            {"role": "user", "content": "Quantas UCs foram cortadas em Olinda no último ano?"},
+            {"role": "assistant", "content": "Foram 38 cortes."},
+        ],
+        "chamadas_llm": 0,
+    }
+    resultado = no_completa_followup(estado, llm=fake_llm)
+
+    assert resultado["chamadas_llm"] == 1
+    assert len(fake_llm.historico_chamadas) == 1
 # ── Nó 3: Checagem de Escopo ─────────────────────────────────────────────────
 def test_no_checa_escopo_heuristica_positiva(fake_llm_factory):
     """Termos explícitos do domínio de energia em Recife/Olinda são aprovados sem chamar LLM."""

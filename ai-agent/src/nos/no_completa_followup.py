@@ -4,6 +4,7 @@ Nó 2: Reescrita Autônoma de Follow-up — resolve pronomes e referências com 
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
@@ -22,12 +23,36 @@ REGRAS:
 2. Se a pergunta mudou completamente de assunto em relação ao histórico, retorne-a EXATAMENTE como está.
 3. Nunca invente dados, cidades ou valores. Apenas resolva as referências implícitas.
 4. Retorne SOMENTE a pergunta reescrita — sem explicações, sem prefixos.
+5. Pergunta sem município, período ou classe NÃO é referência implícita: é uma pergunta sobre todos os dados.
+   Só herde filtros do histórico quando a pergunta depender dele (começa com "e", ou usa "esses", "dessas", "o mesmo", "também").
 
-EXEMPLO:
+EXEMPLO 1:
   Histórico: [Usuário: "Quantas UCs residenciais foram cortadas em Olinda no 1º semestre?"]
   Pergunta atual: "E as comerciais?"
   Saída: "Quantas UCs comerciais foram cortadas em Olinda no 1º semestre?"
+
+EXEMPLO 2:
+  Histórico: [Usuário: "Quantas unidades com painel solar em Olinda tiveram queda de consumo acima de 30%?"]
+  Pergunta atual: "Qual bairro mais perdeu volume residencial no último ano?"
+  Saída: "Qual bairro mais perdeu volume residencial no último ano?"
 """.strip()
+
+# ---------------------------------------------------------------------------
+# Filtro heurístico: detecta marcadores linguísticos de follow-up
+# ---------------------------------------------------------------------------
+_MARCADORES_FOLLOWUP = re.compile(
+    r"^\s*(e|mas|então|entao|agora|ainda)\b|"
+    r"\b(dessa|desse|dessas|desses|disso|nesse|nessa|nesses|nessas|"
+    r"nele|nela|neles|nelas|dele|dela|deles|delas|"
+    r"esse|essa|esses|essas|isso|mesmo|mesma|mesmos|mesmas|"
+    r"anterior|também|tambem|idem)\b",
+    re.IGNORECASE,
+)
+
+
+def _parece_followup(pergunta: str) -> bool:
+    """Retorna True se a pergunta apresenta marcadores claros de dependência de contexto."""
+    return bool(_MARCADORES_FOLLOWUP.search(pergunta)) or len(pergunta.split()) <= 4
 
 
 def _formatar_historico(historico: list[dict]) -> str:
@@ -44,17 +69,28 @@ def no_completa_followup(
 ) -> Dict[str, Any]:
     """
     Reescreve a pergunta para ser autônoma usando o histórico recente da sessão.
-    Bypass de LLM se não houver histórico (primeira mensagem da conversa).
+
+    Bypasses de LLM (zero custo):
+      1. Sem histórico — primeira mensagem da conversa.
+      2. Com histórico mas sem marcadores de follow-up — pergunta já autônoma.
     """
     pergunta = state.get("pergunta_original", "")
     historico = state.get("historico_recente", [])
 
-    # Bypass: primeira mensagem — zero custo de LLM
+    # Bypass 1: primeira mensagem — sem histórico
     if not historico:
         logger.debug("Nó 2 — Sem histórico, bypass de LLM. Pergunta mantida como autônoma.")
         return {
             "pergunta_autonoma": pergunta,
             "passos_executados": ["Nó 2 — Follow-up: sem histórico, pergunta original mantida (0 chamadas LLM)."],
+        }
+
+    # Bypass 2: há histórico, mas a pergunta não parece um follow-up
+    if not _parece_followup(pergunta):
+        logger.info("Nó 2 — Sem marcadores de follow-up, bypass de LLM. Pergunta mantida como autônoma.")
+        return {
+            "pergunta_autonoma": pergunta,
+            "passos_executados": ["Nó 2 — Follow-up: pergunta já autônoma, mantida (0 chamadas LLM)."],
         }
 
     historico_texto = _formatar_historico(historico)

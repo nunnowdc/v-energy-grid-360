@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+from decimal import Decimal
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
@@ -15,16 +16,18 @@ from .no_recusa_honesta import MENSAGENS_RECUSA
 logger = logging.getLogger("venergy.no_sintetiza_resposta")
 
 SYSTEM_PROMPT_SINTESE = """
-Você é o assistente de dados da V-Energy Grid 360, uma distribuidora de energia elétrica.
-Sua função é transformar dados tabulares em respostas claras, objetivas e executivas em português.
+Você é o assistente de dados da V‑Energy Grid 360, responsável por transformar dados tabulares em respostas claras, objetivas e executivas em português.
 
 REGRAS ABSOLUTAS:
-1. PROIBIDO inventar, estimar ou calcular qualquer número que não esteja em <DADOS_SQL>.
-2. Se <DADOS_SQL> estiver vazio, diga claramente que não há dados disponíveis para a pergunta.
-3. Números em formato brasileiro: use vírgula para decimais e ponto para milhar (ex.: R$ 1.250.430,00 / 22,6%).
-4. Cite as fontes do contexto regulatório em rodapé se forem utilizadas.
-5. Seja conciso: máximo de 4 a 6 linhas de texto para a diretoria.
-6. NUNCA use dados do <CONTEXTO_RAG> como substituto de números que deveriam vir do banco.
+1. NÃO invente nem estime números que não estejam em <DADOS_SQL>.
+2. Se <DADOS_SQL> estiver vazio, informe que não há dados disponíveis.
+3. Formate números no padrão brasileiro (vírgula decimal, ponto milhar). Ex.: R$ 1.250.430,00.
+4. Cite fontes do <CONTEXTO_RAG> no rodapé, se utilizadas.
+5. MANTENHA a resposta curta (máx. 4‑6 linhas), porém deixe‑a **conversacional**:
+   • Comece com um breve preâmbulo (“Conforme a base de dados,…”).
+   • Use conectores (“Além disso”, “Portanto”).
+   • Termine com um encerramento amigável (“Qualquer outra informação, estou à disposição.”).
+6. NUNCA misture dados do <CONTEXTO_RAG> com números de <DADOS_SQL>.
 """.strip()
 
 SYSTEM_PROMPT_SINTESE_RAG = """
@@ -61,6 +64,78 @@ def _formatar_contexto_rag(chunks: list[dict]) -> str:
     if len(chunks) > limite:
         texto += f"\n(Exibindo {limite} de {len(chunks)} trechos recuperados.)"
     return texto
+
+# ---------------------------------------------------------------------------
+# Helper para formatação de valores quando usamos o plano B (fallback)
+# ---------------------------------------------------------------------------
+_NOMES_COLUNAS = {
+    "municipio": "Município",
+    "bairro": "Bairro",
+    "classe": "Classe",
+    "ano": "Ano",
+    "mes": "Mês",
+    "alimentador": "Alimentador",
+    # outros nomes podem ser adicionados conforme necessidade
+}
+
+_COLUNAS_SEM_SEPARADOR = {"ano", "mes", "mês", "competencia"}
+
+def _numero_br(valor: float, casas: int) -> str:
+    """Formata número no padrão brasileiro (ponto milhar, vírgula decimal)."""
+    return f"{valor:,.{casas}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+def _formatar_valor(chave: str, valor: Any) -> str:
+    c = chave.lower()
+    if valor is None:
+        return "sem valor"
+    # valores booleanos ou não numéricos são devolvidos como string simples
+    if isinstance(valor, bool) or not isinstance(valor, (int, float, Decimal)):
+        return str(valor)
+    # colunas que não precisam de separador de milhar
+    if c in _COLUNAS_SEM_SEPARADOR or c.startswith(("id_", "cod")):
+        return str(int(valor)) if float(valor) == int(valor) else str(valor)
+    # valores monetários ou de faturamento
+    if any(p in c for p in ("receita", "faturamento", "fatura", "valor", "preco", "preço")):
+        return f"R$ {_numero_br(float(valor), 2)}"
+    # kilowatt‑hour
+    if "kwh" in c:
+        return f"{_numero_br(float(valor), 0)} kWh"
+    # percentuais
+    if "pct" in c or "percentual" in c:
+        return f"{_numero_br(float(valor), 1)}%"
+    # demais números – se for inteiro, sem casas decimais; caso contrário, duas casas
+    inteiro = isinstance(valor, int) or float(valor) == int(valor)
+    return _numero_br(float(valor), 0 if inteiro else 2)
+
+
+def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
+    """Fallback legível quando o modo mock está ativo.
+    Usa nomes de coluna amigáveis e formatação brasileira para valores monetários.
+    Também inclui um pequeno preâmbulo que referencia a pergunta original,
+    para deixar a resposta mais natural.
+    """
+    if not dados:
+        return "Não há dados disponíveis para responder a esta pergunta no momento."
+    # Preâmbulo: reutiliza a própria pergunta (sem o ponto final) como introdução.
+    preambulo = f"Conforme solicitado, {pergunta.rstrip('?').capitalize()}: "
+    primeiros = dados[0]
+    partes = [
+        f"{_NOMES_COLUNAS.get(k.lower(), k.replace('_', ' ').capitalize())}: {_formatar_valor(k, v)}"
+        for k, v in list(primeiros.items())[:6]
+    ]
+    corpo = "; ".join(partes) + "."
+    if len(dados) > 1:
+        corpo += f" (primeira de {len(dados)} linhas retornadas)"
+    return preambulo + corpo
+
+
+def _gerar_resposta_rag_mock(chunks: list[dict]) -> str:
+    """Fallback determinístico baseado exclusivamente no primeiro trecho recuperado."""
+    if not chunks:
+        return MENSAGENS_RECUSA["sem_dados"]
+    chunk = chunks[0]
+    fonte = chunk.get("fonte", "fonte não informada")
+    return f"{chunk.get('conteudo', '')}\n\nFonte: {fonte}"
 
 
 def no_sintetiza_resposta(
@@ -113,7 +188,7 @@ def no_sintetiza_resposta(
         resposta = llm.invoke(
             prompt=prompt,
             system_prompt=system_prompt,
-            temperatura=0.2,
+            temperatura=0.3,
             resposta_mock=resposta_mock,
         )
         chamadas_llm = state.get("chamadas_llm", 0) + 1
@@ -149,7 +224,6 @@ def no_sintetiza_resposta(
         selo = "recusa_honesta"
         motivo_recusa = "sem_dados"
     else:
-        # Selo de confiança: se veio de dados SQL é "gerada_confiavel"; se só RAG é "documental_rag"
         hit_cache = state.get("hit_cache", False)
         if hit_cache:
             selo = "certificada"
@@ -158,7 +232,6 @@ def no_sintetiza_resposta(
         else:
             selo = "documental_rag"
 
-    # Fontes citadas: extrai as fontes do RAG que foram relevantes
     fontes = list({c.get("fonte", "") for c in contexto_rag if c.get("fonte")})
 
     logger.info("Nó 11 — Síntese concluída. Selo: %s | Fontes: %s", selo, fontes)
@@ -179,21 +252,3 @@ def no_sintetiza_resposta(
         resultado["motivo_recusa"] = motivo_recusa
 
     return resultado
-
-
-def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
-    """Fallback legível quando o modo mock está ativo."""
-    if not dados:
-        return "Não há dados disponíveis para responder a esta pergunta no momento."
-    primeiros = dados[0] if dados else {}
-    valores = " | ".join(f"{k}: {v}" for k, v in list(primeiros.items())[:4])
-    return f"Com base nos dados disponíveis, a consulta retornou: {valores}."
-
-
-def _gerar_resposta_rag_mock(chunks: list[dict]) -> str:
-    """Fallback determinístico baseado exclusivamente no primeiro trecho recuperado."""
-    if not chunks:
-        return MENSAGENS_RECUSA["sem_dados"]
-    chunk = chunks[0]
-    fonte = chunk.get("fonte", "fonte não informada")
-    return f"{chunk.get('conteudo', '')}\n\nFonte: {fonte}"
