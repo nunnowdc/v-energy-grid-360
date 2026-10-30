@@ -4,10 +4,10 @@ Portal interno da V-Energy: Indicadores, Receita, Visão 360, Fila de inspeção
 
 ## Como executar
 
-Este guia parte de um computador com Windows e o VS Code aberto, e vai até o portal rodando com dados e com o agente de IA respondendo. São dois caminhos:
+Este guia parte de um computador com Windows, macOS ou Linux e o VS Code aberto, e vai até o portal rodando com dados e com o agente de IA respondendo. São dois caminhos:
 
-- **Jeito rápido (recomendado):** faça o passo 0 e rode dois scripts, `setup.ps1` e `iniciar.ps1`, que fazem todo o resto.
-- **Passo a passo manual:** os mesmos passos, um comando por vez. Serve para o macOS e o Linux, para entender o que o setup faz ou para refazer só uma parte.
+- **Jeito rápido (recomendado):** faça o passo 0 e rode dois scripts, que fazem todo o resto: `setup.ps1` e `iniciar.ps1` no Windows, `setup.sh` e `iniciar.sh` no macOS e no Linux.
+- **Passo a passo manual:** os mesmos passos, um comando por vez. Serve para entender o que o setup faz ou para refazer só uma parte.
 
 Na primeira vez, leva de 20 a 40 minutos, quase tudo em downloads.
 
@@ -20,23 +20,27 @@ O portal tem quatro partes:
 | Frontend (React) | Terminal, na pasta `frontend/` | `http://localhost:5173` |
 | 9router (opcional), roteador local de LLMs para o agente | Terminal | `http://localhost:20128` |
 
-Todos os comandos são para o **PowerShell** e partem da **raiz do repositório** (a pasta `v-energy-grid-360/`), a não ser quando o próprio passo tem um `cd`. No macOS e no Linux, a diferença aparece no comentário do comando.
+Todos os comandos partem da **raiz do repositório** (a pasta `v-energy-grid-360/`), a não ser quando o próprio passo tem um `cd`. Eles são escritos para o **PowerShell** do Windows; quando o comando muda no macOS e no Linux, a versão deles aparece no comentário ao lado.
 
 ### 0. Antes de começar
 
 #### 0.1. Abra o terminal do VS Code
 
 1. No VS Code, abra **Terminal > New Terminal** (atalho `` Ctrl + ` ``).
-2. Confira se o terminal é o **PowerShell**: o nome aparece à direita, acima do terminal. Se for outro, clique na seta ao lado do `+` e escolha **PowerShell**.
+2. **No Windows**, confira se o terminal é o **PowerShell**: o nome aparece à direita, acima do terminal. Se for outro, clique na seta ao lado do `+` e escolha **PowerShell**. No macOS e no Linux, o terminal padrão (zsh ou bash) serve.
 
 Sempre que instalar um programa novo, feche e abra o VS Code de novo, para o terminal enxergar o programa.
 
 #### 0.2. Instale os programas
 
+Siga a parte do seu sistema. Os programas são os mesmos: Git, Python 3.11 ou superior, Node.js 20 ou superior, Docker e, opcionalmente, o DBeaver.
+
+**Windows**
+
 | Programa | Onde baixar | Na instalação |
 |---|---|---|
 | Git | https://git-scm.com/downloads | Pode aceitar todas as opções padrão |
-| Python 3.11 ou superior (o time usa o 3.12) | https://www.python.org/downloads/ | Na primeira tela, marque **Add python.exe to PATH** |
+| Python 3.11 ou superior (o time usa o 3.12) | https://www.python.org/downloads/ | Na primeira tela, marque **Add python.exe to PATH**. Use o instalador **64-bit (x64)**, mesmo em notebook com processador ARM (Snapdragon): algumas dependências não existem para o Python ARM |
 | Node.js 20 ou superior (versão LTS) | https://nodejs.org/ | Pode aceitar todas as opções padrão |
 | Docker Desktop | https://www.docker.com/products/docker-desktop/ | Aceite o uso do WSL 2. Se ele pedir para instalar o WSL, abra o PowerShell **como administrador**, rode `wsl --install --no-distribution` e reinicie o computador |
 | DBeaver Community (opcional, recomendado) | https://dbeaver.io/download/ | Pode aceitar todas as opções padrão. Serve para ver as tabelas e rodar SQL com uma interface |
@@ -56,14 +60,61 @@ docker --version
 - O `python --version` deve mostrar 3.11 ou mais, e o `node --version`, 20 ou mais.
 - Se o `python` abrir a Microsoft Store, desligue os atalhos dele em **Configurações > Aplicativos > Configurações avançadas de aplicativos > Aliases de execução de aplicativo** (as opções `python.exe` e `python3.exe`) e abra o VS Code de novo.
 
+**macOS**
+
+| Programa | Como instalar |
+|---|---|
+| Git | Rode `git --version` no terminal. Se ainda não estiver instalado, o macOS oferece instalar as ferramentas de linha de comando: aceite |
+| Python 3.12 | Instalador do macOS em https://www.python.org/downloads/, ou `brew install python@3.12` se você usa o [Homebrew](https://brew.sh/). Em Mac com processador **Intel**, use o 3.11 ou o 3.12: o `torch`, usado pelo agente, não existe para versões mais novas nesses Macs |
+| Node.js 20 ou superior (versão LTS) | Instalador do macOS em https://nodejs.org/, ou `brew install node@22` |
+| Docker Desktop | https://www.docker.com/products/docker-desktop/. Escolha a versão do seu processador (**Apple Silicon** para M1, M2, M3 e M4, ou **Intel**) |
+| DBeaver Community (opcional, recomendado) | https://dbeaver.io/download/ |
+
+Depois de instalar, abra o **Docker Desktop** e espere aparecer **Engine running**. Confira no terminal:
+
+```bash
+git --version
+python3 --version
+node --version
+npm --version
+docker --version
+```
+
+**Linux (Ubuntu ou Debian)**
+
+Instale o Git, o Python com o `venv` e o curl:
+
+```bash
+sudo apt update
+sudo apt install git python3 python3-venv curl
+```
+
+O Node.js do `apt` costuma ser antigo (no Ubuntu 24.04, é o 18). Instale o 20 ou superior pelo [nvm](https://github.com/nvm-sh/nvm):
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+# feche e abra o terminal
+nvm install 22
+```
+
+Para o Docker, instale o Docker Engine seguindo https://docs.docker.com/engine/install/ (ou o Docker Desktop para Linux) e libere o seu usuário para usar o Docker sem `sudo`:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+Depois desse comando, saia da sessão e entre de novo (ou reinicie o computador). Para conferir, `docker run --rm hello-world` deve funcionar sem `sudo`. Confira as versões como no macOS, acima.
+
+Em outras distribuições, instale os mesmos programas pelo gerenciador de pacotes dela.
+
 #### 0.3. Baixe o repositório
 
 ```powershell
-cd ~\Documents
+cd ~\Documents    # macOS/Linux: cd ~/Documents (ou outra pasta da sua escolha)
 git clone https://github.com/nunnowdc/v-energy-grid-360.git
 ```
 
-Clone numa pasta de caminho curto, como a `Documents`. O caminho até a pasta do repositório deve ter no máximo 120 caracteres: com mais que isso, o Windows não consegue carregar partes do Python dentro do `backend\.venv`.
+No Windows, clone numa pasta de caminho curto, como a `Documents`. O caminho até a pasta do repositório deve ter no máximo 120 caracteres: com mais que isso, o Windows não consegue carregar partes do Python dentro do `backend\.venv`.
 
 Abra a pasta no VS Code: **File > Open Folder...**, escolha `Documents\v-energy-grid-360` e abra um terminal novo (`` Ctrl + ` ``). Ele já começa na raiz do repositório, que é de onde partem os próximos comandos.
 
@@ -84,25 +135,34 @@ Copie o zip para a pasta `data/` do repositório. Ela é ignorada pelo Git, ent�
   1. no Explorador de Arquivos do Windows, clique com o botão direito no zip e escolha **Extrair Tudo...**;
   2. em destino, escreva o caminho da pasta `data\exports_gold` do repositório (por exemplo, `C:\Users\SEU_USUARIO\Documents\v-energy-grid-360\data\exports_gold`) e clique em **Extrair**.
 
-  Se o Windows criar uma subpasta dentro de `exports_gold`, pode deixar: o script procura os CSVs em todas as subpastas de `data/`.
+  No macOS e no Linux, a partir da raiz: `python3 -m zipfile -e data/exports_gold.zip data/exports_gold`.
 
-### Jeito rápido: `setup.ps1` e `iniciar.ps1`
+  Se for criada uma subpasta dentro de `exports_gold`, pode deixar: o script procura os CSVs em todas as subpastas de `data/`.
 
-Depois do passo 0, dois scripts na raiz do repositório fazem todo o resto. Eles funcionam em qualquer pasta e em qualquer computador com Windows. No macOS e no Linux, siga o passo a passo manual.
+No macOS, o Safari às vezes extrai o zip sozinho ao baixar, e o que aparece em **Downloads** é uma pasta. Nesse caso, copie a pasta inteira para `data/`: nos dois caminhos, os CSVs são encontrados em qualquer subpasta.
 
-Os dois comandos começam com `powershell -ExecutionPolicy Bypass -File`. Isso deixa o script rodar só daquela vez, sem mudar nenhuma configuração do Windows. Escrever `.\setup.ps1` direto pode dar o erro "a execução de scripts foi desabilitada neste sistema".
+### Jeito rápido: setup e iniciar
 
-#### Preparar: `setup.ps1`
+Depois do passo 0, dois scripts na raiz do repositório fazem todo o resto. Cada um tem uma versão para o Windows (`.ps1`) e outra para o macOS e o Linux (`.sh`), que fazem a mesma coisa:
+
+| | Windows (PowerShell) | macOS e Linux |
+|---|---|---|
+| Preparar | `powershell -ExecutionPolicy Bypass -File .\setup.ps1` | `bash setup.sh` |
+| Ligar o portal | `powershell -ExecutionPolicy Bypass -File .\iniciar.ps1` | `bash iniciar.sh` |
+
+No Windows, o `powershell -ExecutionPolicy Bypass -File` deixa o script rodar só daquela vez, sem mudar nenhuma configuração do Windows. Escrever `.\setup.ps1` direto pode dar o erro "a execução de scripts foi desabilitada neste sistema". No macOS e no Linux, rode com `bash`, não com `sh`, e **sem** `sudo`.
+
+#### Preparar: setup
 
 Rode uma vez para preparar tudo, e de novo depois de cada `git pull`:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
+powershell -ExecutionPolicy Bypass -File .\setup.ps1    # macOS/Linux: bash setup.sh
 ```
 
 O setup faz os passos 1, 2 e 4 a 9 do passo a passo manual:
 
-1. confere o Python, o Node.js e o Docker, e abre o Docker Desktop se ele estiver fechado;
+1. confere o Python, o Node.js e o Docker, e liga o Docker se ele estiver fechado;
 2. cria o container do banco e ativa as extensões;
 3. cria o ambiente Python e instala as dependências do backend e do agente;
 4. cria os três arquivos de configuração;
@@ -118,39 +178,41 @@ Como ele se comporta:
 - **Rodar de novo é seguro:** o que já está pronto é pulado. O setup **nunca** apaga as ordens de inspeção nem muda um arquivo de configuração que já existe, só completa o `DATABASE_URL` se ele ainda estiver com o valor do exemplo.
 - **Se algo der errado,** ele para com `ERRO:` e diz o que fazer. Corrija e rode de novo: ele continua de onde parou.
 
-| Opção | Quando usar |
-|---|---|
-| `-RecarregarGold` | Chegou uma Gold nova: troque o zip de `data/` pelo novo e rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` |
-| `-Porta 5434` | Na primeira vez, se a porta 5433 já estiver em uso no seu computador |
+| Windows | macOS e Linux | Quando usar |
+|---|---|---|
+| `-RecarregarGold` | `--recarregar-gold` | Chegou uma Gold nova: troque o zip de `data/` pelo novo e rode o setup com essa opção, por exemplo `bash setup.sh --recarregar-gold` |
+| `-Porta 5434` | `--porta 5434` | Na primeira vez, se a porta 5433 já estiver em uso no seu computador |
 
 #### Ligar o agente de IA: uma vez
 
-O setup não tem como criar a chave do LLM. Siga o [passo 3](#3-provedor-de-ia-llm), que preenche o `backend\.env.local` com a chave do OpenRouter ou do 9router. Sem a chave, o portal funciona, mas o agente responde "O serviço de IA está temporariamente indisponível".
+O setup não tem como criar a chave do LLM. Siga o [passo 3](#3-provedor-de-ia-llm), que preenche o `backend/.env.local` com a chave do OpenRouter ou do 9router. Sem a chave, o portal funciona, mas o agente responde "O serviço de IA está temporariamente indisponível".
 
-#### Ligar o portal: `iniciar.ps1`
+#### Ligar o portal: iniciar
 
 Todo dia, para usar o portal:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
+powershell -ExecutionPolicy Bypass -File .\iniciar.ps1    # macOS/Linux: bash iniciar.sh
 ```
 
-O `iniciar.ps1`:
+O iniciar:
 
-- liga o Docker Desktop e o banco, se estiverem desligados;
-- abre uma janela para o backend e outra para o frontend;
-- abre também uma janela para o 9router, se o agente usa ele e ele estiver desligado;
+- liga o Docker e o banco, se estiverem desligados;
+- liga o backend, o frontend e, se o agente usa o 9router e ele estiver desligado, o 9router;
 - espera tudo responder e abre o portal no navegador, em http://localhost:5173.
 
-Se uma parte já estiver ligada, ele só avisa e não abre de novo.
+Se uma parte já estiver ligada, ele só avisa e não liga de novo.
 
-Para desligar, feche as janelas **V-Energy - backend** e **V-Energy - frontend** (ou aperte `Ctrl + C` nelas). O banco pode continuar ligado.
+- **No Windows,** cada parte abre na sua própria janela. Para desligar, feche as janelas **V-Energy - backend** e **V-Energy - frontend** (ou aperte `Ctrl + C` nelas).
+- **No macOS e no Linux,** tudo roda no mesmo terminal, que passa a mostrar as mensagens do backend e do frontend (elas também ficam em `.logs/`). Deixe o terminal aberto. Para desligar, aperte `Ctrl + C` nele.
+
+O banco pode continuar ligado.
 
 Depois, confira se tudo funciona com o [passo 10](#10-confira-se-tudo-funciona).
 
 ### Passo a passo manual
 
-São os mesmos passos que o `setup.ps1` e o `iniciar.ps1` fazem, um comando por vez.
+São os mesmos passos que o setup e o iniciar fazem, um comando por vez.
 
 ### 1. Banco de dados
 
@@ -305,8 +367,10 @@ O 9router roda na sua máquina, recebe os pedidos do agente e repassa para os pr
 2. Ligue o 9router num **terminal só para ele** e deixe esse terminal aberto:
 
    ```powershell
-   9router
+   9router --host 127.0.0.1
    ```
+
+   O `--host 127.0.0.1` deixa o 9router acessível só no seu computador. Sem ele, qualquer um na mesma rede (Wi-Fi da faculdade, por exemplo) alcança o 9router. O iniciar já liga o 9router assim.
 
 3. Abra o painel em http://localhost:20128/dashboard.
 4. Em **Providers**, conecte pelo menos um provedor. Por exemplo, para o Gemini, crie uma chave gratuita em https://aistudio.google.com/apikey e adicione no painel.
@@ -331,7 +395,7 @@ curl.exe http://localhost:20128/v1/models
 Um ambiente virtual só, em `backend/.venv`, serve para o backend, o agente de IA e os scripts dos passos 5 e 6, porque o backend importa o agente da pasta `ai-agent/`.
 
 ```powershell
-python -m venv backend/.venv
+python -m venv backend/.venv    # macOS/Linux: python3 -m venv backend/.venv
 backend\.venv\Scripts\Activate.ps1    # macOS/Linux: source backend/.venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r backend/requirements.txt -r ai-agent/requirements.txt
@@ -340,6 +404,8 @@ python -m pip install -r backend/requirements.txt -r ai-agent/requirements.txt
 - Depois da segunda linha, o terminal mostra `(.venv)` no começo. É assim que você sabe que o ambiente está ativo.
 - Se o PowerShell disser que o `Activate.ps1` não pode ser carregado, libere os scripts uma vez com `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, abra um terminal novo e rode a segunda linha de novo.
 - A instalação leva de 5 a 15 minutos: o agente usa o `torch` e o `sentence-transformers`, que são grandes.
+- **No Linux com processador Intel ou AMD,** antes da última linha, rode `python -m pip install torch --index-url https://download.pytorch.org/whl/cpu`. Sem isso, o `pip` baixa o `torch` com suporte a placa de vídeo NVIDIA, alguns GB a mais que o RAG não usa.
+- **No Mac com processador Intel,** acrescente `"numpy<2"` ao fim da última linha: o último `torch` para esses Macs só funciona com o `numpy` 1.x.
 - **Os passos 5 a 8 precisam do ambiente ativo.** Em todo terminal novo, ative de novo com `backend\.venv\Scripts\Activate.ps1`, a partir da raiz.
 - Opcional: no VS Code, `Ctrl + Shift + P` > **Python: Select Interpreter** > escolha o `backend\.venv`. Com a extensão Python instalada, os terminais novos já abrem com o ambiente ativo.
 
@@ -500,11 +566,11 @@ Abra **outro terminal** (clique no `+` do terminal do VS Code). Ele já começa 
 
 ```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-- O `npm install` baixa as dependências e só é preciso na primeira vez e quando o `package-lock.json` mudar.
+- O `npm ci` baixa as dependências e só é preciso na primeira vez e quando o `package-lock.json` mudar. Ele instala exatamente as versões do `package-lock.json`, sem mudar o arquivo. Com o `npm install`, uma versão do npm diferente da do time pode regravar o `package-lock.json`, e ele aparece como modificado no Git.
 - Quando aparecer `Local: http://localhost:5173/`, abra esse endereço no navegador.
 - **Deixe esse terminal aberto também.** O frontend chama o backend pela porta 8000, então os dois precisam estar ligados.
 
@@ -523,10 +589,10 @@ Com o perfil `ADMIN_TI` (o padrão), todas as telas aparecem no menu:
 
 ### Dia a dia
 
-O jeito mais fácil é o `iniciar.ps1`:
+O jeito mais fácil é o iniciar:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
+powershell -ExecutionPolicy Bypass -File .\iniciar.ps1    # macOS/Linux: bash iniciar.sh
 ```
 
 Sem ele, ligue as partes, cada uma no seu terminal:
@@ -552,19 +618,19 @@ Para desligar, aperte `Ctrl + C` em cada terminal. O banco pode continuar ligado
 
 Depois de um `git pull`:
 
-1. rode o `setup.ps1` de novo. Ele instala só as dependências que mudaram e pula o resto;
-2. reinicie o backend, porque ele não recarrega sozinho: feche a janela dele e rode o `iniciar.ps1`, ou aperte `Ctrl + C` e rode `python -m app.main` de novo.
+1. rode o setup de novo. Ele instala só as dependências que mudaram e pula o resto;
+2. reinicie o backend, porque ele não recarrega sozinho. No Windows, feche a janela dele e rode o iniciar; no macOS e no Linux, aperte `Ctrl + C` no terminal do iniciar e rode o iniciar de novo. Sem o iniciar, aperte `Ctrl + C` no terminal do backend e rode `python -m app.main` de novo.
 
 Sem o setup:
 
-- se o `frontend/package-lock.json` mudou, rode `npm install` em `frontend/`;
+- se o `frontend/package-lock.json` mudou, rode `npm ci` em `frontend/`;
 - se um `requirements.txt` mudou, rode de novo a última linha do passo 4.
 
 ### Gold nova
 
 Quando a Engenharia de Dados publicar uma Gold nova:
 
-- **Com o setup:** troque o zip de `data/` pelo novo, rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` e reinicie o backend.
+- **Com o setup:** troque o zip de `data/` pelo novo, rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` (macOS/Linux: `bash setup.sh --recarregar-gold`) e reinicie o backend.
 - **Sem o setup:**
 
 1. apague a pasta `data/exports_gold/`, com a Gold antiga;
@@ -583,7 +649,7 @@ docker rm -f postgres-venergy
 docker volume rm pgdata-v_energy
 ```
 
-Depois, rode o `setup.ps1` (ele cria o container de novo com a senha que já está no `.env`), ou refaça os passos 1, 5, 6 e 7. Os arquivos de configuração e o ambiente Python continuam valendo.
+Depois, rode o setup (ele cria o container de novo com a senha que já está no `.env`), ou refaça os passos 1, 5, 6 e 7. Os arquivos de configuração e o ambiente Python continuam valendo.
 
 ### Testes
 
@@ -602,10 +668,16 @@ Com o ambiente Python ativo:
 |---|---|---|
 | `a execução de scripts foi desabilitada neste sistema` ao rodar o setup ou o iniciar | O script foi chamado direto (`.\setup.ps1`) | Use o comando completo: `powershell -ExecutionPolicy Bypass -File .\setup.ps1` |
 | O setup para com `Não foi possível entrar no banco com essa senha` | A senha digitada, ou a do `.env`, é diferente da usada quando o container foi criado | Rode de novo com a senha certa. Se não lembrar, recomece o banco do zero |
-| O setup para com `port is already allocated` | A porta 5433 já está em uso | `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Porta 5434` |
-| O setup para com `O caminho da pasta do repositório é longo demais`, ou aparece `Filename too long` ou `DLL load failed` | O caminho até a pasta tem mais de 120 caracteres | Mova a pasta para um lugar mais curto (ex.: `Documents`) e rode o setup de novo |
+| O setup para com `port is already allocated` | A porta 5433 já está em uso | `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Porta 5434` (macOS/Linux: `bash setup.sh --porta 5434`) |
+| O setup para com `O caminho da pasta do repositório é longo demais`, ou aparece `Filename too long` ou `DLL load failed` | No Windows, o caminho até a pasta tem mais de 120 caracteres | Mova a pasta para um lugar mais curto (ex.: `Documents`) e rode o setup de novo |
+| O setup para com `o projeto precisa do Python x64` | No Windows, o Python instalado é o ARM ou o de 32 bits | Instale o Python pelo "Windows installer (64-bit)" (passo 0.2) e rode de novo |
 | `python` abre a Microsoft Store | O atalho do Windows vem antes do Python instalado | Passo 0.2: desligue os aliases de execução do Python |
-| `error during connect` ou `Cannot connect to the Docker daemon` | O Docker Desktop está fechado ou ainda iniciando | Abra o Docker Desktop e espere o **Engine running** |
+| `Rode com: bash setup.sh`, ou erros de sintaxe ao rodar o `setup.sh` | O script foi chamado com `sh` | Use `bash setup.sh` |
+| O setup para com `está sem o módulo venv` | No Ubuntu e no Debian, o `venv` vem num pacote separado | Rode o `sudo apt install` que a mensagem mostra e rode o setup de novo |
+| O setup para com `precisa do 20 ou superior` | O Node.js é antigo (o do `apt` costuma ser) | Instale o Node 22 pelo `nvm` (passo 0.2) |
+| O setup para com `Seu usuário não tem permissão para usar o Docker`, ou aparece `permission denied ... docker.sock` | No Linux, o usuário não está no grupo `docker` | `sudo usermod -aG docker $USER`, saia da sessão e entre de novo |
+| O setup para com `precisa do Python 3.11 ou 3.12` | Mac com processador Intel e Python 3.13 ou mais novo | Instale o Python 3.12 (passo 0.2) e rode de novo |
+| `error during connect` ou `Cannot connect to the Docker daemon` | O Docker está fechado ou ainda iniciando | Abra o Docker Desktop e espere o **Engine running**. No Linux com Docker Engine: `sudo systemctl start docker` |
 | `container name "/postgres-venergy" is already in use` | O container já existe | Ligue com `docker start postgres-venergy`, ou recomece do zero |
 | `port is already allocated` | A porta 5433 já está em uso | Troque para `-p 5434:5432` no `docker run` e use a 5434 nas duas URLs do passo 2 |
 | `password authentication failed` | A senha das URLs é diferente da do `docker run` | Confira o `.env` e o `backend/.env.local`. A senha só é gravada quando o volume é criado: para trocar, recomece do zero |
@@ -613,7 +685,7 @@ Com o ambiente Python ativo:
 | `Nenhum CSV correspondente às tabelas Gold foi identificado` | O zip não foi extraído | Extraia o zip para `data/exports_gold/` (passo 0.4) |
 | `FALHA NO DATA QUALITY GATE` | A Gold carregada está incompleta ou desatualizada | Peça a Gold mais recente ao time e repita o passo 5 |
 | `Activate.ps1 não pode ser carregado` | Política de execução do PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e um terminal novo |
-| `ModuleNotFoundError` ao rodar um script ou o backend | O ambiente Python não está ativo | `backend\.venv\Scripts\Activate.ps1` a partir da raiz |
+| `ModuleNotFoundError` ao rodar um script ou o backend | O ambiente Python não está ativo | `backend\.venv\Scripts\Activate.ps1` a partir da raiz (macOS/Linux: `source backend/.venv/bin/activate`) |
 | `relation "ordens_inspecao" does not exist`, ou a Fila de inspeção dá erro ao listar ou gerar ordens | Falta a tabela das ordens | Passo 7 |
 | `function unaccent(...) does not exist` no passo a passo do agente | Falta a extensão `unaccent` | Passo 1.2 |
 | O agente responde "O serviço de IA está temporariamente indisponível" | Não há chave de LLM no `backend/.env.local`, ou o 9router está fechado | Passo 3, depois reinicie o backend |
