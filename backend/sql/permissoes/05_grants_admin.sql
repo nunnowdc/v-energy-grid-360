@@ -14,6 +14,5 @@ GRANT SELECT ON agg_continuidade_alimentador, agg_continuidade_alimentador_anual
 GRANT SELECT ON ordens_inspecao TO perfil_admin;
 GRANT INSERT (id_uc, status) ON ordens_inspecao TO perfil_admin;
 GRANT UPDATE (status, resultado, atualizada_em, concluida_em) ON ordens_inspecao TO perfil_admin;
-GRANT SELECT ON vw_ordens_campo TO perfil_admin;
 
 -- Pendente: tb_auditoria_agente (pergunta 7 do plano) e a tabela de usuários, quando existir

@@ -30,25 +30,25 @@ SELECT prioridade, id_uc, score, motivo_suspeita, municipio, bairro, classe
 SELECT nome_titular FROM fila_inspecao LIMIT 1;
 \echo '[ok] filtros: municípios de todas as UCs (45000 linhas)'
 SELECT count(municipio) FROM dim_unidade_consumidora;
-\echo '[negado] nome no cadastro, mesmo de uma UC da fila'
-SELECT nome_titular FROM dim_unidade_consumidora WHERE id_uc = 'UC132549';
 \echo '[negado] CPF'
 SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora LIMIT 1;
-\echo '[negado] Visão 360: leituras'
-SELECT count(*) FROM fact_leituras;
+\echo '[ok] Visão 360: cadastro com nome e endereço'
+SELECT id_uc, nome_titular, logradouro, numero, bairro, municipio, tipo_medidor_atual, possui_gd
+  FROM dim_unidade_consumidora WHERE id_uc = 'UC132549';
+\echo '[ok] Visão 360: leituras, faturas, ocorrências e chamados da UC'
+SELECT (SELECT count(*) FROM fact_leituras     WHERE id_uc = 'UC132549') AS leituras,
+       (SELECT count(*) FROM fact_faturamento  WHERE id_uc = 'UC132549') AS faturas,
+       (SELECT count(*) FROM fact_ocorrencias  WHERE id_uc = 'UC132549') AS ocorrencias,
+       (SELECT count(*) FROM fact_atendimentos WHERE id_uc = 'UC132549') AS chamados;
 \echo '[negado] histórico de inspeções'
 SELECT count(*) FROM fact_inspecoes;
 \echo '[negado] receita'
 SELECT count(*) FROM agg_receita_mensal;
 
-\echo '[ok] ordem ativa libera nome e endereço; cancelada, some (tudo desfeito no ROLLBACK)'
+\echo '[ok] criar e cancelar uma ordem (desfeito no ROLLBACK)'
 BEGIN;
 INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA') RETURNING id, id_uc, status;
-\echo '[ok] 1 linha com nome e endereço'
-SELECT id_uc, status, nome_titular, logradouro, numero FROM vw_ordens_campo WHERE id_uc = 'UC132549';
 UPDATE ordens_inspecao SET status = 'CANCELADA', atualizada_em = now() WHERE id_uc = 'UC132549';
-\echo '[ok, mas 0] depois de cancelada'
-SELECT count(*) FROM vw_ordens_campo WHERE id_uc = 'UC132549';
 ROLLBACK;
 \echo '[negado pelo trigger] ordem para UC fora da fila (dentro de ROLLBACK)'
 BEGIN;

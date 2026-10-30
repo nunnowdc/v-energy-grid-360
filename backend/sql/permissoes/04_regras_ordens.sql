@@ -1,7 +1,6 @@
 -- Ordem ativa só para UC da fila de inspeção.
--- Abrir uma ordem libera o nome e o endereço da UC (vw_ordens_campo). Sem esta regra, quem cria
--- ordens poderia abrir uma para qualquer UC, ler os dados e cancelar. O backend já confere a fila
--- antes de criar a ordem; o trigger repete a conferência no banco.
+-- O backend já confere a fila antes de criar a ordem (422); o trigger repete a conferência no
+-- banco, para um endpoint que esquecer a checagem não criar ordem para qualquer UC.
 -- Não dá para ser FK: a chave da fila_inspecao é a prioridade, e a carga recria a tabela.
 -- A carga não apaga a função nem o trigger: rodar uma vez por ambiente.
 
