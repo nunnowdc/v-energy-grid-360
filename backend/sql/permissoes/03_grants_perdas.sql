@@ -1,5 +1,6 @@
 -- Perfil Perdas: Fila de inspeção, ordens e Visão 360 (com nome e endereço, sem CPF).
--- A Visão 360 só das UCs da fila é regra do backend e do frontend, não do banco.
+-- A Visão 360 vale para qualquer UC pesquisada pelo ID, não só as da fila (matriz da seção 7.1
+-- do planejamento-backend.md). As colunas abaixo são as que o repositories/uc.py lê.
 -- Rodar de novo depois de cada carga da Gold: o DROP ... CASCADE da carga apaga os GRANTs.
 
 -- Começa do zero, para uma regra removida daqui também sair do banco

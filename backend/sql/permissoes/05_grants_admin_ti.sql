@@ -8,11 +8,11 @@ GRANT SELECT ON agg_continuidade_alimentador, agg_continuidade_alimentador_anual
                 dim_unidade_consumidora,
                 fact_atendimentos, fact_faturamento, fact_inspecoes, fact_leituras, fact_ocorrencias,
                 fila_inspecao
-   TO perfil_admin;
+   TO perfil_admin_ti;
 
 -- Ordens de inspeção: as mesmas ações do Perdas (criar e mudar o status, sem apagar)
-GRANT SELECT ON ordens_inspecao TO perfil_admin;
-GRANT INSERT (id_uc, status) ON ordens_inspecao TO perfil_admin;
-GRANT UPDATE (status, resultado, atualizada_em, concluida_em) ON ordens_inspecao TO perfil_admin;
+GRANT SELECT ON ordens_inspecao TO perfil_admin_ti;
+GRANT INSERT (id_uc, status) ON ordens_inspecao TO perfil_admin_ti;
+GRANT UPDATE (status, resultado, atualizada_em, concluida_em) ON ordens_inspecao TO perfil_admin_ti;
 
--- Pendente: tb_auditoria_agente (pergunta 7 do plano) e a tabela de usuários, quando existir
+-- Pendente: tb_auditoria_agente (pergunta 7 do plano) e a tabela usuarios, quando existir

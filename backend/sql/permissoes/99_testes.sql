@@ -1,5 +1,6 @@
 -- Testes das permissões: simula cada perfil com SET ROLE e tenta o permitido e o proibido.
 -- Rodar SEM parar no primeiro erro (sem ON_ERROR_STOP): os "permission denied" são esperados.
+-- Só no banco local de desenvolvimento: os testes de ordens escrevem (desfeito no ROLLBACK).
 --   psql -h localhost -p 5433 -U postgres -d v_energy -f backend/sql/permissoes/99_testes.sql
 -- UC132549 está na fila de inspeção; UC100005 não está.
 
@@ -40,6 +41,9 @@ SELECT (SELECT count(*) FROM fact_leituras     WHERE id_uc = 'UC132549') AS leit
        (SELECT count(*) FROM fact_faturamento  WHERE id_uc = 'UC132549') AS faturas,
        (SELECT count(*) FROM fact_ocorrencias  WHERE id_uc = 'UC132549') AS ocorrencias,
        (SELECT count(*) FROM fact_atendimentos WHERE id_uc = 'UC132549') AS chamados;
+\echo '[ok] Visão 360 de uma UC fora da fila'
+SELECT id_uc, nome_titular, logradouro FROM dim_unidade_consumidora WHERE id_uc = 'UC100005';
+SELECT count(*) FROM fact_leituras WHERE id_uc = 'UC100005';
 \echo '[negado] histórico de inspeções'
 SELECT count(*) FROM fact_inspecoes;
 \echo '[negado] receita'
@@ -61,8 +65,8 @@ DELETE FROM ordens_inspecao WHERE false;
 
 RESET ROLE;
 
-\echo '========== ADMIN =========='
-SET ROLE perfil_admin;
+\echo '========== ADMIN_TI =========='
+SET ROLE perfil_admin_ti;
 
 \echo '[ok] receita'
 SELECT count(*) FROM agg_receita_preco_volume;
@@ -83,9 +87,5 @@ ROLLBACK;
 DELETE FROM ordens_inspecao WHERE false;
 \echo '[negado] escrever na Gold'
 UPDATE fila_inspecao SET score = 0 WHERE false;
-\echo '[negado] apagar a Gold (dentro de ROLLBACK, caso o SET ROLE tenha falhado)'
-BEGIN;
-DROP TABLE fila_inspecao;
-ROLLBACK;
 
 RESET ROLE;

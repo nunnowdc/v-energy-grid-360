@@ -1,6 +1,6 @@
 # Planejamento: permissões no nível do banco de dados
 
-**Data:** 28/10/2026 · **Responsável pela implementação:** Rafael · **Status:** planejamento, com perguntas em aberto (seção 7)
+**Data:** 28/10/2026 (atualizado em 30/10/2026) · **Responsável pela implementação:** Rafael · **Status:** scripts de PERDAS, OPERACAO e ADMIN_TI escritos; integração com o backend adiada (seção 6.3)
 
 > **Para o assistente no VS Code:** este arquivo é o contexto completo. Os fatos das seções 1 e 2 vêm de decisões já documentadas pelo time. Tudo o que estiver marcado **[A CONFIRMAR]** não foi decidido: **pergunte ao Rafael, não invente**. O Rafael quer implementar ele mesmo; o papel do assistente é orientar, explicar e revisar.
 
@@ -16,19 +16,25 @@
 | **Autorização por perfil (RBAC)** | O que o seu cargo pode ver e fazer? | O atendente acessa a Visão 360, mas não a tela de Receita |
 | **Autorização por linha (RLS)** | Quais registros são seus? | Cada usuário só vê as próprias conversas com a IA |
 
-RBAC e RLS não são alternativas: são camadas complementares. **Decisão do Rafael (28/10): no banco, controlar por tabela e por coluna; por linha (RLS) fica para depois.**
+RBAC e RLS não são alternativas: são camadas complementares. **Decisão do Rafael (30/10): no banco, controlar só por tabela e por coluna; RLS (por linha) foi descartado.**
 
 ### 1.2 Os 5 perfis
 
-`diretoria` · `atendimento` · `perdas` · `operacao` · `admin`
+Mesmos nomes do backend (coluna `role` de `usuarios`, espelhada em `frontend/src/config/perfis.ts`):
+
+`DIRETORIA` · `ATENDIMENTO` · `PERDAS` · `OPERACAO` · `ADMIN_TI`
+
+No banco, cada perfil vira o role `perfil_<perfil em minúsculas>`: `perfil_diretoria`, `perfil_atendimento`, `perfil_perdas`, `perfil_operacao`, `perfil_admin_ti`.
 
 ### 1.3 Telas × perfis
 
-| Tela | diretoria | atendimento | perdas | operacao | admin |
+Segue a matriz aprovada (seção 7.1 do `docs/backend/planejamento-backend.md`).
+
+| Tela | DIRETORIA | ATENDIMENTO | PERDAS | OPERACAO | ADMIN_TI |
 |---|:-:|:-:|:-:|:-:|:-:|
-| Indicadores | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Indicadores | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Receita | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Visão 360 | ❌ | ✅ | ✅ (abrir a UC suspeita) | ❌ | ✅ |
+| Visão 360 | ❌ | ✅ | ✅ (qualquer UC pelo ID) | ❌ | ✅ |
 | Fila de inspeção | ❌ | ❌ | ✅ | ❌ | ✅ |
 | Continuidade | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Chat da IA | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -36,7 +42,7 @@ RBAC e RLS não são alternativas: são camadas complementares. **Decisão do Ra
 
 ### 1.4 Ações × perfis
 
-| Ação | diretoria | atendimento | perdas | operacao | admin |
+| Ação | DIRETORIA | ATENDIMENTO | PERDAS | OPERACAO | ADMIN_TI |
 |---|:-:|:-:|:-:|:-:|:-:|
 | Ver dados pessoais do cliente (nome, CPF, endereço) | ❌ | ✅ | ✅ | ❌ | ✅ |
 | Gerar ordem de inspeção | ❌ | ❌ | ✅ | ❌ | ✅ |
@@ -99,9 +105,9 @@ O modelo B (mapa no backend) controla **o que cada perfil pode fazer na aplicaç
 
 | Role | Tipo | Para quê |
 |---|---|---|
-| `perfil_diretoria`, `perfil_atendimento`, `perfil_perdas`, `perfil_operacao`, `perfil_admin` | Grupo, **sem login** | Cada um recebe as permissões do seu perfil (seções 1.3 e 1.4) |
-| `portal_app` | **Com login**, `NOINHERIT`, membro dos 5 perfis | Usuário com que o backend conecta. Sozinho, **não tem permissão nenhuma**: a cada requisição o backend faz `SET LOCAL ROLE perfil_<x>` conforme o perfil de quem está logado |
-| `portal_auth` | Com login | Só para o endpoint de login: lê as colunas da tabela de usuários necessárias para conferir e-mail e senha. Existe porque, **antes do login, ainda não se sabe o perfil** |
+| `perfil_diretoria`, `perfil_atendimento`, `perfil_perdas`, `perfil_operacao`, `perfil_admin_ti` | Grupo, **sem login** | Cada um recebe as permissões do seu perfil (seções 1.3 e 1.4) |
+| `portal_app` **(adiado, seção 6.3)** | **Com login**, `NOINHERIT`, membro dos 5 perfis | Usuário com que o backend conecta. Sozinho, **não tem permissão nenhuma**: a cada requisição o backend faz `SET LOCAL ROLE perfil_<x>` conforme o perfil de quem está logado |
+| `portal_auth` **(adiado, seção 6.3)** | Com login | Só para o endpoint de login: lê as colunas da tabela de usuários necessárias para conferir e-mail e senha. Existe porque, **antes do login, ainda não se sabe o perfil** |
 | `agente_ia` | Com login, somente leitura | Só a Gold, sem as colunas pessoais; nunca as tabelas do backend |
 | `sync_databricks` | Com login | Só a carga noturna da Gold |
 | Dono do banco | — | Cria os objetos; **não é usado em tempo de execução** |
@@ -124,7 +130,7 @@ As telas definem o que cada perfil lê. **Quais tabelas cada tela usa ainda não
 
 | Tela | Perfis | Tabelas (proposta) **[A CONFIRMAR]** |
 |---|---|---|
-| Indicadores | diretoria, operacao, admin | **[A CONFIRMAR: quais indicadores a tela mostra]** |
+| Indicadores | diretoria, admin | **[A CONFIRMAR: quais indicadores a tela mostra]** |
 | Receita | diretoria, admin | `agg_receita_mensal`, `agg_receita_preco_volume` |
 | Visão 360 | atendimento, perdas, admin | Pelo case: cliente, consumo × ano anterior, faturas em aberto, medidor, painel solar, falta de luz, chamados → `dim_unidade_consumidora`, `fact_leituras`, `fact_faturamento`, `dim_medidor`, `dim_geracao_distribuida`, `fact_ocorrencias`, `fact_atendimentos` |
 | Fila de inspeção | perdas, admin | `fila_inspecao`, `fact_inspecoes` |
@@ -179,7 +185,7 @@ Dá para restringir o `UPDATE` a colunas: `GRANT UPDATE (status, motivo_cancelam
 | 3 | **`SELECT *` com concessão por coluna falha** | Views para o agente (seção 4.4) |
 | 4 | **Tabelas novas nascem sem permissão** | `ALTER DEFAULT PRIVILEGES` no schema, ou rodar o script de permissões a cada mudança de estrutura |
 | 5 | **O backend esquece o `SET LOCAL ROLE`** | Fazer numa única dependência de sessão do banco (todas as rotas passam por ela) + `NOINHERIT` no `portal_app` para o erro ser seguro |
-| 6 | **"Perdas: Visão 360 só para abrir a UC suspeita"** | Se significar "só as UCs da fila", é uma regra **por linha**. Dá para fazer **sem RLS**, com uma view filtrada (`... WHERE id_uc IN (SELECT id_uc FROM gold.fila_inspecao)`) só para o perfil perdas **[A CONFIRMAR: o que a regra significa]** |
+| 6 | ~~**"Perdas: Visão 360 só para abrir a UC suspeita"**~~ | **Resolvido (30/10):** PERDAS abre a Visão 360 de qualquer UC pelo ID, como na matriz aprovada. Não há regra por linha nem view filtrada |
 
 ---
 
@@ -225,16 +231,16 @@ Fontes: `telas-e-tabelas.md` e `visao-360-perdas.md` (levantamento do código na
 
 **Matriz perfil × tabela Gold**, derivada das telas (`telas-e-tabelas.md`) e da matriz de telas (seção 1.3):
 
-| Tabela | diretoria | atendimento | perdas | operacao | admin | Usada por |
+| Tabela | DIRETORIA | ATENDIMENTO | PERDAS | OPERACAO | ADMIN_TI | Usada por |
 |---|:-:|:-:|:-:|:-:|:-:|---|
-| `agg_receita_mensal` | ✅ | | | ✅ | ✅ | Indicadores |
+| `agg_receita_mensal` | ✅ | | | | ✅ | Indicadores |
 | `agg_receita_preco_volume` | ✅ | | | | ✅ | Receita |
 | `agg_continuidade_alimentador` | ✅ | | | ✅ | ✅ | Continuidade |
 | `agg_continuidade_alimentador_anual` | ✅ | | | ✅ | ✅ | Continuidade |
 | `dim_competencia` | ✅ | ✅ | ✅ | ✅ | ✅ | Indicadores, Visão 360, filtros |
 | `dim_alimentador` | ✅ | | ✅ | ✅ | ✅ | Continuidade, filtros |
 | `fact_ocorrencias` | ✅ | ✅ | ✅ | ✅ | ✅ | Continuidade, Visão 360, filtros (causas) |
-| `dim_unidade_consumidora` | **só colunas sem PII** | ✅ todas | ✅ todas (ou view filtrada) | **só colunas sem PII** | ✅ | Visão 360 (tudo); Indicadores, Receita, Continuidade e filtros (só município, bairro, classe, alimentador) |
+| `dim_unidade_consumidora` | **só colunas sem PII** | ✅ todas | ✅ colunas da Visão 360 (sem CPF) | **só colunas sem PII** | ✅ | Visão 360 (tudo); Indicadores, Receita, Continuidade e filtros (só município, bairro, classe, alimentador) |
 | `fact_leituras` | | ✅ | ✅ | | ✅ | Visão 360 |
 | `fact_faturamento` | | ✅ | ✅ | | ✅ | Visão 360 |
 | `fact_atendimentos` | | ✅ | ✅ | | ✅ | Visão 360 |
@@ -243,7 +249,7 @@ Fontes: `telas-e-tabelas.md` e `visao-360-perdas.md` (levantamento do código na
 
 **É aqui que a restrição por coluna é necessária:** diretoria e operacao não podem ver dado pessoal, mas os filtros e as validações das telas delas leem `dim_unidade_consumidora`. As colunas exatas que os repositories usam **[A CONFIRMAR lendo `metrics.py`, `revenue.py` e `filters.py`]**. Alternativa sem concessão por coluna: uma view `vw_gold_filtros_uc` só com município, bairro, classe e alimentador.
 
-**Conflito Indicadores × Receita: resolvido pelo banco.** Indicadores lê `agg_receita_mensal` e Receita lê `agg_receita_preco_volume`. São tabelas diferentes, então dá para conceder a primeira ao `operacao` sem a segunda. O `operacao` vê a receita mensal nos Indicadores (já previsto na matriz de telas), mas não a decomposição preço × volume.
+**OPERACAO não tem Indicadores (corrigido em 30/10).** A versão anterior desta seção concedia `agg_receita_mensal` ao `operacao` por causa de Indicadores. A matriz aprovada e o `perfis.ts` dão à OPERACAO só Continuidade, então o `operacao` não lê nenhuma das duas tabelas de receita (`02_grants_operacao.sql`).
 
 **Correção necessária no agente:** a lista de tabelas que o agente pode consultar inclui `dim_unidade_consumidora` inteira, com nome, CPF mascarado e endereço. Isso contradiz a opção C. O agente precisa ler uma view sem essas colunas (o prefixo `vw_gold_` já é aceito pelo validador).
 
@@ -254,14 +260,14 @@ Fontes: `telas-e-tabelas.md` e `visao-360-perdas.md` (levantamento do código na
 **Respostas do Rafael:**
 - **Schema:** tudo no `public` (Gold e `tb_*`).
 - **Tabela de usuários:** ainda não foi criada.
-- **Perdas na Visão 360:** decisão ainda pendente com o time de Perdas.
+- **Perdas na Visão 360:** ~~decisão ainda pendente com o time de Perdas.~~ Decidido em 30/10: qualquer UC pelo ID (seção 6.3).
 
 **Decisões do time (mensagem da daily):**
 - 5 perfis: **Diretoria** (indicadores gerais e variação de receita), **Atendimento** (Visão 360), **Perdas** (fila, ordens e resultados de campo), **Operação** (continuidade: DEC/FEC), **Admin TI** (todas as telas e cadastro de usuários).
 - Senhas com hash; JWT com expiração de 15 minutos em cookie HttpOnly.
 - **Permissões centralizadas e verificadas pelo FastAPI, sem RLS no banco por enquanto.** O frontend também esconde as telas por perfil.
 
-**⚠️ Divergência a esclarecer:** a mensagem da daily dá à Diretoria "indicadores gerais e receita" e à Operação só "continuidade". A matriz de telas (seção 1.3) dá **Continuidade também à Diretoria** e **Indicadores também à Operação**. A fonte da verdade é o mapa em `frontend/src/config/perfis.ts` e na seção 7.1 do `planejamento-backend.md` **[A CONFIRMAR no código: tarefa 8.2]**. A matriz perfil × tabela da seção 6.1 segue a seção 1.3 e muda se o código disser outra coisa.
+**Divergência resolvida (30/10):** a fonte da verdade é a matriz da seção 7.1 do `planejamento-backend.md`, espelhada em `frontend/src/config/perfis.ts`. Ela dá Continuidade à DIRETORIA (aprovado) e **não** dá Indicadores à OPERACAO. As seções 1.3 e 6.1 foram corrigidas.
 
 **Consequência de tudo estar no schema `public`:** não dá para conceder "o schema inteiro" a ninguém. Um `GRANT SELECT ON ALL TABLES IN SCHEMA public TO agente` daria ao agente a `tb_auditoria_agente` (as perguntas de todos os usuários) e, no futuro, a tabela de usuários. **Todas as concessões precisam listar as tabelas uma a uma.** Separar em schemas (`gold`, `app`, `ia`) facilitaria, mas é uma mudança para combinar com o time.
 
@@ -277,6 +283,39 @@ A decisão "permissões verificadas pelo FastAPI, sem RLS" **não impede** permi
 
 **Recomendação:** fases 1 e 2 agora (é onde o risco é maior: o SQL do agente é escrito por um LLM). A fase 3 fica como reforço, se o time topar.
 
+## 6.3 Atualização de 30/10: decisão do time e estado dos scripts
+
+**Decisão do time (resposta ao parecer técnico sobre `SET LOCAL ROLE`):**
+- **Vale hoje:** autenticação e RBAC centralizado no FastAPI, seguindo a matriz aprovada (seção 7.1 do `planejamento-backend.md`).
+- **O backend mantém a conexão atual** com o banco: um usuário só, sem troca de role.
+- **A fase 3 (`SET LOCAL ROLE` no portal) fica como evolução futura**, sem acoplar ao login. Retomar depois que a autenticação estiver funcionando.
+- A mensagem não trata das fases 1 e 2 (usuários separados e perfis no agente) **[A CONFIRMAR]**.
+
+**Outras decisões de 30/10:**
+- **RLS descartado.** Por isso o `perfil_admin_ti` não tem mais `BYPASSRLS`.
+- **PERDAS abre a Visão 360 de qualquer UC pelo ID**, sem restrição à fila. O `99_testes.sql` confere com uma UC fora da fila.
+- **Nomes dos roles seguem o backend:** `perfil_admin` virou `perfil_admin_ti` (e `05_grants_admin.sql` virou `05_grants_admin_ti.sql`).
+
+**Estado dos scripts em `backend/sql/permissoes/`.** Eles são a segunda camada; nada no backend os usa ainda.
+
+| Script | Cobre |
+|---|---|
+| `01_perfis.sql` | Roles `perfil_operacao`, `perfil_perdas`, `perfil_admin_ti` |
+| `02_grants_operacao.sql` | OPERACAO: Continuidade e colunas de filtro sem PII |
+| `03_grants_perdas.sql` | PERDAS: Fila, Visão 360 (sem CPF) e ordens |
+| `04_regras_ordens.sql` | Trigger: ordem ativa só para UC da fila |
+| `05_grants_admin_ti.sql` | ADMIN_TI: leitura da Gold e ordens |
+| `99_testes.sql` | Testes com `SET ROLE`; escreve dentro de `ROLLBACK`, rodar só no banco local de desenvolvimento |
+
+**Pendências para ligar a segunda camada** (levantadas no parecer técnico; nenhuma bloqueia o MVP):
+1. `perfil_diretoria` e `perfil_atendimento` e seus GRANTs: responsabilidade de outra pessoa do time.
+2. Contas com login (`portal_app`, `portal_auth`) e a associação delas aos perfis. `SET ROLE` só funciona se a conta for membro do perfil com a opção `SET`.
+3. GRANTs na tabela `usuarios` para login, `GET /api/auth/me`, troca da própria senha e criação de contas pelo ADMIN_TI.
+4. GRANTs da `tb_auditoria_agente` (pergunta 7).
+5. Uma fronteira de transação só: o `SET LOCAL ROLE` abre uma transação, e hoje o `InspectionOrdersRepository.transaction()` abre a sua com `connection.begin()`. As duas conflitariam.
+6. O executor SQL da IA (`ai-agent/src/services/sql_executor.py`) abre conexões próprias em autocommit. Um `SET LOCAL ROLE` só no `core/database.py` não protege essas consultas.
+7. Conferir os privilégios efetivos no banco (`PUBLIC`, outras roles, dono das tabelas), e não só os GRANTs diretos que os scripts revogam ou concedem.
+
 ---
 
 ## 7. Perguntas em aberto (não inventar: perguntar)
@@ -284,13 +323,13 @@ A decisão "permissões verificadas pelo FastAPI, sem RLS" **não impede** permi
 **Respondidas em 28/10:** banco (Postgres local) · tabelas Gold · quais tabelas cada tela lê · cancelar = `UPDATE` (seção 6.1).
 
 **Ainda bloqueiam o início:**
-1. **Em que schema** estão as tabelas Gold e as `tb_*` no Postgres (`public`? schemas separados?).
-2. **Nome da tabela de usuários** do login (não aparece na lista) e suas colunas.
-3. **O portal vai trocar de role por requisição** (`SET LOCAL ROLE`), ou só o agente? Hoje o backend usa um usuário só. Mudar isso é decisão conjunta com o time de backend.
+1. ~~**Em que schema** estão as tabelas Gold e as `tb_*` no Postgres?~~ Respondido: tudo no `public` (seção 6.2).
+2. ~~**Nome da tabela de usuários** do login e suas colunas.~~ Respondido: `usuarios` (`id`, `nome`, `email`, `senha_hash`, `role`), seção 9.1 do `planejamento-backend.md`. Ainda não foi criada.
+3. ~~**O portal vai trocar de role por requisição** (`SET LOCAL ROLE`)?~~ Adiado: o portal mantém um usuário só no MVP (seção 6.3). Para o agente, ver a seção 6.3 **[A CONFIRMAR]**.
 4. **Colunas de `dim_unidade_consumidora`** que os repositories de Indicadores, Receita, Continuidade e filtros realmente leem.
 
 **Definem regras:**
-5. **"Perdas: Visão 360 (abrir a UC suspeita)"**: perdas abre a Visão 360 de **qualquer** UC ou **só das UCs da fila** (ou com ordem aberta)? Decisão do time de Perdas, ainda pendente.
+5. ~~**"Perdas: Visão 360 (abrir a UC suspeita)"**: qualquer UC ou só as da fila?~~ Respondido: qualquer UC pelo ID (seção 6.3).
 6. ~~Cancelar ordem é `UPDATE` ou `DELETE`?~~ Respondido: `UPDATE` de status.
 7. **Conversas sem RLS** nesta primeira versão: o time aceita que o isolamento entre usuários fique só no backend? O **admin** pode ler as conversas de todos?
 8. **Latitude, longitude e CEP** contam como "endereço" para a regra de dados pessoais? (Afeta o agente.)
@@ -300,8 +339,8 @@ A decisão "permissões verificadas pelo FastAPI, sem RLS" **não impede** permi
 **Definem a operação:**
 11. **Como a carga noturna da Gold** vai gravar: recria as tabelas ou faz `TRUNCATE` + `INSERT`? (Armadilhas 1 e 2.)
 12. Quem roda os scripts de permissão, e em que momento (instalação, depois de cada migração)?
-13. **Divergência de telas** entre a mensagem da daily e a matriz (seção 6.2).
-14. O time topa a **fase 3** (perfis também no portal)?
+13. ~~**Divergência de telas** entre a mensagem da daily e a matriz.~~ Resolvida: vale a matriz aprovada (seção 6.2).
+14. ~~O time topa a **fase 3** (perfis também no portal)?~~ Adiada como evolução futura, depois da autenticação (seção 6.3).
 
 ---
 

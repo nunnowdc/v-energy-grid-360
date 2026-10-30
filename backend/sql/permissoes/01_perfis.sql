@@ -1,4 +1,5 @@
+-- Nomes seguem os perfis do backend (coluna role de usuarios): perfil_<perfil em minúsculas>.
+-- perfil_diretoria e perfil_atendimento ficam com outra pessoa (planejamento, seção 6.3).
 CREATE ROLE perfil_operacao NOLOGIN;
 CREATE ROLE perfil_perdas NOLOGIN;
--- BYPASSRLS: hoje nenhuma tabela tem RLS; se alguma ganhar, o admin continua vendo todas as linhas
-CREATE ROLE perfil_admin NOLOGIN BYPASSRLS;
+CREATE ROLE perfil_admin_ti NOLOGIN;
