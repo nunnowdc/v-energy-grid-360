@@ -8,7 +8,7 @@ SET ROLE perfil_operacao;
 
 \echo '[ok] continuidade'
 SELECT count(*) FROM agg_continuidade_alimentador;
-\echo '[ok] filtros: municípios de todas as UCs (45000 linhas, sem filtro do RLS)'
+\echo '[ok] filtros: municípios de todas as UCs (45000 linhas)'
 SELECT count(municipio) FROM dim_unidade_consumidora;
 \echo '[negado] nome do titular'
 SELECT nome_titular FROM dim_unidade_consumidora LIMIT 1;
@@ -22,28 +22,70 @@ RESET ROLE;
 \echo '========== PERDAS =========='
 SET ROLE perfil_perdas;
 
-\echo '[ok] fila: 11586 UCs'
-SELECT count(*) FROM fila_inspecao;
-\echo '[ok] cadastro: só as 11586 UCs da fila, não as 45000 (RLS)'
-SELECT count(*) FROM dim_unidade_consumidora;
-\echo '[ok] Visão 360 de uma UC da fila: 1 linha'
-SELECT id_uc, nome_titular, bairro FROM dim_unidade_consumidora WHERE id_uc = 'UC132549';
-\echo '[ok, mas vazio] Visão 360 de uma UC fora da fila: 0 linhas, como se ela não existisse'
-SELECT id_uc, nome_titular, bairro FROM dim_unidade_consumidora WHERE id_uc = 'UC100005';
-\echo '[ok, mas 0] leituras de uma UC fora da fila'
-SELECT count(*) FROM fact_leituras WHERE id_uc = 'UC100005';
+\echo '[ok] fila: 11586 UCs, com as colunas da tela'
+SELECT count(*), max(data_referencia) FROM fila_inspecao;
+SELECT prioridade, id_uc, score, motivo_suspeita, municipio, bairro, classe
+  FROM fila_inspecao ORDER BY prioridade LIMIT 1;
+\echo '[negado] nome na fila'
+SELECT nome_titular FROM fila_inspecao LIMIT 1;
+\echo '[ok] filtros: municípios de todas as UCs (45000 linhas)'
+SELECT count(municipio) FROM dim_unidade_consumidora;
+\echo '[negado] nome no cadastro, mesmo de uma UC da fila'
+SELECT nome_titular FROM dim_unidade_consumidora WHERE id_uc = 'UC132549';
 \echo '[negado] CPF'
 SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora LIMIT 1;
+\echo '[negado] Visão 360: leituras'
+SELECT count(*) FROM fact_leituras;
+\echo '[negado] histórico de inspeções'
+SELECT count(*) FROM fact_inspecoes;
 \echo '[negado] receita'
 SELECT count(*) FROM agg_receita_mensal;
 
-\echo '[ok] criar uma ordem (desfeita no ROLLBACK)'
+\echo '[ok] ordem ativa libera nome e endereço; cancelada, some (tudo desfeito no ROLLBACK)'
 BEGIN;
 INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA') RETURNING id, id_uc, status;
+\echo '[ok] 1 linha com nome e endereço'
+SELECT id_uc, status, nome_titular, logradouro, numero FROM vw_ordens_campo WHERE id_uc = 'UC132549';
+UPDATE ordens_inspecao SET status = 'CANCELADA', atualizada_em = now() WHERE id_uc = 'UC132549';
+\echo '[ok, mas 0] depois de cancelada'
+SELECT count(*) FROM vw_ordens_campo WHERE id_uc = 'UC132549';
+ROLLBACK;
+\echo '[negado pelo trigger] ordem para UC fora da fila (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC100005', 'ABERTA');
 ROLLBACK;
 \echo '[negado] trocar a UC de uma ordem'
 UPDATE ordens_inspecao SET id_uc = 'UC100005' WHERE false;
 \echo '[negado] apagar ordem'
 DELETE FROM ordens_inspecao WHERE false;
+
+RESET ROLE;
+
+\echo '========== ADMIN =========='
+SET ROLE perfil_admin;
+
+\echo '[ok] receita'
+SELECT count(*) FROM agg_receita_preco_volume;
+\echo '[ok] cadastro: as 45000 UCs'
+SELECT count(*) FROM dim_unidade_consumidora;
+\echo '[ok] CPF'
+SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora LIMIT 1;
+\echo '[ok] leituras de uma UC fora da fila'
+SELECT count(*) FROM fact_leituras WHERE id_uc = 'UC100005';
+\echo '[ok] tabelas sem tela (só o agente)'
+SELECT count(*) FROM fact_inspecoes;
+
+\echo '[ok] criar uma ordem (desfeita no ROLLBACK)'
+BEGIN;
+INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA') RETURNING id, id_uc, status;
+ROLLBACK;
+\echo '[negado] apagar ordem'
+DELETE FROM ordens_inspecao WHERE false;
+\echo '[negado] escrever na Gold'
+UPDATE fila_inspecao SET score = 0 WHERE false;
+\echo '[negado] apagar a Gold (dentro de ROLLBACK, caso o SET ROLE tenha falhado)'
+BEGIN;
+DROP TABLE fila_inspecao;
+ROLLBACK;
 
 RESET ROLE;
