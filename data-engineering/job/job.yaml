@@ -1,0 +1,127 @@
+resources:
+  jobs:
+    v_energy_validation_pipeline_completo:
+      name: v-energy-validation · pipeline completo
+      tasks:
+        - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/01_bronze_ingestao.py
+            source: WORKSPACE
+        - task_key: 02_silver_faturas
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_faturas.py
+            source: WORKSPACE
+        - task_key: 02_silver_geracao_distribuida
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_geracao_distribuida.py
+            source: WORKSPACE
+        - task_key: 02_silver_inspecoes
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_inspecoes.py
+            source: WORKSPACE
+        - task_key: 02_silver_leituras
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_leituras.py
+            source: WORKSPACE
+        - task_key: 02_silver_medidores
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_medidores.py
+            source: WORKSPACE
+        - task_key: 02_silver_ocorrencias_rede
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_ocorrencias_rede.py
+            source: WORKSPACE
+        - task_key: 02_silver_unidades_consumidoras
+          depends_on:
+            - task_key: 01_bronze_ingestao
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/02_silver_unidades_consumidoras.py
+            source: WORKSPACE
+        - task_key: 03_silver_atendimentos
+          depends_on:
+            - task_key: 02_silver_leituras
+            - task_key: 02_silver_unidades_consumidoras
+            - task_key: 02_silver_inspecoes
+            - task_key: 02_silver_geracao_distribuida
+            - task_key: 02_silver_ocorrencias_rede
+            - task_key: 02_silver_faturas
+            - task_key: 02_silver_medidores
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/03_silver_atendimentos.ipynb
+            source: WORKSPACE
+        - task_key: 03_silver_leituras_ajustes
+          depends_on:
+            - task_key: 02_silver_leituras
+            - task_key: 02_silver_unidades_consumidoras
+            - task_key: 02_silver_inspecoes
+            - task_key: 02_silver_geracao_distribuida
+            - task_key: 02_silver_ocorrencias_rede
+            - task_key: 02_silver_faturas
+            - task_key: 02_silver_medidores
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/03_silver_leituras_ajustes.ipynb
+            source: WORKSPACE
+        - task_key: 04_gold_dimensoes
+          depends_on:
+            - task_key: 03_silver_leituras_ajustes
+            - task_key: 03_silver_atendimentos
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/04_gold_dimensoes.py
+            source: WORKSPACE
+        - task_key: 04_gold_fatos
+          depends_on:
+            - task_key: 03_silver_leituras_ajustes
+            - task_key: 03_silver_atendimentos
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/04_gold_fatos.py
+            source: WORKSPACE
+        - task_key: 05_gold_continuidade
+          depends_on:
+            - task_key: 04_gold_fatos
+            - task_key: 04_gold_dimensoes
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/05_gold_continuidade.py
+            source: WORKSPACE
+        - task_key: 05_gold_perdas
+          depends_on:
+            - task_key: 04_gold_dimensoes
+            - task_key: 04_gold_fatos
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/05_gold_perdas.py
+            source: WORKSPACE
+        - task_key: 05_gold_receita
+          depends_on:
+            - task_key: 04_gold_fatos
+            - task_key: 04_gold_dimensoes
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/05_gold_receita.py
+            source: WORKSPACE
+        - task_key: 05_gold_qualidade_testes
+          depends_on:
+            - task_key: 05_gold_receita
+            - task_key: 05_gold_perdas
+            - task_key: 05_gold_continuidade
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/05_gold_qualidade_testes
+            source: WORKSPACE
+        - task_key: 06_export_csv
+          depends_on:
+            - task_key: 05_gold_qualidade_testes
+          notebook_task:
+            notebook_path: /Workspace/v-energy-validation/06_export_csv
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED

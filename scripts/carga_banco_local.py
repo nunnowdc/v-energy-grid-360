@@ -27,6 +27,10 @@ from dotenv import load_dotenv
 load_dotenv()
 # Configuração de diretórios
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from scripts.validador_qualidade import validar_banco_sqlite, validar_banco_postgres
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 SQLITE_DB_PATH = os.path.join(DATA_DIR, "v_energy_gold.db")
 
@@ -355,27 +359,37 @@ DDL_POSTGRES = {
 }
 
 
-def garantir_extracao_csvs():
+def garantir_extracao_csvs(reset_data=False):
     """Localiza o arquivo .zip da release e descompacta na pasta data/ se necessário."""
     os.makedirs(DATA_DIR, exist_ok=True)
-    
-    # Procura por CSVs já existentes
-    csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
-    if csvs:
-        print(f"-> Localizados {len(csvs)} arquivos CSV na pasta de dados.")
-        return csvs
 
-    # Se não houver CSVs, procura por arquivos .zip
+    if reset_data:
+        print("\n-> Flag --reset-data ativada: limpando CSVs e ZIPs antigos da pasta data/...")
+        for arq in glob.glob(os.path.join(DATA_DIR, "**", "*"), recursive=True):
+            if os.path.isfile(arq) and (arq.endswith(".csv") or arq.endswith(".zip")):
+                try:
+                    os.remove(arq)
+                except Exception:
+                    pass
+        print("-> Pasta data/ limpa com sucesso.")
+
+    if not reset_data:
+        # Procura por CSVs já existentes
+        csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
+        if csvs:
+            print(f"-> Localizados {len(csvs)} arquivos CSV na pasta de dados.")
+            return csvs
+
+    # Se não houver CSVs ou se reset_data=True, procura/baixa o release mais recente
     zips = glob.glob(os.path.join(DATA_DIR, "*.zip")) + glob.glob(os.path.join(ROOT_DIR, "*.zip"))
-    
-    if not zips:
-        print("\n[!] Nenhum CSV ou arquivo .zip encontrado na pasta 'data/'.")
-        print("    Tentando baixar release mais recente via GitHub CLI ('gh')...")
+
+    if not zips or reset_data:
+        print("\n[!] Baixando release mais recente via GitHub CLI ('gh')...")
         try:
-            subprocess.run(["gh", "release", "download", "--pattern", "*.zip", "--dir", DATA_DIR], check=True)
+            subprocess.run(["gh", "release", "download", "--pattern", "*.zip", "--dir", DATA_DIR, "--clobber"], check=True)
             zips = glob.glob(os.path.join(DATA_DIR, "*.zip"))
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"    Erro ao executar 'gh release download': {e}")
 
     if not zips:
         print("\n[X] Arquivo .zip da release não encontrado automaticamente.")
@@ -387,7 +401,7 @@ def garantir_extracao_csvs():
     with zipfile.ZipFile(zip_alvo, "r") as zf:
         zf.extractall(DATA_DIR)
     print("-> Extração concluída com sucesso.")
-    
+
     csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
     return csvs
 
@@ -469,6 +483,22 @@ def carregar_postgres(mapa_csv, args):
         tempo = time.time() - t0
         print(f"OK ({qtd:,} linhas em {tempo:.2f}s)")
 
+    # 3. Data Quality Gate (Validação Automatizada)
+    if not getattr(args, "skip_quality_check", False):
+        print("\n[3/3] Executando Data Quality Gate...")
+        res = validar_banco_postgres(cursor)
+        print(f"-> Total de verificações executadas: {res.total_verificacoes}")
+        if not res.sucesso:
+            print("\n❌ FALHA NO DATA QUALITY GATE! A carga violou o Contrato de Dados da Gold:")
+            for erro in res.erros:
+                print(f"   ❌ {erro}")
+            print("\n⛔ Operação abortada para proteger o Portal Web. O banco não foi liberado.")
+            conn.close()
+            sys.exit(1)
+        print("✅ Data Quality Gate aprovado com sucesso! Nenhuma inconsistência detectada.")
+    else:
+        print("\n⚠️ AVISO: Data Quality Gate ignorado via flag --skip-quality-check.")
+
     conn.close()
     tempo_total = time.time() - inicio_total
     print(f"\n✨ Carga concluída com sucesso no PostgreSQL!")
@@ -476,7 +506,7 @@ def carregar_postgres(mapa_csv, args):
     print(f"-> Tempo total de processamento: {tempo_total:.2f} segundos")
 
 
-def carregar_sqlite(mapa_csv):
+def carregar_sqlite(mapa_csv, args=None):
     """Executa a carga em massa no SQLite local (data/v_energy_gold.db)."""
     import sqlite3
     import csv
@@ -526,6 +556,24 @@ def carregar_sqlite(mapa_csv):
             tempo = time.time() - t0
             print(f"OK ({qtd:,} linhas em {tempo:.2f}s)")
 
+    # 3. Data Quality Gate (Validação Automatizada)
+    if not getattr(args, "skip_quality_check", False):
+        print("\n-> Executando Data Quality Gate no SQLite...")
+        res = validar_banco_sqlite(conn)
+        print(f"-> Total de verificações executadas: {res.total_verificacoes}")
+        if not res.sucesso:
+            print("\n❌ FALHA NO DATA QUALITY GATE! A carga violou o Contrato de Dados da Gold:")
+            for erro in res.erros:
+                print(f"   ❌ {erro}")
+            print("\n⛔ Operação abortada para proteger o Portal Web.")
+            conn.close()
+            if os.path.exists(SQLITE_DB_PATH):
+                os.remove(SQLITE_DB_PATH)
+            sys.exit(1)
+        print("✅ Data Quality Gate aprovado com sucesso! Nenhuma inconsistência detectada.")
+    else:
+        print("\n⚠️ AVISO: Data Quality Gate ignorado via flag --skip-quality-check.")
+
     conn.close()
     tempo_total = time.time() - inicio_total
     print(f"\n✨ Carga concluída com sucesso no SQLite!")
@@ -536,6 +584,8 @@ def carregar_sqlite(mapa_csv):
 def main():
     parser = argparse.ArgumentParser(description="Seed do Banco de Dados Local da V-Energy Grid 360")
     parser.add_argument("--sqlite", action="store_true", help="Carrega no banco SQLite local em vez do PostgreSQL")
+    parser.add_argument("--skip-quality-check", action="store_true", help="Ignora a validação automatizada de qualidade de dados")
+    parser.add_argument("--reset-data", "--update-release", action="store_true", dest="reset_data", help="Limpa a pasta data/ e força o download do release mais recente do GitHub")
     parser.add_argument("--url", type=str, default=None, help="Database URL (ex: postgresql://user:pass@localhost:5432/v_energy)")
     parser.add_argument("--host", type=str, default=os.getenv("PGHOST", "localhost"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PGPORT", 5432)))
@@ -550,7 +600,7 @@ def main():
     print("=" * 70)
 
     # 1. Garante extração dos CSVs
-    lista_csvs = garantir_extracao_csvs()
+    lista_csvs = garantir_extracao_csvs(reset_data=args.reset_data)
     mapa_tabelas = mapear_arquivos_csv(lista_csvs)
 
     if not mapa_tabelas:
@@ -562,7 +612,7 @@ def main():
 
     # 2. Executa a carga no destino solicitado
     if args.sqlite:
-        carregar_sqlite(mapa_tabelas)
+        carregar_sqlite(mapa_tabelas, args)
     else:
         carregar_postgres(mapa_tabelas, args)
 
