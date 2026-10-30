@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 try:
-    from analisys.scripts.analise_negocio._helpers import (
+    from analisys_antes_tratamento.scripts.analise_negocio._helpers import (
         get_analisys_dir, get_graficos_dir, get_project_root
     )
 except ModuleNotFoundError as error:
@@ -26,7 +26,7 @@ except ModuleNotFoundError as error:
         else:
             continue
         break
-    from analisys.scripts.analise_negocio._helpers import (
+    from analisys_antes_tratamento.scripts.analise_negocio._helpers import (
         get_analisys_dir, get_graficos_dir, get_project_root
     )
 
