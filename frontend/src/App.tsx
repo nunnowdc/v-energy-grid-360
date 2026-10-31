@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import Layout from './components/Layout/Layout'
 import RotaInicial from './components/RotaInicial/RotaInicial'
 import RotaProtegida from './components/RotaProtegida/RotaProtegida'
+import SessaoObrigatoria from './components/SessaoObrigatoria/SessaoObrigatoria'
 import { TooltipProvider } from './components/ui/tooltip'
 import { queryClient } from './lib/api/query-client'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
@@ -21,22 +22,25 @@ function App() {
           <Routes>
             {/* O login fica fora do Layout: sem menu nem cabeçalho */}
             <Route path="login" element={<LoginPage />} />
-            <Route element={<Layout />}>
-              <Route index element={<RotaInicial />} />
-              <Route element={<RotaProtegida permissao="ver_receita" />}>
-                <Route path="receita" element={<ReceitaPage />} />
+            {/* O resto só abre com alguém logado */}
+            <Route element={<SessaoObrigatoria />}>
+              <Route element={<Layout />}>
+                <Route index element={<RotaInicial />} />
+                <Route element={<RotaProtegida permissao="ver_receita" />}>
+                  <Route path="receita" element={<ReceitaPage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_visao_360" />}>
+                  <Route path="visao-360" element={<Visao360Page />} />
+                  <Route path="visao-360/:idUc" element={<Visao360Page />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_fila_inspecao" />}>
+                  <Route path="inspecoes" element={<InspecoesPage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_continuidade" />}>
+                  <Route path="continuidade" element={<ContinuidadePage />} />
+                </Route>
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
-              <Route element={<RotaProtegida permissao="ver_visao_360" />}>
-                <Route path="visao-360" element={<Visao360Page />} />
-                <Route path="visao-360/:idUc" element={<Visao360Page />} />
-              </Route>
-              <Route element={<RotaProtegida permissao="ver_fila_inspecao" />}>
-                <Route path="inspecoes" element={<InspecoesPage />} />
-              </Route>
-              <Route element={<RotaProtegida permissao="ver_continuidade" />}>
-                <Route path="continuidade" element={<ContinuidadePage />} />
-              </Route>
-              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

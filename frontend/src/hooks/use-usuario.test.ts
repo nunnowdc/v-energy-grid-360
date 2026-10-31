@@ -1,31 +1,61 @@
-import { renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
+import { useSair, useSessao } from '@/hooks/use-usuario'
+import { navegador } from '@/lib/api/sessao'
+import { usuarioApiExemplo } from '@/mocks/usuarios'
 
-// O perfil de teste é lido do .env quando o módulo carrega,
-// então cada caso recarrega o módulo com outro valor
-async function usuarioCom(valor: string | undefined) {
-  vi.resetModules()
-  vi.stubEnv('VITE_PERFIL_TESTE', valor)
-  const { useUsuario } = await import('@/hooks/use-usuario')
-  return renderHook(() => useUsuario()).result.current
+function responder(status: number, corpo?: unknown) {
+  return vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response(corpo === undefined ? null : JSON.stringify(corpo), { status }))
+}
+
+function comCache<T>(hook: () => T) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const envolver = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children)
+  return renderHook(hook, { wrapper: envolver })
 }
 
 afterEach(() => {
-  vi.unstubAllEnvs()
+  vi.restoreAllMocks()
 })
 
-test('aceita o perfil em maiúsculas ou minúsculas', async () => {
-  expect((await usuarioCom('DIRETORIA')).usuario.perfil).toBe('DIRETORIA')
-  expect((await usuarioCom('atendimento')).usuario.perfil).toBe('ATENDIMENTO')
+test('a sessão vem do /auth/me, com as permissões do perfil', async () => {
+  const fetch = responder(200, usuarioApiExemplo('OPERACAO'))
+  const { result } = comCache(useSessao)
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  expect(fetch.mock.calls[0][0]).toBe('/api/auth/me')
+  expect(result.current.data).toMatchObject({ perfil: 'OPERACAO', permissoes: ['ver_continuidade', 'usar_agente_ia'] })
 })
 
-test('valor inválido ou ausente vira ADMIN_TI', async () => {
-  expect((await usuarioCom('inventado')).usuario.perfil).toBe('ADMIN_TI')
-  expect((await usuarioCom(undefined)).usuario.perfil).toBe('ADMIN_TI')
+test('401 no /auth/me é visitante sem login, e não erro', async () => {
+  responder(401, { detail: 'Não autenticado' })
+  const { result } = comCache(useSessao)
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  expect(result.current.data).toBeNull()
 })
 
-test('pode() responde pelas permissões do perfil', async () => {
-  const { pode } = await usuarioCom('OPERACAO')
-  expect(pode('ver_continuidade')).toBe(true)
-  expect(pode('ver_receita')).toBe(false)
+test('perfil que o portal não conhece vira erro, sem nenhuma tela liberada', async () => {
+  responder(200, { ...usuarioApiExemplo(), perfil: 'ESTAGIARIO' })
+  const { result } = comCache(useSessao)
+
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  expect(result.current.error?.message).toMatch(/perfil não é reconhecido/)
+})
+
+test('sair chama o logout e recarrega no login, mesmo com a sessão já vencida', async () => {
+  const abrir = vi.spyOn(navegador, 'abrir').mockImplementation(() => {})
+  const fetch = responder(401, { detail: 'Não autenticado' })
+  const { result } = comCache(useSair)
+
+  result.current.mutate()
+
+  await waitFor(() => expect(abrir).toHaveBeenCalledWith('/login'))
+  expect(fetch.mock.calls[0][0]).toBe('/api/auth/logout')
+  expect(fetch.mock.calls[0][1]?.method).toBe('POST')
 })

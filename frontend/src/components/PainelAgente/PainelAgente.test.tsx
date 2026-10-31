@@ -2,8 +2,10 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useLocation } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import PainelAgente from '@/components/PainelAgente/PainelAgente'
+import type { Perfil } from '@/config/perfis'
 import type { AuditoriaAgente, RespostaAgente } from '@/hooks/use-agente-ia'
 import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
+import { usuarioExemplo } from '@/mocks/usuarios'
 import { renderizar } from '@/test/renderizar'
 
 // Respostas e auditorias inventadas, no formato das rotas reais do agente
@@ -79,14 +81,19 @@ function Endereco() {
   return <output aria-label="Endereço">{pathname + search}</output>
 }
 
-function abrir({ url = '/receita', aberto = true, comOpcoes = false } = {}) {
+function abrir({
+  url = '/receita',
+  aberto = true,
+  comOpcoes = false,
+  perfil = 'ADMIN_TI' as Perfil,
+} = {}) {
   const aoFechar = vi.fn()
   renderizar(
     <>
       <PainelAgente aberto={aberto} aoFechar={aoFechar} />
       <Endereco />
     </>,
-    { url, opcoesFiltros: comOpcoes ? opcoesFiltrosExemplo : undefined },
+    { url, opcoesFiltros: comOpcoes ? opcoesFiltrosExemplo : undefined, perfil },
   )
   return { aoFechar }
 }
@@ -134,7 +141,7 @@ test('a sugestão vira pergunta com o contexto da tela, e a resposta chega com s
 
   expect(corpoDas(fetch, '/api/ai/ask')).toEqual([
     {
-      user_id: 'teste-admin_ti',
+      user_id: usuarioExemplo('ADMIN_TI').id,
       session_id: '00000000-0000-4000-8000-000000000000',
       message: 'Qual o faturamento em Recife no ano de 2024?',
       context: { page: 'receita' },
@@ -190,6 +197,18 @@ test('o passo a passo só aparece, e só é buscado, ao clicar em "Ver o passo a
 
   fireEvent.click(screen.getByRole('button', { name: 'Esconder o passo a passo' }))
   expect(screen.queryByRole('list', { name: 'Passos do agente' })).not.toBeInTheDocument()
+})
+
+test('só o ADMIN_TI vê o passo a passo; os outros perfis perguntam e avaliam normalmente', async () => {
+  const fetch = backend({ perguntas: [{ corpo: resposta('a1') }], auditorias: { a1: auditoria('a1') } })
+  abrir({ perfil: 'DIRETORIA' })
+  perguntar('Qual o faturamento em Olinda?')
+
+  expect(await screen.findByText('Resposta a1')).toBeInTheDocument()
+  expect(corpoDas(fetch, '/api/ai/ask')[0].user_id).toBe(usuarioExemplo('DIRETORIA').id)
+  expect(screen.queryByRole('button', { name: 'Ver o passo a passo' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Resposta útil' })).toBeInTheDocument()
+  expect(auditoriasBuscadas(fetch)).toEqual([])
 })
 
 test('a pergunta seguinte leva o histórico, e cada resposta abre o próprio passo a passo', async () => {
