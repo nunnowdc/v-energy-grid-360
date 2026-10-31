@@ -569,7 +569,7 @@ Depois, crie a primeira conta, a do administrador (perfil `ADMIN_TI`):
 
 3. Pronto: você entra no portal com o e-mail `adminti.vgrid360@visagio.com` e essa senha. A senha fica guardada no banco só como hash, então a linha do `BOOTSTRAP_ADMIN_PASSWORD` pode ser apagada do `backend/.env.local`.
 
-Rodar o script de novo não muda a conta nem a senha (aparece `Conta ADMIN_TI já existente.`). As contas dos outros perfis são criadas pelo administrador.
+Rodar o script de novo não muda a conta nem a senha (aparece `Conta ADMIN_TI já existente.`). As contas dos outros perfis são criadas pelo administrador, no portal, na tela **Usuários**. Cada pessoa troca a própria senha pelo botão com a chave, no rodapé do menu.
 
 ### 8. Backend
 
@@ -611,6 +611,7 @@ Abra http://localhost:5173. O portal mostra a tela de login: entre com `adminti.
 | Visão 360 | Busque `UC100000`: aparecem o cadastro, o consumo e as faturas da UC |
 | Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7.1) |
 | Continuidade | Os KPIs, o DEC e o FEC mês a mês e o ranking dos 122 alimentadores. Com a Gold 1.0.1 e sem filtro, o "Pior DEC (100 UCs ou mais)" é o ALM-SAO-004, com 15,6 h |
+| Usuários | O formulário de nova conta. Crie uma conta de outro perfil, saia e entre com ela: o menu mostra só as telas daquele perfil |
 | Agente de IA (botão no topo) | Pergunte "Qual o faturamento de Recife em 2024?": a resposta traz cerca de R$ 68,56 milhões (68.560.067,39), e a tela vai para os Indicadores de Recife em 2024 |
 
 ### Dia a dia

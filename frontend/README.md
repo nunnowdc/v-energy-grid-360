@@ -63,6 +63,7 @@ src/
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
 │   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
 │   ├── CaixaPergunta/CaixaPergunta.tsx    ← campo da pergunta ao agente (Enter envia)
+│   ├── CampoFormulario/CampoFormulario.tsx ← rótulo, campo e a dica ou o erro embaixo
 │   ├── CarregandoPortal/CarregandoPortal.tsx ← tela inteira enquanto o portal confere quem está logado
 │   ├── CartaoKpi/
 │   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
@@ -95,7 +96,7 @@ src/
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
 │   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
 │   ├── RotaInicial/RotaInicial.tsx
-│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário logado no rodapé do menu, com o botão Sair
+│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário logado no rodapé do menu, com Trocar senha e Sair
 │   ├── RotaProtegida/RotaProtegida.tsx
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
@@ -107,6 +108,7 @@ src/
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
 │   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
 │   ├── TextoMarkdown/TextoMarkdown.tsx    ← resposta do agente em Markdown com o visual do portal
+│   ├── TrocaSenha/TrocaSenha.tsx          ← botão do rodapé e painel para trocar a própria senha
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
 ├── config/
@@ -120,6 +122,7 @@ src/
 │   └── perfis.ts            ← perfis e permissões
 ├── hooks/
 │   ├── use-agente-ia.ts       ← perguntar, auditoria e 👍/👎 do agente (rotas /api/ai/*, reais)
+│   ├── use-contas.ts          ← criar conta (POST /api/auth/users) e trocar a senha (PATCH /api/auth/password)
 │   ├── use-continuidade.ts    ← DEC, FEC e ocorrências (GET /api/network/continuity)
 │   ├── use-fila-inspecao.ts   ← fila de UCs suspeitas (GET /api/inspections/queue)
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
@@ -213,6 +216,7 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 | `/visao-360/:idUc` | Visão 360 | Atendimento, Perdas, Administrador (TI) | Tudo sobre uma unidade consumidora em uma única tela |
 | `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
+| `/usuarios` | Usuários | Administrador (TI) | Criação das contas de acesso, com o perfil de cada pessoa |
 
 As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas ficam atrás de `components/SessaoObrigatoria` (só abrem com alguém logado) e são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`), o cabeçalho (`AppHeader`) e o agente de IA (`PainelAgente`). O `/login` fica fora dos dois, sem menu nem cabeçalho.
 
@@ -238,7 +242,7 @@ Os perfis usam os mesmos nomes da coluna `perfil` da tabela `usuarios` do backen
 
 ## Login
 
-O contrato está em `docs/backend/impl_autenticação-backend.md`. Não há cadastro: as contas são criadas pelo `ADMIN_TI` (`POST /api/auth/users`, pelo Swagger).
+O contrato está em `docs/backend/impl_autenticação-backend.md`. Não há cadastro público: as contas são criadas pelo `ADMIN_TI`.
 
 - **Cookie:** o `POST /api/auth/login` devolve o JWT no cookie `HttpOnly` `vgrid360_access_token`, que o navegador manda sozinho nas chamadas a `/api`. O frontend nunca lê nem guarda o token.
 - **Ao abrir o portal:** a tela fica em "Carregando o portal…" até o `GET /api/auth/me` responder, sem menu nem dados. Sem ninguém logado, vai para o `/login` e guarda a tela pedida (`/login?voltar=/receita`).
@@ -247,6 +251,8 @@ O contrato está em `docs/backend/impl_autenticação-backend.md`. Não há cada
 - **Sair:** o botão no rodapé do menu chama o `POST /api/auth/logout` e recarrega o portal no `/login`, o que apaga da memória os dados e a conversa com o agente.
 - **Sessão vencida:** o JWT dura 15 minutos e não é renovado. A primeira chamada com 401 leva ao `/login?motivo=sessao-expirada`, com o aviso "Sua sessão expirou. Entre novamente.", e depois do login volta para a mesma tela.
 - **403:** o endereço de uma tela sem permissão mostra "Sem permissão"; uma ação recusada mostra o erro no próprio bloco. A sessão continua.
+- **Criar conta:** a tela **Usuários** (`/usuarios`, só do `ADMIN_TI`, permissão `gerenciar_usuarios`) tem o formulário de nova conta (nome, e-mail, perfil e senha inicial) e, ao lado, as telas de cada perfil. O e-mail repetido (409) aparece no campo do e-mail. O backend não lista as contas, então a tela só cria. Depois, o administrador passa a senha inicial para a pessoa.
+- **Trocar senha:** o botão com a chave, no rodapé do menu, abre um painel com a senha atual, a nova e a confirmação, para qualquer perfil. A confirmação é conferida só na tela. Senha atual errada (400) aparece no campo dela. Depois da troca, a sessão continua. A troca nunca é obrigatória (decisão do backend).
 
 ## Chamadas à API
 
@@ -347,6 +353,7 @@ A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem lar
 Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a Gold no banco local (veja o "Como executar" do README da raiz). Os testes (`npm test`) não usam o backend: respondem com dados inventados no próprio teste ou com os de `src/mocks/`. Esses dados **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
 - `POST /api/auth/login`, `GET /api/auth/me` e `POST /api/auth/logout`: o login (veja [Login](#login)). Nos testes, as contas inventadas de `src/mocks/usuarios.ts`, uma por perfil.
+- `POST /api/auth/users` e `PATCH /api/auth/password`: criar conta (tela Usuários) e trocar a senha (rodapé do menu). Os testes usam um backend inventado no próprio teste.
 
 - `GET /api/filters/options`: as opções dos filtros. Nos testes, as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.
@@ -364,6 +371,7 @@ Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://t
 - **O que cobrem hoje:**
   - menu e rotas por perfil;
   - login, sessão vencida e Sair;
+  - criar conta e trocar a senha;
   - o `apiFetch` (mensagens de erro, servidor fora do ar, tempo esgotado, busca cancelada);
   - a sessão expirada e as novas tentativas;
   - os 4 estados dos blocos;
