@@ -139,7 +139,7 @@ src/
 │   ├── periodos.ts          ← regras dos períodos escolhíveis (tamanho, comparação, atalhos)
 │   ├── tela-da-resposta.ts  ← tela e filtros do dashboard para uma resposta do agente
 │   └── utils.ts
-├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
+├── mocks/                   ← dados inventados para os testes
 ├── pages/
 └── test/                    ← preparação dos testes e o renderizar()
 ```
@@ -328,31 +328,17 @@ Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e
 
 A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem largura fixa (definida em `FiltrosGlobais.tsx`), então escolher outro valor não muda o tamanho nem a posição dos filtros. Um valor maior que o filtro aparece cortado com "…" e inteiro ao passar o mouse. A lista de opções usa o `Select` do shadcn/ui, no visual do portal.
 
-## Dados de exemplo (MSW)
+## Rotas do backend
 
-Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde com dados de exemplo **só no `npm run dev`**. Nada disso vai para o build de produção.
+Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a Gold no banco local (veja o "Como executar" do README da raiz). Os testes (`npm test`) não usam o backend: respondem com dados inventados no próprio teste ou com os de `src/mocks/`. Esses dados **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
-- Ligar e desligar: `VITE_USAR_DADOS_EXEMPLO=true` ou `false` no `.env.local`, e reiniciar o `npm run dev`.
-- As respostas ficam em `src/mocks/handlers.ts`. As rotas sem exemplo seguem para o backend de verdade.
-- Quando uma rota real ficar pronta, apague o handler dela.
-- Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
-
-Rotas com exemplo hoje (números inventados):
-
-| Rota | Tela | Exemplo | Formato (proposta ao backend) |
-|---|---|---|---|
-| `GET /api/network/continuity` | Continuidade | `src/mocks/continuidade.ts` | `src/hooks/use-continuidade.ts` |
-
-Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
-
-Rotas que já são reais e precisam do backend com a Gold no banco local (veja `backend/README.md`):
-
-- `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/filters/options`: as opções dos filtros. Nos testes, as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
+- `GET /api/network/continuity`: a Continuidade. Os testes dela usam números redondos inventados no próprio teste. O card "Pior DEC" e o gráfico mês a mês, sem alimentador escolhido, mostram o pior DEC entre os alimentadores com 100 UCs ou mais: nos pequenos, poucas interrupções já inflam o DEC. Como a série da resposta é a do primeiro do ranking, quando ele é pequeno a tela pede a série do alimentador em destaque numa segunda consulta (`alimentadorEmDestaque` em `src/hooks/use-continuidade.ts`).
 - `GET /api/inspections/queue`, `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}`: a Fila de inspeção. As ordens ficam na tabela `ordens_inspecao`, que não vem com a Gold: crie uma vez com `backend/sql/ordens_inspecao.sql` (veja `backend/README.md`). Os testes da tela usam um backend inventado no próprio teste, com as mesmas regras (gerar é tudo ou nada; a hora vem em UTC).
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
-- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde em modo de teste. Os testes do painel usam respostas inventadas no próprio teste.
+- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde "O serviço de IA está temporariamente indisponível". Os testes do painel usam respostas inventadas no próprio teste.
 
 ## Testes automatizados
 
@@ -367,7 +353,7 @@ Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://t
   - a variação e o cartão de KPI;
   - os filtros na URL;
   - os formatos de número;
-  - os dados de exemplo.
+  - cada tela, com dados inventados no lugar do backend.
 - **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas). A opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
 - **Preparação comum:** fica em `src/test/setup.ts`. Ele limpa a tela entre um teste e outro, adiciona os verificadores do jest-dom (`toBeInTheDocument`, `toBeDisabled`…) e simula o que o jsdom não tem.
 - **Antes de abrir um PR:** `npm run lint`, `npm test` e `npm run build` devem passar.

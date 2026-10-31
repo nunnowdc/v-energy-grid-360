@@ -44,18 +44,9 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
     "jsdom": "^27.4.0",
-    "msw": "^2.15.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^8.3.4",
     "vitest": "^4.1.12"
-  },
-  "msw": {
-    "workerDirectory": [
-      "public"
-    ]
-  },
-  "allowScripts": {
-    "msw@2.15.0": true
   }
 }

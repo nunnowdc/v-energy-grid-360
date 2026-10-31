@@ -329,10 +329,7 @@ Se a senha tiver caracteres especiais, escreva-os codificados nas duas URLs:
 cp frontend/.env.example frontend/.env.local
 ```
 
-Os valores do exemplo já servem:
-
-- `VITE_PERFIL_TESTE` define o perfil do usuário de teste enquanto o login não existe. Os perfis são `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI`, e o `ADMIN_TI` vê todas as telas.
-- `VITE_USAR_DADOS_EXEMPLO=true` mostra dados de exemplo nas rotas que o backend ainda não tem (hoje, só a Continuidade).
+O valor do exemplo já serve. O `VITE_PERFIL_TESTE` define o perfil do usuário de teste enquanto o login não existe. Os perfis são `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI`, e o `ADMIN_TI` vê todas as telas.
 
 Depois de mudar qualquer `.env`, reinicie o que lê o arquivo (backend ou frontend).
 
@@ -427,8 +424,8 @@ python scripts/carga_banco_local.py
 - Depois da carga, ele roda o **Data Quality Gate**: 29 verificações do contrato da Gold, como chaves únicas, nenhum registro órfão e totais que fecham. Deve aparecer `Data Quality Gate aprovado com sucesso!`.
 - No fim, aparece `Carga concluída com sucesso no PostgreSQL!` e `Total de linhas importadas: 4,997,681`.
 - Se aparecer `FALHA NO DATA QUALITY GATE`, a Gold está incompleta ou desatualizada. Peça ao time a versão mais recente e repita a carga.
-- Deixe só uma cópia dos CSVs da Gold em `data/`. Com duas, o script não avisa e pode carregar a antiga.
-- Não use as opções `--reset-data` e `--update-release`. Elas apagam **todos** os CSVs de `data/`, inclusive os dados brutos do case, e tentam baixar a Gold do GitHub.
+- Deixe só uma cópia da Gold em `data/`, seja o zip, seja a pasta extraída. Com duas, o script para e mostra as cópias que encontrou.
+- Para trocar por uma Gold nova, deixe só o zip novo em `data/` e rode o script com `--reset-data`. Ele apaga só os CSVs da Gold já extraídos e extrai o zip de novo. O zip e os dados brutos do case ficam.
 
 Para conferir (no DBeaver ou no terminal):
 
@@ -584,7 +581,7 @@ Com o perfil `ADMIN_TI` (o padrão), todas as telas aparecem no menu:
 | Receita | A ponte de receita entre os dois períodos e a tabela por município |
 | Visão 360 | Busque `UC100000`: aparecem o cadastro, o consumo e as faturas da UC |
 | Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7) |
-| Continuidade | Dados de exemplo, até a rota real existir no backend |
+| Continuidade | Os KPIs, o DEC e o FEC mês a mês e o ranking dos 122 alimentadores. Com a Gold 1.0.1 e sem filtro, o "Pior DEC (100 UCs ou mais)" é o ALM-SAO-004, com 15,6 h |
 | Agente de IA (botão no topo) | Pergunte "Qual o faturamento de Recife em 2024?": a resposta traz cerca de R$ 68,56 milhões (68.560.067,39), e a tela vai para os Indicadores de Recife em 2024 |
 
 ### Dia a dia
@@ -631,12 +628,7 @@ Sem o setup:
 Quando a Engenharia de Dados publicar uma Gold nova:
 
 - **Com o setup:** troque o zip de `data/` pelo novo, rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` (macOS/Linux: `bash setup.sh --recarregar-gold`) e reinicie o backend.
-- **Sem o setup:**
-
-1. apague a pasta `data/exports_gold/`, com a Gold antiga;
-2. extraia o zip novo para `data/exports_gold/`, como no passo 0.4;
-3. com o ambiente ativo, rode de novo o passo 5;
-4. reinicie o backend.
+- **Sem o setup:** troque o zip de `data/` pelo novo, deixando só ele. Com o ambiente ativo, rode `python scripts/carga_banco_local.py --reset-data` e reinicie o backend. O `--reset-data` apaga os CSVs da Gold antiga e extrai o zip novo.
 
 A carga apaga e recria só as 15 tabelas da Gold. As ordens de inspeção e as tabelas da IA continuam como estavam.
 
@@ -682,7 +674,8 @@ Com o ambiente Python ativo:
 | `port is already allocated` | A porta 5433 já está em uso | Troque para `-p 5434:5432` no `docker run` e use a 5434 nas duas URLs do passo 2 |
 | `password authentication failed` | A senha das URLs é diferente da do `docker run` | Confira o `.env` e o `backend/.env.local`. A senha só é gravada quando o volume é criado: para trocar, recomece do zero |
 | `extension "vector" is not available` | A URL aponta para outro PostgreSQL (porta 5432) | Use a porta 5433 nas duas URLs |
-| `Nenhum CSV correspondente às tabelas Gold foi identificado` | O zip não foi extraído | Extraia o zip para `data/exports_gold/` (passo 0.4) |
+| `Nenhum CSV da Gold nem arquivo .zip encontrado` | A Gold não está em `data/` | Copie o zip da Gold para `data/` (passo 0.4) |
+| `Mais de um arquivo .zip encontrado` ou `Mais de um CSV para a tabela ...` | Há duas cópias da Gold em `data/` (por exemplo, a antiga e a nova) | Tire a cópia antiga de `data/` e rode de novo |
 | `FALHA NO DATA QUALITY GATE` | A Gold carregada está incompleta ou desatualizada | Peça a Gold mais recente ao time e repita o passo 5 |
 | `Activate.ps1 não pode ser carregado` | Política de execução do PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e um terminal novo |
 | `ModuleNotFoundError` ao rodar um script ou o backend | O ambiente Python não está ativo | `backend\.venv\Scripts\Activate.ps1` a partir da raiz (macOS/Linux: `source backend/.venv/bin/activate`) |
@@ -723,8 +716,9 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - **Gold:** no MVP, é um retrato fixo carregado no PostgreSQL local, sem atualização.
 - **Decomposição preço × volume:** usa a fórmula publicada na Gold: efeito-volume = (kWh P1 − kWh P0) × preço P0, e efeito-preço = (preço P1 − preço P0) × kWh P1. A decomposição de Shapley do diagnóstico fica fora do MVP.
 - **Filtros:** um valor por filtro. A Continuidade filtra por alimentador e causa: o município limita os alimentadores mostrados, e a causa filtra só as ocorrências. DEC e FEC são sempre do alimentador inteiro, nunca de um município ou de uma causa.
+- **Alimentadores pequenos:** na Continuidade, o "Pior DEC" e o gráfico mês a mês destacam o pior alimentador com 100 UCs ou mais. Nos com menos de 100 UCs (14 dos 122), poucas interrupções já inflam o DEC. Eles continuam no ranking, marcados com "Menos de 100 UCs".
 - ⚠️ **Motivo da suspeita:** a Fila de inspeção ainda não filtra por motivo, porque a Gold guarda vários motivos no mesmo texto. Depende de uma lista de motivos da Engenharia de Dados.
-- **Dados de exemplo:** enquanto o backend não tem todas as rotas, o frontend usa dados de exemplo (MSW), só no `npm run dev`. Eles nunca vêm da base real (veja `frontend/README.md`).
+- **Dados reais:** todas as telas usam a Gold pelo backend. Os testes automatizados usam dados inventados, nunca da base real (veja `frontend/README.md`).
 
 ## Fluxo de trabalho (Git Flow)
 
