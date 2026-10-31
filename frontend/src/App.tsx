@@ -12,6 +12,7 @@ import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import LoginPage from './pages/Login/LoginPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import ReceitaPage from './pages/Receita/ReceitaPage'
+import UsuariosPage from './pages/Usuarios/UsuariosPage'
 import Visao360Page from './pages/Visao360/Visao360Page'
 
 function App() {
@@ -38,6 +39,9 @@ function App() {
                 </Route>
                 <Route element={<RotaProtegida permissao="ver_continuidade" />}>
                   <Route path="continuidade" element={<ContinuidadePage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="gerenciar_usuarios" />}>
+                  <Route path="usuarios" element={<UsuariosPage />} />
                 </Route>
                 <Route path="*" element={<NotFoundPage />} />
               </Route>

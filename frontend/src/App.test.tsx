@@ -66,12 +66,27 @@ describe('menu e rotas por perfil', () => {
     await abrir('/', 'ADMIN_TI')
     expect(within(menu()).getByText('Negócio')).toBeInTheDocument()
     expect(within(menu()).getByText('Operação')).toBeInTheDocument()
+    expect(within(menu()).getByText('Administração')).toBeInTheDocument()
     document.body.innerHTML = ''
     queryClient.clear()
 
     await abrir('/', 'ATENDIMENTO')
     expect(within(menu()).queryByText('Negócio')).not.toBeInTheDocument()
     expect(within(menu()).getByText('Operação')).toBeInTheDocument()
+    expect(within(menu()).queryByText('Administração')).not.toBeInTheDocument()
+  })
+
+  test('só o ADMIN_TI vê e abre a tela de Usuários', async () => {
+    await abrir('/usuarios', 'ADMIN_TI')
+    expect(titulo()).toBe('Usuários')
+    expect(trilha()).toBe('Administração/Usuários')
+    expect(telasNoMenu()).toContain('Usuários')
+    document.body.innerHTML = ''
+    queryClient.clear()
+
+    await abrir('/usuarios', 'PERDAS')
+    expect(titulo()).toBe('Você não tem acesso a esta tela')
+    expect(telasNoMenu()).not.toContain('Usuários')
   })
 
   test('Atendimento abre o "/" e vai direto para a Visão 360', async () => {
@@ -116,10 +131,13 @@ describe('menu e rotas por perfil', () => {
     expect(screen.getByRole('button', { name: 'Agente de IA' })).toBeInTheDocument()
   })
 
-  test('o rodapé do menu mostra quem está logado', async () => {
+  test('o rodapé do menu mostra quem está logado e deixa trocar a senha', async () => {
     await abrir('/', 'OPERACAO')
     expect(screen.getByText('Pessoa Operação')).toBeInTheDocument()
     expect(within(screen.getByText('Pessoa Operação').parentElement!).getByText('Operação')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Trocar senha' }))
+    expect(screen.getByRole('dialog', { name: 'Trocar senha' })).toBeInTheDocument()
   })
 })
 

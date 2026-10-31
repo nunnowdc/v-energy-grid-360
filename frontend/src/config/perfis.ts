@@ -9,6 +9,7 @@ export type Permissao =
   | 'ver_continuidade'
   | 'usar_agente_ia'
   | 'ver_auditoria_ia'
+  | 'gerenciar_usuarios'
 
 export const nomesPerfis: Record<Perfil, string> = {
   DIRETORIA: 'Diretoria',
@@ -21,7 +22,8 @@ export const nomesPerfis: Record<Perfil, string> = {
 // Espelho do mapa de permissões do backend, que é quem decide de verdade.
 // Aqui serve só para montar o menu, as rotas e os botões de cada perfil.
 // O agente de IA (painel ao lado das telas) é de todos os perfis, mas o passo
-// a passo de cada resposta (GET /api/ai/audit) é só do ADMIN_TI (decisão do time)
+// a passo de cada resposta (GET /api/ai/audit) é só do ADMIN_TI (decisão do time).
+// Criar contas (POST /api/auth/users) também é só do ADMIN_TI
 export const permissoesPorPerfil: Record<Perfil, Permissao[]> = {
   DIRETORIA: ['ver_indicadores', 'ver_receita', 'ver_continuidade', 'usar_agente_ia'],
   ATENDIMENTO: ['ver_visao_360', 'usar_agente_ia'],
@@ -35,6 +37,7 @@ export const permissoesPorPerfil: Record<Perfil, Permissao[]> = {
     'ver_continuidade',
     'usar_agente_ia',
     'ver_auditoria_ia',
+    'gerenciar_usuarios',
   ],
 }
 
