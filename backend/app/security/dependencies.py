@@ -61,3 +61,12 @@ def get_current_user(
     if user is None:
         raise HTTPException(status_code=401, detail="Não autenticado")
     return user
+
+
+def require_admin_ti(
+    user: Annotated[dict[str, object], Depends(get_current_user)],
+) -> dict[str, object]:
+    """Protege o cadastro administrativo antes do RBAC geral do Ticket 04."""
+    if user["perfil"] != "ADMIN_TI":
+        raise HTTPException(status_code=403, detail="Acesso não permitido")
+    return user

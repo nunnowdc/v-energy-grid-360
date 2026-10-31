@@ -15,6 +15,9 @@ from app.core.config import ENV_LOCAL_PATH, get_settings
 from app.security.dependencies import ALLOWED_WRITE_ORIGINS
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
@@ -41,6 +44,22 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def safe_auth_validation(request: Request, exc: RequestValidationError):
+    """Evita ecoar senhas inválidas nas respostas dos novos endpoints."""
+    if request.url.path in {"/api/auth/users", "/api/auth/password"}:
+        errors = [
+            {key: value for key, value in error.items() if key != "input"}
+            for error in exc.errors()
+        ]
+        return JSONResponse(
+            status_code=422, content={"detail": jsonable_encoder(errors)}
+        )
+    return await request_validation_exception_handler(request, exc)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

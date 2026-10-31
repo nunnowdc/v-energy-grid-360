@@ -22,6 +22,8 @@ Partindo da raiz do repositório, com o PostgreSQL local já preparado:
 
    ```bash
    cp -n .env.example .env.local
+   ```
+
 Configure as seguintes variáveis:
 - **Banco de dados & Autenticação:**
   - `DATABASE_URL`: Connection string do PostgreSQL
@@ -46,8 +48,11 @@ Configure as seguintes variáveis:
 
    Substitua `HOST`, `PORTA`, `USUARIO` e `BANCO` pelos valores da sua conexão;
    `psql` solicitará a senha do PostgreSQL quando necessário. Os scripts não são
-   executados pela API e falham se as tabelas já existirem; não os rode novamente
-   em uma instalação já preparada.
+   executados pela API. `sql/usuarios.sql` usa `CREATE TABLE IF NOT EXISTS`: ao
+   reexecutá-lo, não tenta recriar uma tabela existente, mas também não verifica
+   nem corrige diferenças de estrutura. `sql/ordens_inspecao.sql` não usa essa
+   cláusula e falha se a tabela já existir; não o rode novamente em uma
+   instalação já preparada.
 
 5. Crie a primeira conta administrativa. O bootstrap exige `usuarios` já criada e
    lê a senha de `.env.local` ou da variável do processo (que tem prioridade):
