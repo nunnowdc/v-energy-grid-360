@@ -1,8 +1,8 @@
 ﻿<#
 Prepara o V-Energy Grid 360 para rodar neste computador (Windows), fazendo os
 passos 1 a 9 do "Como executar" do README: banco no Docker, arquivos de
-configuração, ambiente Python, carga da Gold, tabelas da IA, tabela das ordens
-de inspeção e dependências do frontend.
+configuração, ambiente Python, carga da Gold, tabelas da IA, tabelas das ordens
+de inspeção e dos usuários, conta de administrador e dependências do frontend.
 
 Pode rodar de novo quantas vezes quiser: o que já está pronto é pulado. Rode de
 novo depois de um git pull, para instalar dependências novas.
@@ -21,7 +21,9 @@ param(
     [int]$Porta = 5433,
     [string]$Volume = 'pgdata-v_energy',
     # Senha do banco, para não perguntar (opcional)
-    [string]$Senha = ''
+    [string]$Senha = '',
+    # Senha da conta de administrador do portal, para não perguntar (opcional)
+    [string]$SenhaAdmin = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,10 +41,11 @@ $TabelasGold = @(
 
 $EnvRaiz = Join-Path $Raiz '.env'
 $EnvBackend = Join-Path $Raiz 'backend\.env.local'
-$EnvFrontend = Join-Path $Raiz 'frontend\.env.local'
 $PastaVenv = Join-Path $Raiz 'backend\.venv'
 $Py = Join-Path $PastaVenv 'Scripts\python.exe'
 $PastaDados = Join-Path $Raiz 'data'
+# A primeira conta do portal, a mesma do backend\scripts\bootstrap_admin_ti.py
+$EmailAdmin = 'adminti.vgrid360@visagio.com'
 
 Write-Host 'V-Energy Grid 360 · setup' -ForegroundColor Cyan
 
@@ -212,12 +215,25 @@ else {
     Escrever-Ok 'backend\.env.local já existe (mantido)'
 }
 
-if (-not (Test-Path -LiteralPath $EnvFrontend)) {
-    Copy-Item -LiteralPath (Join-Path $Raiz 'frontend\.env.example') -Destination $EnvFrontend
-    Escrever-Ok 'frontend\.env.local criado'
+# Segredo que assina o cookie de login. É gerado uma vez só: com um segredo
+# novo, quem estiver logado precisa entrar de novo
+if (-not (Ler-Variavel $EnvBackend 'JWT_SECRET_KEY')) {
+    $segredo = Ler-Saida $Py @('-c', 'import secrets; print(secrets.token_urlsafe(48))')
+    if (-not $segredo) { Falhar 'Não foi possível gerar o JWT_SECRET_KEY.' }
+    $linhaSegredo = "JWT_SECRET_KEY=$segredo"
+    $texto = Ler-Arquivo $EnvBackend
+    if ($texto -match '(?m)^JWT_SECRET_KEY=') {
+        $texto = $texto -replace '(?m)^JWT_SECRET_KEY=[^\r\n]*', $linhaSegredo
+    }
+    else {
+        if ($texto -and -not $texto.EndsWith("`n")) { $texto += "`r`n" }
+        $texto += "$linhaSegredo`r`n"
+    }
+    Escrever-Arquivo $EnvBackend $texto
+    Escrever-Ok 'backend\.env.local: JWT_SECRET_KEY gerado'
 }
 else {
-    Escrever-Ok 'frontend\.env.local já existe (mantido)'
+    Escrever-Ok 'JWT_SECRET_KEY já definido (mantido)'
 }
 
 # ---------------------------------------------------------------------------
@@ -302,7 +318,7 @@ if (-not $trechos -or $trechos -eq '0') {
 Escrever-Ok "Base de conhecimento do RAG ($trechos trechos)"
 
 # ---------------------------------------------------------------------------
-Escrever-Titulo '8/9 Tabela das ordens de inspeção'
+Escrever-Titulo '8/9 Tabelas das ordens de inspeção e dos usuários'
 
 if ((Consultar $Container "SELECT to_regclass('public.ordens_inspecao') IS NOT NULL") -eq 't') {
     Escrever-Ok 'Tabela ordens_inspecao já existe (mantida, com as ordens que houver)'
@@ -313,6 +329,49 @@ else {
         'exec', $Container, 'psql', '-q', '-U', 'postgres', '-d', 'v_energy', '-v', 'ON_ERROR_STOP=1', '-f', '/tmp/ordens_inspecao.sql'
     )
     Escrever-Ok 'Tabela ordens_inspecao criada'
+}
+
+if ((Consultar $Container "SELECT to_regclass('public.usuarios') IS NOT NULL") -eq 't') {
+    Escrever-Ok 'Tabela usuarios já existe (mantida, com as contas que houver)'
+}
+else {
+    Executar-Quieto 'Copiar o script dos usuários para o container' 'docker' @('cp', 'backend\sql\usuarios.sql', "$($Container):/tmp/usuarios.sql")
+    Executar-Quieto 'Criar a tabela usuarios' 'docker' @(
+        'exec', $Container, 'psql', '-q', '-U', 'postgres', '-d', 'v_energy', '-v', 'ON_ERROR_STOP=1', '-f', '/tmp/usuarios.sql'
+    )
+    Escrever-Ok 'Tabela usuarios criada'
+}
+
+# A conta ADMIN_TI é a única criada aqui: as outras contas são criadas por ela
+if ((Consultar $Container "SELECT count(*) FROM usuarios WHERE email = '$EmailAdmin'") -eq '1') {
+    Escrever-Ok "Conta de administrador já existe ($EmailAdmin, mantida)"
+}
+else {
+    # O bootstrap lê a senha do backend\.env.local. Sem ela lá, a senha digitada vai
+    # só para o processo do bootstrap, sem ser gravada em arquivo
+    $senhaConta = $SenhaAdmin
+    if (-not $senhaConta -and -not (Ler-Variavel $EnvBackend 'BOOTSTRAP_ADMIN_PASSWORD')) {
+        Write-Host "   Escolha a senha da conta de administrador do portal ($EmailAdmin)."
+        Write-Host '   Ela precisa de pelo menos 8 caracteres. Guarde: é com ela que você entra no portal.'
+        $senhaConta = Ler-Senha '   Senha'
+        if ((Ler-Senha '   Repita a senha') -ne $senhaConta) {
+            Falhar 'As duas senhas digitadas são diferentes. Rode o setup de novo.'
+        }
+    }
+    if ($senhaConta -and $senhaConta.Length -lt 8) {
+        Falhar 'A senha da conta de administrador precisa de pelo menos 8 caracteres. Rode o setup de novo.'
+    }
+    $senhaAnterior = $env:BOOTSTRAP_ADMIN_PASSWORD
+    if ($senhaConta) { $env:BOOTSTRAP_ADMIN_PASSWORD = $senhaConta }
+    Push-Location -LiteralPath (Join-Path $Raiz 'backend')
+    try {
+        Executar-Quieto 'Criar a conta de administrador' $Py @('-m', 'scripts.bootstrap_admin_ti')
+    }
+    finally {
+        Pop-Location
+        $env:BOOTSTRAP_ADMIN_PASSWORD = $senhaAnterior
+    }
+    Escrever-Ok "Conta de administrador criada ($EmailAdmin)"
 }
 
 # ---------------------------------------------------------------------------
@@ -346,3 +405,5 @@ elseif ($chave9router -and -not (Get-Command 9router.cmd -ErrorAction SilentlyCo
 Write-Host ''
 Write-Host 'Para ligar o portal:' -ForegroundColor Green
 Write-Host '    powershell -ExecutionPolicy Bypass -File .\iniciar.ps1'
+Write-Host ''
+Write-Host "Para entrar no portal, use $EmailAdmin e a senha da conta de administrador." -ForegroundColor Green

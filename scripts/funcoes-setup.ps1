@@ -94,15 +94,17 @@ function Ler-Arquivo([string]$caminho) {
     return [System.IO.File]::ReadAllText($caminho, [System.Text.Encoding]::UTF8)
 }
 
-# Valor de uma variável de um arquivo .env, ou '' se não houver
+# Valor de uma variável de um arquivo .env, ou '' se não houver. Se ela aparecer
+# mais de uma vez, vale a última, como no python-dotenv do backend
 function Ler-Variavel([string]$arquivo, [string]$nome) {
     if (-not (Test-Path -LiteralPath $arquivo)) { return '' }
+    $valor = ''
     foreach ($linha in (Ler-Arquivo $arquivo) -split "`r?`n") {
         if ($linha -match "^\s*$nome\s*=\s*(.*)$") {
-            return $Matches[1].Trim().Trim('"').Trim("'")
+            $valor = $Matches[1].Trim().Trim('"').Trim("'")
         }
     }
-    return ''
+    return $valor
 }
 
 # Senha e porta do DATABASE_URL de um arquivo .env, ou $null se o arquivo
@@ -113,6 +115,12 @@ function Ler-Conexao([string]$arquivo) {
     $senha = [System.Uri]::UnescapeDataString($Matches[2])
     if ($senha -eq 'SUA_SENHA' -or $senha -eq '') { return $null }
     return @{ Senha = $senha; Porta = [int]$Matches[3] }
+}
+
+# Pede uma senha sem mostrar o que é digitado
+function Ler-Senha([string]$pergunta) {
+    $segura = Read-Host $pergunta -AsSecureString
+    return [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($segura))
 }
 
 function Docker-Ligado {

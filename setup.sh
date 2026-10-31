@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Prepara o V-Energy Grid 360 para rodar neste computador (macOS ou Linux),
 # fazendo os passos 1 a 9 do "Como executar" do README: banco no Docker, arquivos
-# de configuração, ambiente Python, carga da Gold, tabelas da IA, tabela das
-# ordens de inspeção e dependências do frontend. No Windows, use o setup.ps1.
+# de configuração, ambiente Python, carga da Gold, tabelas da IA, tabelas das
+# ordens de inspeção e dos usuários, conta de administrador e dependências do
+# frontend. No Windows, use o setup.ps1.
 #
 # Pode rodar de novo quantas vezes quiser: o que já está pronto é pulado. Rode de
 # novo depois de um git pull, para instalar dependências novas.
@@ -22,6 +23,7 @@ CONTAINER='postgres-venergy'
 PORTA=5433
 VOLUME='pgdata-v_energy'
 SENHA=''
+SENHA_ADMIN=''
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -30,7 +32,8 @@ while [ $# -gt 0 ]; do
         --porta) PORTA="$2"; shift ;;
         --volume) VOLUME="$2"; shift ;;
         --senha) SENHA="$2"; shift ;;
-        *) echo "Opção desconhecida: $1 (as opções são --recarregar-gold, --porta, --container, --volume e --senha)"; exit 1 ;;
+        --senha-admin) SENHA_ADMIN="$2"; shift ;;
+        *) echo "Opção desconhecida: $1 (as opções são --recarregar-gold, --porta, --container, --volume, --senha e --senha-admin)"; exit 1 ;;
     esac
     shift
 done
@@ -47,10 +50,11 @@ agg_receita_preco_volume agg_continuidade_alimentador agg_continuidade_alimentad
 
 ENV_RAIZ="$RAIZ/.env"
 ENV_BACKEND="$RAIZ/backend/.env.local"
-ENV_FRONTEND="$RAIZ/frontend/.env.local"
 PASTA_VENV="$RAIZ/backend/.venv"
 PY="$PASTA_VENV/bin/python"
 PASTA_DADOS="$RAIZ/data"
+# A primeira conta do portal, a mesma do backend/scripts/bootstrap_admin_ti.py
+EMAIL_ADMIN='adminti.vgrid360@visagio.com'
 
 echo "${COR_TITULO}V-Energy Grid 360 · setup${COR_FIM}"
 
@@ -252,11 +256,22 @@ else
     escrever_ok 'backend/.env.local já existe (mantido)'
 fi
 
-if [ ! -e "$ENV_FRONTEND" ]; then
-    cp "$RAIZ/frontend/.env.example" "$ENV_FRONTEND"
-    escrever_ok 'frontend/.env.local criado'
+# Segredo que assina o cookie de login. É gerado uma vez só: com um segredo
+# novo, quem estiver logado precisa entrar de novo
+if [ -z "$(ler_variavel "$ENV_BACKEND" 'JWT_SECRET_KEY')" ]; then
+    executar_quieto 'Gerar o JWT_SECRET_KEY' "$PY" -c '
+import re, secrets, sys
+texto = open(sys.argv[1], encoding="utf-8").read()
+linha = "JWT_SECRET_KEY=" + secrets.token_urlsafe(48)
+if re.search(r"(?m)^JWT_SECRET_KEY=", texto):
+    texto = re.sub(r"(?m)^JWT_SECRET_KEY=.*$", lambda _: linha, texto)
+else:
+    texto += ("\n" if texto and not texto.endswith("\n") else "") + linha + "\n"
+open(sys.argv[1], "w", encoding="utf-8", newline="").write(texto)
+' "$ENV_BACKEND"
+    escrever_ok 'backend/.env.local: JWT_SECRET_KEY gerado'
 else
-    escrever_ok 'frontend/.env.local já existe (mantido)'
+    escrever_ok 'JWT_SECRET_KEY já definido (mantido)'
 fi
 
 # ---------------------------------------------------------------------------
@@ -348,7 +363,7 @@ fi
 escrever_ok "Base de conhecimento do RAG ($TRECHOS trechos)"
 
 # ---------------------------------------------------------------------------
-escrever_titulo '8/9 Tabela das ordens de inspeção'
+escrever_titulo '8/9 Tabelas das ordens de inspeção e dos usuários'
 
 if [ "$(consultar "$CONTAINER" "SELECT to_regclass('public.ordens_inspecao') IS NOT NULL")" = 't' ]; then
     escrever_ok 'Tabela ordens_inspecao já existe (mantida, com as ordens que houver)'
@@ -357,6 +372,46 @@ else
     executar_quieto 'Criar a tabela ordens_inspecao' \
         docker exec "$CONTAINER" psql -q -U postgres -d v_energy -v ON_ERROR_STOP=1 -f /tmp/ordens_inspecao.sql
     escrever_ok 'Tabela ordens_inspecao criada'
+fi
+
+if [ "$(consultar "$CONTAINER" "SELECT to_regclass('public.usuarios') IS NOT NULL")" = 't' ]; then
+    escrever_ok 'Tabela usuarios já existe (mantida, com as contas que houver)'
+else
+    executar_quieto 'Copiar o script dos usuários para o container' docker cp backend/sql/usuarios.sql "$CONTAINER:/tmp/usuarios.sql"
+    executar_quieto 'Criar a tabela usuarios' \
+        docker exec "$CONTAINER" psql -q -U postgres -d v_energy -v ON_ERROR_STOP=1 -f /tmp/usuarios.sql
+    escrever_ok 'Tabela usuarios criada'
+fi
+
+# A conta ADMIN_TI é a única criada aqui: as outras contas são criadas por ela
+if [ "$(consultar "$CONTAINER" "SELECT count(*) FROM usuarios WHERE email = '$EMAIL_ADMIN'")" = '1' ]; then
+    escrever_ok "Conta de administrador já existe ($EMAIL_ADMIN, mantida)"
+else
+    # O bootstrap lê a senha do backend/.env.local. Sem ela lá, a senha digitada vai
+    # só para o processo do bootstrap, sem ser gravada em arquivo
+    SENHA_CONTA="$SENHA_ADMIN"
+    if [ -z "$SENHA_CONTA" ] && [ -z "$(ler_variavel "$ENV_BACKEND" 'BOOTSTRAP_ADMIN_PASSWORD')" ]; then
+        if [ ! -t 0 ]; then
+            falhar 'Não dá para perguntar a senha da conta de administrador aqui. Rode de novo com: bash setup.sh --senha-admin SUA_SENHA'
+        fi
+        echo "   Escolha a senha da conta de administrador do portal ($EMAIL_ADMIN)."
+        echo '   Ela precisa de pelo menos 8 caracteres. Guarde: é com ela que você entra no portal.'
+        SENHA_CONTA="$(ler_senha '   Senha: ')"
+        if [ "$(ler_senha '   Repita a senha: ')" != "$SENHA_CONTA" ]; then
+            falhar 'As duas senhas digitadas são diferentes. Rode o setup de novo.'
+        fi
+    fi
+    if [ -n "$SENHA_CONTA" ] && [ ${#SENHA_CONTA} -lt 8 ]; then
+        falhar 'A senha da conta de administrador precisa de pelo menos 8 caracteres. Rode o setup de novo.'
+    fi
+    cd "$RAIZ/backend" || exit 1
+    if [ -n "$SENHA_CONTA" ]; then
+        BOOTSTRAP_ADMIN_PASSWORD="$SENHA_CONTA" executar_quieto 'Criar a conta de administrador' "$PY" -m scripts.bootstrap_admin_ti
+    else
+        executar_quieto 'Criar a conta de administrador' "$PY" -m scripts.bootstrap_admin_ti
+    fi
+    cd "$RAIZ" || exit 1
+    escrever_ok "Conta de administrador criada ($EMAIL_ADMIN)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -385,3 +440,5 @@ fi
 echo ''
 echo "${COR_OK}Para ligar o portal:${COR_FIM}"
 echo '    bash iniciar.sh'
+echo ''
+echo "${COR_OK}Para entrar no portal, use $EMAIL_ADMIN e a senha da conta de administrador.${COR_FIM}"
