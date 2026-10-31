@@ -29,6 +29,8 @@ npm install     # instala as dependências (só na primeira vez)
 npm run dev     # sobe o servidor em http://localhost:5173
 ```
 
+A porta é sempre a 5173: o backend só aceita escritas (login, ordens, agente) vindas dela. Se ela estiver ocupada, o `npm run dev` para com o erro `Port 5173 is already in use` em vez de subir em outra porta. Feche o outro processo (normalmente um `npm run dev` esquecido) e rode de novo.
+
 ### Outros comandos
 
 | Comando | O que faz |
@@ -61,6 +63,7 @@ src/
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
 │   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
 │   ├── CaixaPergunta/CaixaPergunta.tsx    ← campo da pergunta ao agente (Enter envia)
+│   ├── CarregandoPortal/CarregandoPortal.tsx ← tela inteira enquanto o portal confere quem está logado
 │   ├── CartaoKpi/
 │   │   ├── CartaoKpi.tsx                  ← indicador com valor e variação
 │   │   └── CartaoKpiEsqueleto.tsx
@@ -92,12 +95,13 @@ src/
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
 │   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
 │   ├── RotaInicial/RotaInicial.tsx
-│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário no rodapé do menu
+│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário logado no rodapé do menu, com o botão Sair
 │   ├── RotaProtegida/RotaProtegida.tsx
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
 │   ├── SeloConfianca/SeloConfianca.tsx    ← quanto dá para confiar na resposta do agente
 │   ├── SeletorPeriodo/SeletorPeriodo.tsx  ← filtro de período: botão que abre um calendário de meses
+│   ├── SessaoObrigatoria/SessaoObrigatoria.tsx ← porta da área logada: sem login, vai para o /login
 │   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
 │   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
@@ -125,13 +129,13 @@ src/
 │   ├── use-ordens-inspecao.ts ← listar, gerar, mudar e cancelar ordens de inspeção
 │   ├── use-receita.ts         ← efeito preço e volume (GET /api/metrics/revenue-variance, rota real)
 │   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
-│   └── use-usuario.ts         ← usuário atual (de teste até o login existir)
+│   └── use-usuario.ts         ← quem está logado (GET /api/auth/me), entrar e sair
 ├── lib/
 │   ├── api/
 │   │   ├── api-fetch.ts     ← função única para chamar o backend
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
 │   │   ├── query-client.ts  ← configuração do TanStack Query
-│   │   └── sessao.ts        ← sessão expirada (401) leva ao login
+│   │   └── sessao.ts        ← sessão expirada (401) leva ao login e guarda a tela para voltar
 │   ├── comparacao.ts        ← variação percentual entre dois períodos
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
@@ -210,7 +214,7 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 | `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
 
-As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`), o cabeçalho (`AppHeader`) e o agente de IA (`PainelAgente`).
+As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas ficam atrás de `components/SessaoObrigatoria` (só abrem com alguém logado) e são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`), o cabeçalho (`AppHeader`) e o agente de IA (`PainelAgente`). O `/login` fica fora dos dois, sem menu nem cabeçalho.
 
 ### Agente de IA
 
@@ -219,7 +223,7 @@ Não é uma tela: o botão **Agente de IA** do cabeçalho abre o agente numa col
 - Em telas largas (a partir de 1024 px) o agente divide o espaço com a tela; nas estreitas, abre por cima.
 - A conversa continua ao trocar de tela e ao fechar e reabrir o painel. "Nova conversa" começa outra sessão.
 - Cada pergunta leva a tela aberta como contexto (`page`, e `id_uc` na Visão 360) e as 3 perguntas anteriores, para o agente entender "e em 2023?".
-- Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. O texto vem em Markdown (negrito, listas, tabelas) e é mostrado formatado; HTML no texto não é interpretado. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado.
+- Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. O texto vem em Markdown (negrito, listas, tabelas) e é mostrado formatado; HTML no texto não é interpretado. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado. Esse botão é só do Administrador (TI) (permissão `ver_auditoria_ia`), porque o backend libera `GET /api/ai/audit/{id}` só para o `ADMIN_TI` (decisão do time).
 - **O dashboard acompanha a conversa.** Cada resposta com base (dados ou documentos; recusa e erro não contam) leva a tela para onde estão os dados dela: "faturamento em Recife" abre os Indicadores de Recife, "qual alimentador teve o maior DEC" abre a Continuidade naquele alimentador, "a UC mais suspeita" abre a Visão 360 dela. Quem escolhe é o agente, pela consulta que executou: as tabelas decidem a tela e o WHERE (ou a linha única do resultado) decide os filtros, no campo `dashboard` de `/api/ai/ask`. O front (`src/lib/tela-da-resposta.ts`) só aplica os valores que existem em `/filters/options` e que a tela tem. Respostas sem consulta (glossário, normas) abrem a tela do assunto da pergunta. A resposta mostra o link "No dashboard: …" para reabrir essa visão.
 
 ## Perfis de acesso
@@ -230,9 +234,19 @@ Cada usuário tem um perfil, e o perfil define as permissões (`ver_receita`, `v
 - Quem digita o endereço de uma tela sem permissão vê a tela **"Sem permissão"**.
 - O `/` leva cada perfil para a primeira tela que ele pode abrir.
 
-Os perfis usam os mesmos nomes da coluna `role` do backend: `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI` (`src/config/perfis.ts`).
+Os perfis usam os mesmos nomes da coluna `perfil` da tabela `usuarios` do backend: `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI` (`src/config/perfis.ts`). Esse arquivo é só um espelho para montar o menu e os botões: quem bloqueia de verdade é o backend, que responde 403.
 
-Enquanto o login não existe, o portal usa um **usuário de teste**. Para trocar o perfil dele, copie `.env.example` para `.env.local`, mude `VITE_PERFIL_TESTE` (ex.: `VITE_PERFIL_TESTE=DIRETORIA`) e reinicie o `npm run dev`.
+## Login
+
+O contrato está em `docs/backend/impl_autenticação-backend.md`. Não há cadastro: as contas são criadas pelo `ADMIN_TI` (`POST /api/auth/users`, pelo Swagger).
+
+- **Cookie:** o `POST /api/auth/login` devolve o JWT no cookie `HttpOnly` `vgrid360_access_token`, que o navegador manda sozinho nas chamadas a `/api`. O frontend nunca lê nem guarda o token.
+- **Ao abrir o portal:** a tela fica em "Carregando o portal…" até o `GET /api/auth/me` responder, sem menu nem dados. Sem ninguém logado, vai para o `/login` e guarda a tela pedida (`/login?voltar=/receita`).
+- **Depois de entrar:** volta para a tela pedida ou, se o perfil não puder abri-la, para a primeira tela dele. O cache das consultas é limpo, para nada da conta anterior aparecer.
+- **E-mail ou senha errados:** "E-mail ou senha incorretos.", sem dizer qual dos dois.
+- **Sair:** o botão no rodapé do menu chama o `POST /api/auth/logout` e recarrega o portal no `/login`, o que apaga da memória os dados e a conversa com o agente.
+- **Sessão vencida:** o JWT dura 15 minutos e não é renovado. A primeira chamada com 401 leva ao `/login?motivo=sessao-expirada`, com o aviso "Sua sessão expirou. Entre novamente.", e depois do login volta para a mesma tela.
+- **403:** o endereço de uma tela sem permissão mostra "Sem permissão"; uma ação recusada mostra o erro no próprio bloco. A sessão continua.
 
 ## Chamadas à API
 
@@ -241,7 +255,7 @@ Toda chamada ao backend passa pela função `apiFetch` (`src/lib/api/api-fetch.t
 - Coloca o prefixo `/api`, envia o cookie de login e converte a resposta de JSON.
 - Em caso de erro, lança um `ErroApi` com o `status` e uma mensagem em português, pronta para mostrar na tela.
 - Desiste depois de 30 segundos. Quem precisa de mais tempo passa `tempoLimiteMs` (o agente de IA usa 90 s).
-- **401** (sessão expirada): qualquer consulta ou alteração leva ao `/login` com o aviso "Sua sessão expirou. Entre novamente.". O JWT dura 15 minutos e não é renovado.
+- **401** (sessão expirada): qualquer consulta ou alteração leva ao `/login` com o aviso "Sua sessão expirou. Entre novamente.", e o login volta para a mesma tela. As exceções são o próprio login e o `/auth/me` ao abrir o portal, em que 401 quer dizer só que ninguém entrou ainda (veja [Login](#login)).
 - **429** (limite de requisições): mostra "Muitas tentativas. Aguarde um instante e tente de novo." e não tenta de novo sozinho.
 
 As telas não chamam o `apiFetch` direto: cada recurso tem um hook com o [TanStack Query](https://tanstack.com/query), em `src/hooks/use-<recurso>.ts`. O TanStack Query guarda o resultado em cache por filtro, cancela a busca anterior quando o filtro muda e entrega os estados `isPending`, `isFetching` e `isError` para a tela. Exemplo (ilustrativo):
@@ -332,6 +346,8 @@ A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem lar
 
 Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a Gold no banco local (veja o "Como executar" do README da raiz). Os testes (`npm test`) não usam o backend: respondem com dados inventados no próprio teste ou com os de `src/mocks/`. Esses dados **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
+- `POST /api/auth/login`, `GET /api/auth/me` e `POST /api/auth/logout`: o login (veja [Login](#login)). Nos testes, as contas inventadas de `src/mocks/usuarios.ts`, uma por perfil.
+
 - `GET /api/filters/options`: as opções dos filtros. Nos testes, as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
@@ -347,6 +363,7 @@ Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://t
 - **Onde ficam:** junto do que testam, com o mesmo nome e `.test` no fim. Exemplos: `components/EstadoConsulta/EstadoConsulta.test.tsx` e `lib/filtros-url.test.ts`.
 - **O que cobrem hoje:**
   - menu e rotas por perfil;
+  - login, sessão vencida e Sair;
   - o `apiFetch` (mensagens de erro, servidor fora do ar, tempo esgotado, busca cancelada);
   - a sessão expirada e as novas tentativas;
   - os 4 estados dos blocos;
@@ -354,7 +371,7 @@ Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://t
   - os filtros na URL;
   - os formatos de número;
   - cada tela, com dados inventados no lugar do backend.
-- **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas). A opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
+- **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas) e já deixa alguém logado: o `ADMIN_TI`, que vê tudo. A opção `perfil` troca quem está logado (`null` = ninguém), e a opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
 - **Preparação comum:** fica em `src/test/setup.ts`. Ele limpa a tela entre um teste e outro, adiciona os verificadores do jest-dom (`toBeInTheDocument`, `toBeDisabled`…) e simula o que o jsdom não tem.
 - **Antes de abrir um PR:** `npm run lint`, `npm test` e `npm run build` devem passar.
 

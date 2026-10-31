@@ -165,24 +165,23 @@ O setup faz os passos 1, 2 e 4 a 9 do passo a passo manual:
 1. confere o Python, o Node.js e o Docker, e liga o Docker se ele estiver fechado;
 2. cria o container do banco e ativa as extensões;
 3. cria o ambiente Python e instala as dependências do backend e do agente;
-4. cria os três arquivos de configuração;
+4. cria os dois arquivos de configuração e gera o segredo do login;
 5. extrai o zip da Gold e carrega a Gold no banco;
 6. cria as tabelas da IA e a base de conhecimento do RAG;
-7. cria a tabela das ordens de inspeção;
+7. cria as tabelas das ordens de inspeção e dos usuários, e a conta de administrador do portal;
 8. instala as dependências do frontend.
 
 Como ele se comporta:
 
-- **Senha:** na primeira vez, ele pede uma senha para o banco. O mais simples é usar só letras e números. Depois, ele lê a senha dos arquivos de configuração.
+- **Senhas:** na primeira vez, ele pede duas senhas. A primeira é a do banco: o mais simples é usar só letras e números. A segunda é a da conta de administrador do portal, com pelo menos 8 caracteres: é com ela e com o e-mail `adminti.vgrid360@visagio.com` que você entra no portal. Depois, ele lê a senha do banco dos arquivos de configuração e não pergunta mais a do administrador, que não fica gravada em arquivo nenhum.
 - **Tempo:** na primeira vez leva de 15 a 30 minutos, quase tudo em downloads (dependências do Python, imagem do banco, modelo do RAG). Nas próximas, um ou dois minutos.
-- **Rodar de novo é seguro:** o que já está pronto é pulado. O setup **nunca** apaga as ordens de inspeção nem muda um arquivo de configuração que já existe, só completa o `DATABASE_URL` se ele ainda estiver com o valor do exemplo.
+- **Rodar de novo é seguro:** o que já está pronto é pulado. O setup **nunca** apaga as ordens de inspeção nem as contas, e não muda um arquivo de configuração que já existe: só completa o `DATABASE_URL` se ele ainda estiver com o valor do exemplo e o `JWT_SECRET_KEY` se ele estiver vazio.
 - **Se algo der errado,** ele para com `ERRO:` e diz o que fazer. Corrija e rode de novo: ele continua de onde parou.
 
 | Windows | macOS e Linux | Quando usar |
 |---|---|---|
 | `-RecarregarGold` | `--recarregar-gold` | Chegou uma Gold nova: troque o zip de `data/` pelo novo e rode o setup com essa opção, por exemplo `bash setup.sh --recarregar-gold` |
 | `-Porta 5434` | `--porta 5434` | Na primeira vez, se a porta 5433 já estiver em uso no seu computador |
-
 #### Ligar o agente de IA: uma vez
 
 O setup não tem como criar a chave do LLM. Siga o [passo 3](#3-provedor-de-ia-llm), que preenche o `backend/.env.local` com a chave do OpenRouter ou do 9router. Sem a chave, o portal funciona, mas o agente responde "O serviço de IA está temporariamente indisponível".
@@ -281,13 +280,12 @@ Para abrir um terminal SQL interativo, use `docker exec -it postgres-venergy psq
 
 ### 2. Arquivos de configuração
 
-O projeto lê três arquivos de configuração. Todos ficam fora do Git: **nunca suba senhas nem chaves**.
+O projeto lê dois arquivos de configuração. Os dois ficam fora do Git: **nunca suba senhas nem chaves**.
 
 | Arquivo | Quem lê |
 |---|---|
 | `.env` (na raiz) | Scripts de carga e de preparação da IA (passos 5 e 6) |
 | `backend/.env.local` | Backend e agente de IA |
-| `frontend/.env.local` | Frontend |
 
 #### 2.1. `.env` da raiz
 
@@ -311,7 +309,15 @@ Abra o `backend/.env.local` e troque a linha do `DATABASE_URL` por esta, com a s
 DATABASE_URL=postgresql+psycopg://postgres:SUA_SENHA@localhost:5433/v_energy
 ```
 
-Repare no `+psycopg`, que não existe no `.env` da raiz: é o nome do driver que o backend usa. As outras linhas podem ficar como estão. As chaves de LLM são preenchidas no passo 3.
+Repare no `+psycopg`, que não existe no `.env` da raiz: é o nome do driver que o backend usa. As chaves de LLM são preenchidas no passo 3.
+
+O login também precisa de um segredo, que assina o cookie da sessão. Gere um:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"    # macOS/Linux: python3
+```
+
+Copie o texto que aparecer para a linha do `JWT_SECRET_KEY`, sem aspas: `JWT_SECRET_KEY=texto_gerado`. Gere uma vez e não troque: com um segredo novo, quem estiver logado precisa entrar de novo. O `BOOTSTRAP_ADMIN_PASSWORD` é preenchido no passo 7.2, e as outras linhas podem ficar como estão.
 
 Se a senha tiver caracteres especiais, escreva-os codificados nas duas URLs:
 
@@ -323,15 +329,7 @@ Se a senha tiver caracteres especiais, escreva-os codificados nas duas URLs:
 | `/` | `%2F` |
 | `:` | `%3A` |
 
-#### 2.3. `frontend/.env.local`
-
-```powershell
-cp frontend/.env.example frontend/.env.local
-```
-
-O valor do exemplo já serve. O `VITE_PERFIL_TESTE` define o perfil do usuário de teste enquanto o login não existe. Os perfis são `DIRETORIA`, `ATENDIMENTO`, `PERDAS`, `OPERACAO` e `ADMIN_TI`, e o `ADMIN_TI` vê todas as telas.
-
-Depois de mudar qualquer `.env`, reinicie o que lê o arquivo (backend ou frontend).
+Depois de mudar o `backend/.env.local`, reinicie o backend.
 
 ### 3. Provedor de IA (LLM)
 
@@ -463,7 +461,9 @@ Para conferir:
 SELECT count(*) FROM tb_conhecimento_vetorial;   -- mais de 200 trechos
 ```
 
-### 7. Tabela das ordens de inspeção
+### 7. Tabelas das ordens de inspeção e dos usuários
+
+#### 7.1. Ordens de inspeção
 
 Na Fila de inspeção, o analista de perdas gera ordens de inspeção para as UCs suspeitas e acompanha cada uma até a conclusão. As ordens ficam na tabela `ordens_inspecao`, que **não vem com a Gold**: crie uma vez, por um dos dois caminhos.
 
@@ -543,6 +543,34 @@ Pelo terminal:
 docker exec postgres-venergy psql -U postgres -d v_energy -c "TRUNCATE ordens_inspecao RESTART IDENTITY;"
 ```
 
+#### 7.2. Usuários e conta de administrador
+
+O portal pede login. As contas ficam na tabela `usuarios`, que também **não vem com a Gold**. Crie a tabela pelo terminal:
+
+```powershell
+docker cp backend/sql/usuarios.sql postgres-venergy:/tmp/usuarios.sql
+docker exec postgres-venergy psql -U postgres -d v_energy -v ON_ERROR_STOP=1 -f /tmp/usuarios.sql
+```
+
+Ou pelo DBeaver, como no passo 7.1, com o arquivo `backend/sql/usuarios.sql` (`Alt + X` para o script inteiro). Se a tabela já existe, o script não muda nada.
+
+Depois, crie a primeira conta, a do administrador (perfil `ADMIN_TI`):
+
+1. No `backend/.env.local`, escolha a senha da conta na linha `BOOTSTRAP_ADMIN_PASSWORD`, com pelo menos 8 caracteres e entre aspas simples: `BOOTSTRAP_ADMIN_PASSWORD='sua senha'`.
+2. Com o ambiente Python ativo (passo 4), rode:
+
+   ```powershell
+   cd backend
+   python -m scripts.bootstrap_admin_ti
+   cd ..
+   ```
+
+   Deve aparecer `Conta ADMIN_TI criada.`
+
+3. Pronto: você entra no portal com o e-mail `adminti.vgrid360@visagio.com` e essa senha. A senha fica guardada no banco só como hash, então a linha do `BOOTSTRAP_ADMIN_PASSWORD` pode ser apagada do `backend/.env.local`.
+
+Rodar o script de novo não muda a conta nem a senha (aparece `Conta ADMIN_TI já existente.`). As contas dos outros perfis são criadas pelo administrador.
+
 ### 8. Backend
 
 Com o ambiente ativo:
@@ -573,14 +601,15 @@ npm run dev
 
 ### 10. Confira se tudo funciona
 
-Com o perfil `ADMIN_TI` (o padrão), todas as telas aparecem no menu:
+Abra http://localhost:5173. O portal mostra a tela de login: entre com `adminti.vgrid360@visagio.com` e a senha escolhida no setup (ou no passo 7.2). Com o perfil `ADMIN_TI`, todas as telas aparecem no menu:
 
 | Tela | O que deve aparecer |
 |---|---|
+| Login | Depois de entrar, o rodapé do menu mostra `admin_ti` e "Administrador (TI)". O botão ao lado sai da conta e volta para o login. A sessão dura 15 minutos: depois disso, o portal pede o login de novo |
 | Indicadores | KPIs com valores, não "Algo deu errado no servidor" |
 | Receita | A ponte de receita entre os dois períodos e a tabela por município |
 | Visão 360 | Busque `UC100000`: aparecem o cadastro, o consumo e as faturas da UC |
-| Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7) |
+| Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7.1) |
 | Continuidade | Os KPIs, o DEC e o FEC mês a mês e o ranking dos 122 alimentadores. Com a Gold 1.0.1 e sem filtro, o "Pior DEC (100 UCs ou mais)" é o ALM-SAO-004, com 15,6 h |
 | Agente de IA (botão no topo) | Pergunte "Qual o faturamento de Recife em 2024?": a resposta traz cerca de R$ 68,56 milhões (68.560.067,39), e a tela vai para os Indicadores de Recife em 2024 |
 
@@ -630,18 +659,18 @@ Quando a Engenharia de Dados publicar uma Gold nova:
 - **Com o setup:** troque o zip de `data/` pelo novo, rode `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -RecarregarGold` (macOS/Linux: `bash setup.sh --recarregar-gold`) e reinicie o backend.
 - **Sem o setup:** troque o zip de `data/` pelo novo, deixando só ele. Com o ambiente ativo, rode `python scripts/carga_banco_local.py --reset-data` e reinicie o backend. O `--reset-data` apaga os CSVs da Gold antiga e extrai o zip novo.
 
-A carga apaga e recria só as 15 tabelas da Gold. As ordens de inspeção e as tabelas da IA continuam como estavam.
+A carga apaga e recria só as 15 tabelas da Gold. As ordens de inspeção, as contas e as tabelas da IA continuam como estavam.
 
 ### Recomeçar o banco do zero
 
-Os comandos abaixo apagam o banco inteiro: Gold, tabelas da IA e **todas as ordens de inspeção**.
+Os comandos abaixo apagam o banco inteiro: Gold, tabelas da IA, **todas as ordens de inspeção e todas as contas**.
 
 ```powershell
 docker rm -f postgres-venergy
 docker volume rm pgdata-v_energy
 ```
 
-Depois, rode o setup (ele cria o container de novo com a senha que já está no `.env`), ou refaça os passos 1, 5, 6 e 7. Os arquivos de configuração e o ambiente Python continuam valendo.
+Depois, rode o setup (ele cria o container de novo com a senha que já está no `.env` e pede de novo a senha da conta de administrador), ou refaça os passos 1, 5, 6 e 7. Os arquivos de configuração e o ambiente Python continuam valendo.
 
 ### Testes
 
@@ -679,7 +708,13 @@ Com o ambiente Python ativo:
 | `FALHA NO DATA QUALITY GATE` | A Gold carregada está incompleta ou desatualizada | Peça a Gold mais recente ao time e repita o passo 5 |
 | `Activate.ps1 não pode ser carregado` | Política de execução do PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e um terminal novo |
 | `ModuleNotFoundError` ao rodar um script ou o backend | O ambiente Python não está ativo | `backend\.venv\Scripts\Activate.ps1` a partir da raiz (macOS/Linux: `source backend/.venv/bin/activate`) |
-| `relation "ordens_inspecao" does not exist`, ou a Fila de inspeção dá erro ao listar ou gerar ordens | Falta a tabela das ordens | Passo 7 |
+| `relation "ordens_inspecao" does not exist`, ou a Fila de inspeção dá erro ao listar ou gerar ordens | Falta a tabela das ordens | Passo 7.1 |
+| O login mostra "Autenticação indisponível" | Falta o `JWT_SECRET_KEY` no `backend/.env.local`, ou o backend não foi reiniciado depois de mudar o arquivo | Rode o setup de novo (ou o passo 2.2) e reinicie o backend |
+| O login mostra "Erro interno" | Falta a tabela `usuarios` | Rode o setup de novo (ou o passo 7.2) |
+| O login mostra "E-mail ou senha incorretos." com a senha certa | A conta de administrador ainda não foi criada | Rode o setup de novo (ou o passo 7.2) |
+| O iniciar para com `Falta preparar o projeto (JWT_SECRET_KEY ...)` | O `git pull` trouxe o login, e o setup ainda não rodou depois dele | Rode o setup de novo |
+| O frontend não sobe e mostra `Port 5173 is already in use` | Já há um frontend rodando em outro terminal. O portal só funciona na porta 5173, porque o backend só aceita login vindo dela | Feche o outro terminal ou aperte `Ctrl + C` nele |
+| No Swagger (`/api/docs`), o login responde `Origem não autorizada` | O Swagger foi aberto em `localhost:8000` | Abra em http://127.0.0.1:8000/api/docs |
 | `function unaccent(...) does not exist` no passo a passo do agente | Falta a extensão `unaccent` | Passo 1.2 |
 | O agente responde "O serviço de IA está temporariamente indisponível" | Não há chave de LLM no `backend/.env.local`, ou o 9router está fechado | Passo 3, depois reinicie o backend |
 | As telas mostram "Algo deu errado no servidor" ou "Não foi possível conectar ao servidor" | O backend está desligado | Passo 8 |
@@ -691,7 +726,7 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 
 ### Perfis de acesso
 
-| Perfil (`role`) | Quem usa | Telas |
+| Perfil | Quem usa | Telas |
 |---|---|---|
 | `DIRETORIA` | Diretoria, incluindo o diretor comercial | Indicadores, Receita, Continuidade |
 | `ATENDIMENTO` | Atendentes do call center | Visão 360 |
@@ -704,7 +739,7 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - Perdas também vê a Visão 360, para investigar a unidade consumidora suspeita.
 - A Diretoria não vê a Visão 360 (dados pessoais de clientes) nem a Fila de inspeção (ações operacionais), seguindo a LGPD e o princípio do menor privilégio.
 - `ADMIN_TI` não é um cargo do case: é uma conta técnica para administrar o portal.
-- As contas são pré-cadastradas pelo `ADMIN_TI`, sem cadastro público. A troca de senha é opcional.
+- As contas são pré-cadastradas pelo `ADMIN_TI`, sem cadastro público. A troca de senha é opcional. A primeira conta `ADMIN_TI` é criada pelo setup (passo 7.2).
 - O chat da IA fica disponível para todos os perfis e responde só com dados agregados, nunca com dados pessoais.
 
 ### Dados e telas
