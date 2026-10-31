@@ -52,7 +52,11 @@ def no_valida_sql(
     resultado = validador.validar(sql)
 
     if resultado.aprovado:
-        logger.info("Nó 8 — SQL aprovado pela validação.")
+        # Se o validador oficial devolve sql_normalizado, usamos este texto para a execução.
+        # O stub não tem o atributo, então usamos getattr para manter compatibilidade.
+        sql_norm = getattr(resultado, "sql_normalizado", None)
+        if sql_norm:
+            state["sql_gerado"] = sql_norm
         return {
             "erro_validacao_ou_execucao": None,
             "malicioso": False,

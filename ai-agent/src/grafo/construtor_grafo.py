@@ -18,8 +18,20 @@ if __package__ in (None, ""):
 from langgraph.graph import StateGraph, START, END
 
 from ..contratos.estado_agente import EstadoAgente
-from ..interfaces.stub_validador_sql import StubValidadorSQL
+
+from security.sql_validator import SQLValidator
+from security.validador_sqlglot import ValidadorSQLGlotPostgres
 from ..interfaces.validador_sql_interface import ValidadorSQLInterface
+
+# Official validator factory (replaces stub as default)
+def _validador_padrao() -> ValidadorSQLGlotPostgres:
+    """Create the official PostgreSQL validator with `unaccent` allowed.
+    The agent uses `unaccent` in text filters; allowing it avoids false rejections.
+    """
+    return ValidadorSQLGlotPostgres(
+        SQLValidator(dialect="postgres", allowed_extra_functions=frozenset({"unaccent"}))
+    )
+
 from ..nos.no_filtro_seguranca import no_filtro_seguranca, rota_pos_filtro
 from ..nos.no_completa_followup import no_completa_followup
 from ..nos.no_checa_escopo import no_checa_escopo, rota_pos_escopo
@@ -80,6 +92,9 @@ def construir_grafo(
     Compila e retorna o grafo LangGraph com todas as Fatias 1 e 2.
     Todas as dependências são injetadas para facilitar mocks nos testes.
 
+    O validador padrão agora é o oficial `ValidadorSQLGlotPostgres` (com `unaccent` permitido).
+    Quando `validador` for None, `_validador_padrao()` será usado.
+    
     Fluxo completo (Fatias 1 + 2):
 
     START
@@ -108,7 +123,7 @@ def construir_grafo(
     validador padrão continua sendo o stub até a entrega da frente de Segurança.
     """
     _llm = llm or ClienteLLM()
-    _validador = validador or StubValidadorSQL()
+    _validador = validador or _validador_padrao()
     _executor = executor or SQLExecutor(db_url=db_url or os.getenv("DATABASE_URL"))
     _db_url = db_url or os.getenv("DATABASE_URL")
 
