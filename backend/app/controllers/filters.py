@@ -4,12 +4,13 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Annotated
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
+
 from app.core.database import get_connection
 from app.repositories.filters import FiltersRepository
 from app.schemas.filters import FilterOptionsResponse
 from app.services.filters import get_filter_options
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 
 router = APIRouter()
 

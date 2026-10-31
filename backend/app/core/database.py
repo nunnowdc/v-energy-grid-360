@@ -4,9 +4,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from functools import lru_cache
 
-from app.core.config import ConfigurationUnavailableError, get_settings
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Connection, Engine
+
+from app.core.config import ConfigurationUnavailableError, get_settings
 
 
 @lru_cache(maxsize=1)
