@@ -1,31 +1,78 @@
 # API do V-Energy Grid 360
 
-## Instalação
+## Passo a passo de inicialização local
 
-Requer Python 3.11 ou superior. A partir de `backend/`:
+Partindo da raiz do repositório, com o PostgreSQL local já preparado:
 
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-```
+1. Entre em `backend/` e crie o ambiente virtual, caso ainda não exista:
 
-Se já existe um ambiente virtual em `../.venv`, instale as dependências com
-`../.venv/bin/python -m pip install -r requirements.txt` e inicie com
-`../.venv/bin/python -m app.main`.
+   ```bash
+   cd backend
+   python3 -m venv .venv
+   ```
 
-## Configuração local
 
-Copie o exemplo para o arquivo privado do backend, depois ajuste `DATABASE_URL` para
-o seu PostgreSQL Gold local:
+2. Instale as dependências nesse ambiente:
 
-```bash
-cp -n .env.example .env.local
-```
+   ```bash
+   .venv/bin/python -m pip install -r requirements.txt
+   ```
 
-O exemplo usa a autenticação local pelo usuário do sistema, sem senha. Se a sua
-instalação exigir host, porta e credenciais, configure-os **somente** em
-`.env.local`, usando o formato `postgresql+psycopg://USUARIO:SENHA@HOST:5432/BANCO`.
-O arquivo é ignorado pelo Git; não coloque credenciais em `.env.example`.
+3. Crie o arquivo `.env.local` a partir do exemplo:
+
+   ```bash
+   cp -n .env.example .env.local
+Configure as seguintes variáveis:
+- **Banco de dados & Autenticação:**
+  - `DATABASE_URL`: Connection string do PostgreSQL
+  - `JWT_SECRET_KEY`: Segredo local para assinatura dos tokens JWT.
+  - `BOOTSTRAP_ADMIN_PASSWORD`: Senha inicial para a conta `ADMIN_TI` (mínimo de 8 caracteres).
+
+  - `CORS_ORIGINS`: URLs liberadas para o frontend (padrão: `http://localhost:5173,http://127.0.0.1:5173`).
+
+- **Agentes de IA (LLM):**
+  - `MODELO_LLM_PRIMARIO`: Identificador do modelo principal a ser utilizado.
+  - `OPENROUTER_API_KEY` ou `NINEROUTER_API_KEY`: Chave da API do provedor escolhido (OpenRouter tem precedência; se ambas ficarem vazias, o backend roda em modo de teste).
+
+4. No banco PostgreSQL indicado por `DATABASE_URL`, execute **uma vez** os scripts
+   `sql/ordens_inspecao.sql` e `sql/usuarios.sql`. No DBeaver, selecione esse banco,
+   abra cada arquivo e execute o script inteiro usando uma Query Tool. Pelo terminal, a partir de
+   `backend/`, use os mesmos dados de conexão para os dois comandos:
+
+   ```bash
+   psql -h HOST -p PORTA -U USUARIO -d BANCO -v ON_ERROR_STOP=1 -f sql/ordens_inspecao.sql
+   psql -h HOST -p PORTA -U USUARIO -d BANCO -v ON_ERROR_STOP=1 -f sql/usuarios.sql
+   ```
+
+   Substitua `HOST`, `PORTA`, `USUARIO` e `BANCO` pelos valores da sua conexão;
+   `psql` solicitará a senha do PostgreSQL quando necessário. Os scripts não são
+   executados pela API e falham se as tabelas já existirem; não os rode novamente
+   em uma instalação já preparada.
+
+5. Crie a primeira conta administrativa. O bootstrap exige `usuarios` já criada e
+   lê a senha de `.env.local` ou da variável do processo (que tem prioridade):
+
+   ```bash
+   .venv/bin/python -m scripts.bootstrap_admin_ti
+   ```
+
+6. Inicie a API e consulte `/api/health` ou `/api/docs` no endereço informado em
+   **Execução** abaixo:
+
+   ```bash
+   .venv/bin/python -m app.main
+   ```
+
+7. **Opcional** (Verificação do ambiente) Em outro terminal, a partir de `backend/`, execute a suíte de testes:
+
+   ```bash
+   .venv/bin/python -m pytest -q
+   ```
+
+   Os testes de escrita criam bancos PostgreSQL descartáveis com dados fictícios;
+   as consultas de integração à Gold são somente leitura. Veja os pré-requisitos
+   de permissão em **Testes com PostgreSQL isolado** abaixo.
+
 
 `app/core/config.py` lê `backend/.env.local` automaticamente, mesmo quando o comando
 é iniciado de outro diretório. Variáveis já definidas no ambiente do sistema têm
@@ -33,18 +80,24 @@ prioridade. Reinicie a API após mudar a configuração local.
 
 ## Execução
 
-```bash
-.venv/bin/python -m app.main
-```
-
 A API usa `127.0.0.1:8000` por padrão. Consulte `GET http://127.0.0.1:8000/api/health`,
 `http://127.0.0.1:8000/api/docs`, `http://127.0.0.1:8000/api/redoc` e
 `http://127.0.0.1:8000/api/openapi.json`.
 
 `CORS_ORIGINS` aceita origens HTTP locais separadas por vírgula; por padrão, inclui
-`localhost:5173` e `127.0.0.1:5173`.
+`http://localhost:5173` e `http://127.0.0.1:5173`.
 
-## Ordens de inspeção: estrutura operacional pendente de aplicação
+## Bootstrap da conta administrativa
+
+O script do passo 5 cria somente a conta `admin_ti`
+(`adminti.vgrid360@visagio.com`, perfil `ADMIN_TI`) e armazena a senha apenas como
+hash Argon2id. Ele é idempotente: se a conta já existir, não altera seus dados
+nem redefine a senha. O bootstrap não cria tabelas.
+
+> **Nota**
+Após executar o bootstrap com sucesso, a senha inicial pode ser removida do .env.local. A conta permanecerá cadastrada no banco, com a senha armazenada em hash.
+
+## Ordens de inspeção: estrutura operacional
 
 O script [`sql/ordens_inspecao.sql`](sql/ordens_inspecao.sql) prepara a tabela
 operacional `ordens_inspecao` e o índice único parcial que impede duas ordens
@@ -66,21 +119,20 @@ As restrições SQL validam domínios e coerência dos campos.
 
 ## Testes com PostgreSQL isolado
 
-Prefira executar os testes que criam ou alteram ordens em um banco de teste, nunca
-inserindo UCs ou ordens fictícias no banco principal. O fixture em
-`tests/test_inspection_orders_postgres.py` faz esse isolamento automaticamente:
-usa a conexão configurada em `DATABASE_URL` apenas para identificar o servidor
-local, cria nele um banco descartável chamado `v_energy_orders_test_<sufixo>`,
-aplica `sql/ordens_inspecao.sql` nesse banco, insere dados **sintéticos** que
-simulam o uso da fila e das ordens e remove o banco ao terminar. Não copia os
-dados do banco principal. As consultas de integração à Gold original são somente
-leitura. A URL deve apontar para o banco principal em PostgreSQL local e o usuário da
-conexão precisa poder conectar ao banco administrativo `postgres` e criar/remover
-bancos (`CREATEDB`).
+Os testes que criam ou alteram dados não inserem UCs, ordens ou usuários fictícios
+no banco principal. Os fixtures de `tests/test_inspection_orders_postgres.py` e
+`tests/test_users_postgres.py` usam a conexão configurada em `DATABASE_URL` apenas
+para identificar o servidor local, criam bancos descartáveis chamados
+`v_energy_orders_test_<sufixo>` e `v_energy_users_test_<sufixo>`, aplicam os SQLs
+correspondentes nesses bancos, inserem dados **sintéticos** e removem os bancos
+ao terminar. Não copiam dados do banco principal. As consultas de integração à
+Gold original são somente leitura. A URL deve apontar para o
+PostgreSQL local, e o usuário da conexão precisa acessar o banco administrativo
+`postgres` e criar/remover bancos (`CREATEDB`).
 
 Com o ambiente virtual ativo e `backend/.env.local` configurado, execute a partir
 de `backend/`:
 
 ```bash
-python -m pytest -q
+.venv/bin/python -m pytest -q
 ```
