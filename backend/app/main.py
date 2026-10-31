@@ -4,10 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
+from app.controllers.auth import router as auth_router
 from app.controllers.filters import router as filters_router
 from app.controllers.health import router as health_router
 from app.controllers.inspections import router as inspections_router
@@ -15,6 +12,12 @@ from app.controllers.metrics import router as metrics_router
 from app.controllers.network import router as network_router
 from app.controllers.uc import router as uc_router
 from app.core.config import ENV_LOCAL_PATH, get_settings
+from app.security.dependencies import ALLOWED_WRITE_ORIGINS
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.requests import Request
 
 settings = get_settings()
 
@@ -38,7 +41,30 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+)
+
+
+@app.middleware("http")
+async def check_write_origin(request: Request, call_next):
+    """Aplica a mesma lista local a toda requisição que altera estado."""
+    origin = request.headers.get("origin")
+    if (
+        request.method in {"POST", "PATCH", "DELETE"}
+        and origin is not None
+        and origin not in ALLOWED_WRITE_ORIGINS
+    ):
+        return JSONResponse(
+            status_code=403, content={"detail": "Origem não autorizada"}
+        )
+    return await call_next(request)
+
+
+app.include_router(auth_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 app.include_router(filters_router, prefix="/api")
 app.include_router(inspections_router, prefix="/api")

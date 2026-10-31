@@ -19,6 +19,7 @@ class Settings:
     port: int
     cors_origins: tuple[str, ...]
     database_url: str | None = field(default=None, repr=False)
+    jwt_secret_key: str | None = field(default=None, repr=False)
 
 
 def get_settings() -> Settings:
@@ -82,4 +83,5 @@ def get_settings() -> Settings:
             drivername="postgresql+psycopg"
         ).render_as_string(hide_password=False)
 
-    return Settings(environment, host, port, origins, database_url)
+    jwt_secret_key = value("JWT_SECRET_KEY", "") or None
+    return Settings(environment, host, port, origins, database_url, jwt_secret_key)
