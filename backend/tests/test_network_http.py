@@ -551,6 +551,7 @@ def test_openapi_declara_os_sete_parametros_aprovados() -> None:
         "municipio",
         "alimentador",
         "causa",
+        "vgrid360_access_token",
     }
 
 
@@ -559,6 +560,7 @@ def test_openapi_explica_periodos_padrao_e_escolhidos() -> None:
     descriptions = {
         parameter["name"]: parameter["description"]
         for parameter in operation["parameters"]
+        if parameter["name"] != "vgrid360_access_token"
     }
 
     assert "últimos 12 meses" in descriptions["inicio"]

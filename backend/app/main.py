@@ -12,9 +12,9 @@ from app.controllers.metrics import router as metrics_router
 from app.controllers.network import router as network_router
 from app.controllers.uc import router as uc_router
 from app.core.config import ENV_LOCAL_PATH, get_settings
-from app.security.dependencies import ALLOWED_WRITE_ORIGINS
+from app.security.dependencies import ALLOWED_WRITE_ORIGINS, authorize_business_route
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -85,12 +85,32 @@ async def check_write_origin(request: Request, call_next):
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
-app.include_router(filters_router, prefix="/api")
-app.include_router(inspections_router, prefix="/api")
-app.include_router(metrics_router, prefix="/api")
-app.include_router(network_router, prefix="/api")
-app.include_router(uc_router, prefix="/api")
-app.include_router(ai_router, prefix="/api")
+protected = [Depends(authorize_business_route)]
+protected_responses = {
+    401: {"description": "Sessão ausente, inválida ou expirada"},
+    403: {"description": "Perfil sem permissão ou origem não autorizada"},
+}
+app.include_router(
+    filters_router, prefix="/api", dependencies=protected, responses=protected_responses
+)
+app.include_router(
+    inspections_router,
+    prefix="/api",
+    dependencies=protected,
+    responses=protected_responses,
+)
+app.include_router(
+    metrics_router, prefix="/api", dependencies=protected, responses=protected_responses
+)
+app.include_router(
+    network_router, prefix="/api", dependencies=protected, responses=protected_responses
+)
+app.include_router(
+    uc_router, prefix="/api", dependencies=protected, responses=protected_responses
+)
+app.include_router(
+    ai_router, prefix="/api", dependencies=protected, responses=protected_responses
+)
 
 
 if __name__ == "__main__":

@@ -117,4 +117,5 @@ def test_orders_openapi_documents_response_and_errors() -> None:
         "municipio",
         "bairro",
         "classe",
+        "vgrid360_access_token",
     }

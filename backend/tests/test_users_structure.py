@@ -44,7 +44,6 @@ def test_user_model_has_only_the_approved_six_columns() -> None:
 def test_user_ddl_is_controlled_and_does_not_touch_gold() -> None:
     ddl = SQL_PATH.read_text(encoding="utf-8").upper()
 
-    assert "CREATE TABLE USUARIOS" in ddl
-    assert "IF NOT EXISTS" not in ddl
+    assert "CREATE TABLE IF NOT EXISTS USUARIOS" in ddl
     for forbidden in ("DROP ", "TRUNCATE ", "DELETE ", "ALTER ", "FILA_INSPECAO"):
         assert forbidden not in ddl

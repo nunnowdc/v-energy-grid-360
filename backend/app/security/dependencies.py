@@ -4,11 +4,13 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Annotated
 
+from fastapi import Cookie, Depends, HTTPException, Request
+from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
+
 from app.core.database import get_connection
 from app.repositories.users import UsersRepository
+from app.security.permissions import ROUTE_PERMISSIONS
 from app.security.tokens import COOKIE_NAME, InvalidSessionToken, read_subject
-from fastapi import Cookie, Depends, HTTPException
-from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 
 ALLOWED_WRITE_ORIGINS = frozenset(
     {
@@ -70,3 +72,16 @@ def require_admin_ti(
     if user["perfil"] != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Acesso não permitido")
     return user
+
+
+def authorize_business_route(
+    request: Request,
+    user: Annotated[dict[str, object], Depends(get_current_user)],
+) -> None:
+    """Autoriza a rota registrada, sem comparar prefixos ou dados do cliente."""
+    route = request.scope.get("route")
+    route_path = getattr(route, "path", None)
+    pattern = f"/api{route_path}" if route_path is not None else None
+    profiles = ROUTE_PERMISSIONS.get((request.method, pattern))
+    if profiles is None or user["perfil"] not in profiles:
+        raise HTTPException(status_code=403, detail="Acesso não permitido")
