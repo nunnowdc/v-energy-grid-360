@@ -2,7 +2,7 @@
 -- Não executar automaticamente na API nem pelo bootstrap.
 BEGIN;
 
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
