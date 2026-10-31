@@ -22,14 +22,6 @@ from ai_agent.tests.test_avaliacao_golden_set import (
     carregar_golden_dataset,
 )
 
-
-RAG_PENDENCIA = (
-    "RAG real pendente: instalar a dependência de embeddings, criar e indexar "
-    "tb_conhecimento_vetorial com pgvector, e adicionar injeção read-only do "
-    "buscador ao grafo sem persistência de auditoria no PostgreSQL Gold."
-)
-
-
 def _prevalidar_gold(executor: SQLExecutor) -> None:
     for tabela in sorted(TABELAS_GOLD_AVALIACAO):
         resultado = executor.executar(
@@ -100,7 +92,6 @@ def test_avaliacao_real_golden_dataset_openrouter():
     casos_executados = [
         caso for caso in casos if caso["rota_esperada"] in {"sql", "recusa"}
     ]
-    casos_rag = [caso for caso in casos if caso["rota_esperada"] == "rag"]
     resultados: list[dict[str, Any]] = []
     falhas_seguranca: list[str] = []
     falhas_privacidade: list[str] = []
@@ -116,8 +107,6 @@ def test_avaliacao_real_golden_dataset_openrouter():
     print(f"Banco: PostgreSQL / schema configurado ({schema})")
     print(f"LLM: OpenRouter / modelo {cliente.modelo_primario}")
     print(f"Casos SQL e recusa executados: {len(casos_executados)} de {len(casos)}")
-    if casos_rag:
-        print(f"Casos RAG não executados: {len(casos_rag)} — {RAG_PENDENCIA}")
 
     for caso in casos_executados:
         quantidade_violacoes = len(validador.violacoes_sql_inseguro)
@@ -136,6 +125,7 @@ def test_avaliacao_real_golden_dataset_openrouter():
             pytest.fail(
                 f"Falha OpenRouter no caso {caso['id']}: {cliente.erro_fatal}"
             )
+
         if len(validador.violacoes_sql_inseguro) > quantidade_violacoes:
             falhas_seguranca.append(caso["id"])
 

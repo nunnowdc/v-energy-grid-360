@@ -188,6 +188,7 @@ class ValidadorSQLAgregadoGold:
             allowed_tables=TABELAS_GOLD_AVALIACAO,
             allowed_table_prefixes=(),
             blocked_columns=DEFAULT_BLOCKED_COLUMNS,
+            allowed_extra_functions=frozenset({"unaccent"}),
             max_rows=50,
         )
 
