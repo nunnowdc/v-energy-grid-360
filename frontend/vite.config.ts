@@ -18,7 +18,10 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
-  server: { proxy },
+  // Porta fixa: o backend só aceita escritas vindas de localhost:5173 ou
+  // 127.0.0.1:5173. Se ela estiver ocupada, o Vite para com erro em vez de
+  // subir em outra porta, onde o login e as ordens dariam 403
+  server: { proxy, port: 5173, strictPort: true },
   preview: { proxy },
   // Testes automatizados (npm test): navegador simulado com jsdom
   test: {

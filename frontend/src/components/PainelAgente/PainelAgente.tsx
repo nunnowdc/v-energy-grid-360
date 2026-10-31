@@ -103,8 +103,8 @@ function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
   function perguntarAoAgente(troca: Troca, anteriores: Troca[]) {
     perguntar.mutate(
       {
-        // Enquanto o login não existe, o usuário é o de teste do perfil
-        user_id: `teste-${usuario.perfil.toLowerCase()}`,
+        // Só informativo: quem pergunta, para o backend, é o dono do cookie de login
+        user_id: usuario.id,
         session_id: sessao,
         message: troca.pergunta,
         context: contextoDaTela(pathname),
