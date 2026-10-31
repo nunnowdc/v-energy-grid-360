@@ -59,3 +59,19 @@ test('sair chama o logout e recarrega no login, mesmo com a sessão já vencida'
   expect(fetch.mock.calls[0][0]).toBe('/api/auth/logout')
   expect(fetch.mock.calls[0][1]?.method).toBe('POST')
 })
+
+// Sem revogação de JWT, um logout que falha pode deixar o cookie valendo:
+// ir para o login daria a impressão de sessão encerrada
+test.each([
+  ['500', () => responder(500, { detail: 'Erro interno' })],
+  ['falha de rede', () => vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))],
+])('logout com %s vira erro e não leva ao login', async (_, falhar) => {
+  const abrir = vi.spyOn(navegador, 'abrir').mockImplementation(() => {})
+  falhar()
+  const { result } = comCache(useSair)
+
+  result.current.mutate()
+
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  expect(abrir).not.toHaveBeenCalled()
+})

@@ -47,7 +47,8 @@ function RodapeUsuario() {
     <>
       <SidebarMenu className="border-t border-sidebar-border pt-2">
         <SidebarMenuItem>
-          <DropdownMenu>
+          {/* Cada vez que o menu abre, some o erro de uma tentativa anterior de sair */}
+          <DropdownMenu onOpenChange={(aberto) => aberto && sair.reset()}>
             <DropdownMenuTrigger
               render={
                 <SidebarMenuButton
@@ -87,10 +88,16 @@ function RodapeUsuario() {
                 Trocar senha
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={sair.isPending} onClick={() => sair.mutate()}>
+              {/* O menu só fecha com o logout confirmado, que recarrega a página no login */}
+              <DropdownMenuItem closeOnClick={false} disabled={sair.isPending} onClick={() => sair.mutate()}>
                 <LogOut />
-                Sair
+                {sair.isPending ? 'Saindo…' : 'Sair'}
               </DropdownMenuItem>
+              {sair.isError && (
+                <p role="alert" className="max-w-60 px-1.5 py-1 text-xs text-destructive">
+                  Não foi possível sair. Você continua conectado; tente de novo.
+                </p>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>

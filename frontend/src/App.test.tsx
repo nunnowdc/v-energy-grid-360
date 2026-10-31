@@ -206,4 +206,20 @@ describe('login e sessão', () => {
     await waitFor(() => expect(abrirPagina).toHaveBeenCalledWith('/login'))
     expect(fetch.mock.calls.some(([url, init]) => url === '/api/auth/logout' && init?.method === 'POST')).toBe(true)
   })
+
+  test('se o logout falhar, continua no portal e o menu da conta avisa', async () => {
+    const abrirPagina = vi.spyOn(navegador, 'abrir').mockImplementation(() => {})
+    await abrir('/', 'DIRETORIA')
+    vi.mocked(globalThis.fetch).mockImplementation(async (url) =>
+      String(url) === '/api/auth/logout' ? json({ detail: 'Erro interno' }, 500) : json({ detail: 'Não encontrado' }, 404),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Minha conta' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Sair' }))
+
+    const menuConta = screen.getByRole('menu')
+    expect(await within(menuConta).findByRole('alert')).toHaveTextContent('Não foi possível sair')
+    expect(abrirPagina).not.toHaveBeenCalled()
+    expect(titulo()).toBe('Indicadores')
+  })
 })

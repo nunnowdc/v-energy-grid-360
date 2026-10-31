@@ -103,7 +103,9 @@ export function useSair() {
       }
     },
     // Recarrega a página no login, o que apaga da memória os dados da conta
-    // (cache das consultas e a conversa com o agente)
-    onSettled: () => navegador.abrir(ROTA_LOGIN),
+    // (cache das consultas e a conversa com o agente). Se o logout falhar (500,
+    // rede), o cookie pode continuar valendo: a pessoa fica no portal e o menu
+    // da conta mostra o erro (RodapeUsuario)
+    onSuccess: () => navegador.abrir(ROTA_LOGIN),
   })
 }
