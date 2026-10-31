@@ -1,4 +1,4 @@
-import { CircleCheck, KeyRound } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import CampoFormulario from '@/components/CampoFormulario/CampoFormulario'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,6 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { TAMANHO_MINIMO_SENHA, useTrocarSenha } from '@/hooks/use-contas'
@@ -136,15 +135,16 @@ function Formulario() {
   )
 }
 
-// Botão do rodapé do menu que abre o painel de troca de senha, para qualquer perfil
-function TrocaSenha({ className }: { className?: string }) {
+type TrocaSenhaProps = {
+  aberto: boolean
+  aoMudar: (aberto: boolean) => void
+}
+
+// Painel de troca da própria senha, para qualquer perfil. Quem abre é o
+// "Trocar senha" do menu da conta (RodapeUsuario)
+function TrocaSenha({ aberto, aoMudar }: TrocaSenhaProps) {
   return (
-    <Sheet>
-      <SheetTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label="Trocar senha" title="Trocar senha" className={className} />}
-      >
-        <KeyRound />
-      </SheetTrigger>
+    <Sheet open={aberto} onOpenChange={aoMudar}>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Trocar senha</SheetTitle>

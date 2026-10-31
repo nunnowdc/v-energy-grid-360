@@ -131,13 +131,22 @@ describe('menu e rotas por perfil', () => {
     expect(screen.getByRole('button', { name: 'Agente de IA' })).toBeInTheDocument()
   })
 
-  test('o rodapé do menu mostra quem está logado e deixa trocar a senha', async () => {
+  test('o rodapé do menu mostra quem está logado e abre o menu da conta', async () => {
     await abrir('/', 'OPERACAO')
-    expect(screen.getByText('Pessoa Operação')).toBeInTheDocument()
-    expect(within(screen.getByText('Pessoa Operação').parentElement!).getByText('Operação')).toBeInTheDocument()
+    const conta = screen.getByRole('button', { name: 'Minha conta' })
+    expect(conta).toHaveTextContent('Pessoa Operação')
+    expect(conta).toHaveTextContent('Operação')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Trocar senha' }))
-    expect(screen.getByRole('dialog', { name: 'Trocar senha' })).toBeInTheDocument()
+    fireEvent.click(conta)
+    const menuConta = await screen.findByRole('menu')
+    expect(menuConta).toHaveTextContent('operacao@example.test')
+    expect(within(menuConta).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Trocar senha',
+      'Sair',
+    ])
+
+    fireEvent.click(within(menuConta).getByRole('menuitem', { name: 'Trocar senha' }))
+    expect(await screen.findByRole('dialog', { name: 'Trocar senha' })).toBeInTheDocument()
   })
 })
 
@@ -191,7 +200,8 @@ describe('login e sessão', () => {
     await abrir('/', 'DIRETORIA')
     const fetch = vi.mocked(globalThis.fetch)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sair' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Minha conta' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Sair' }))
 
     await waitFor(() => expect(abrirPagina).toHaveBeenCalledWith('/login'))
     expect(fetch.mock.calls.some(([url, init]) => url === '/api/auth/logout' && init?.method === 'POST')).toBe(true)

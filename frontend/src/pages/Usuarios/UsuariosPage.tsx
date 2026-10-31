@@ -106,7 +106,7 @@ function NovaConta() {
             <p>
               Conta criada para <strong>{criada.nome}</strong> ({criada.email}), com o perfil{' '}
               {nomesPerfis[criada.perfil as Perfil] ?? criada.perfil}. Passe a senha inicial para a pessoa e peça
-              que ela troque em “Trocar senha”, no rodapé do menu.
+              que ela troque: é só clicar no próprio nome, no rodapé do menu, e em “Trocar senha”.
             </p>
           </div>
         )}

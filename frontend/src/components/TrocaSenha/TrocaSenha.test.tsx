@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import TrocaSenha from '@/components/TrocaSenha/TrocaSenha'
 import { renderizar } from '@/test/renderizar'
@@ -14,9 +15,22 @@ function backend(status: number, corpo?: unknown) {
   )
 }
 
+// Abre e fecha o painel como o menu da conta faz
+function ComBotao() {
+  const [aberto, setAberto] = useState(false)
+  return (
+    <>
+      <button type="button" onClick={() => setAberto(true)}>
+        Abrir
+      </button>
+      <TrocaSenha aberto={aberto} aoMudar={setAberto} />
+    </>
+  )
+}
+
 function abrirPainel() {
-  renderizar(<TrocaSenha />, { perfil: 'DIRETORIA' })
-  fireEvent.click(screen.getByRole('button', { name: 'Trocar senha' }))
+  renderizar(<ComBotao />, { perfil: 'DIRETORIA' })
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir' }))
   return screen.getByRole('dialog', { name: 'Trocar senha' })
 }
 
@@ -81,7 +95,7 @@ test('fechar e abrir o painel de novo começa com os campos vazios', async () =>
 
   fireEvent.keyDown(painel, { key: 'Escape' })
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  fireEvent.click(screen.getByRole('button', { name: 'Trocar senha' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir' }))
 
   expect(within(screen.getByRole('dialog')).getByLabelText('Senha atual')).toHaveValue('')
 })
