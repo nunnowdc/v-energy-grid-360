@@ -285,7 +285,7 @@ export function useReceita(municipio: string) {
 
 Em desenvolvimento, o Vite repassa tudo o que começa com `/api` para o FastAPI em `http://127.0.0.1:8000` (veja `vite.config.ts`). Para as telas receberem dados, o backend precisa estar rodando, com as rotas registradas sob o prefixo `/api`.
 
-No `npm run dev`, um botão flutuante do TanStack Query aparece no canto da tela. Ele mostra cada consulta, o cache e os erros. Esse botão não vai para o build de produção.
+Para depurar as consultas no `npm run dev`, abra o portal com `?devtools` no endereço (ex.: http://localhost:5173/?devtools): aparece o botão flutuante do TanStack Query, no canto inferior esquerdo, que mostra cada consulta, o cache e os erros. Sem o `?devtools` ele fica escondido, para não cobrir o rodapé do menu nas apresentações. Ele vale até a página recarregar (o Sair recarrega) e nunca vai para o build de produção.
 
 ## Blocos de dados
 

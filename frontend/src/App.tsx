@@ -15,6 +15,11 @@ import ReceitaPage from './pages/Receita/ReceitaPage'
 import UsuariosPage from './pages/Usuarios/UsuariosPage'
 import Visao360Page from './pages/Visao360/Visao360Page'
 
+// O botão do TanStack Query cobre o rodapé do menu e apareceria nas apresentações,
+// que rodam com npm run dev. Só aparece abrindo o portal com ?devtools no endereço
+// (ex.: http://localhost:5173/?devtools) e nunca vai para o build de produção
+const mostrarDevtools = new URLSearchParams(window.location.search).has('devtools')
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -50,7 +55,7 @@ function App() {
         </BrowserRouter>
       </TooltipProvider>
       {/* No canto esquerdo: à direita ficaria em cima do botão de enviar do agente */}
-      <ReactQueryDevtools buttonPosition="bottom-left" />
+      {mostrarDevtools && <ReactQueryDevtools buttonPosition="bottom-left" />}
     </QueryClientProvider>
   )
 }
