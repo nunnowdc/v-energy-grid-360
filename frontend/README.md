@@ -96,7 +96,7 @@ src/
 │   ├── ReceitaPorClasse/ReceitaPorClasse.tsx ← barras da receita de cada classe de consumo
 │   ├── ResumoUc/ResumoUc.tsx              ← cadastro, medidor e geração própria da UC
 │   ├── RotaInicial/RotaInicial.tsx
-│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário logado no rodapé do menu, com Trocar senha e Sair
+│   ├── RodapeUsuario/RodapeUsuario.tsx    ← usuário logado no rodapé do menu; clicar abre o menu da conta
 │   ├── RotaProtegida/RotaProtegida.tsx
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
@@ -108,7 +108,7 @@ src/
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
 │   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
 │   ├── TextoMarkdown/TextoMarkdown.tsx    ← resposta do agente em Markdown com o visual do portal
-│   ├── TrocaSenha/TrocaSenha.tsx          ← botão do rodapé e painel para trocar a própria senha
+│   ├── TrocaSenha/TrocaSenha.tsx          ← painel para trocar a própria senha, aberto pelo menu da conta
 │   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
 │   └── ui/                                ← shadcn/ui
 ├── config/
@@ -248,11 +248,12 @@ O contrato está em `docs/backend/impl_autenticação-backend.md`. Não há cada
 - **Ao abrir o portal:** a tela fica em "Carregando o portal…" até o `GET /api/auth/me` responder, sem menu nem dados. Sem ninguém logado, vai para o `/login` e guarda a tela pedida (`/login?voltar=/receita`).
 - **Depois de entrar:** volta para a tela pedida ou, se o perfil não puder abri-la, para a primeira tela dele. O cache das consultas é limpo, para nada da conta anterior aparecer.
 - **E-mail ou senha errados:** "E-mail ou senha incorretos.", sem dizer qual dos dois.
-- **Sair:** o botão no rodapé do menu chama o `POST /api/auth/logout` e recarrega o portal no `/login`, o que apaga da memória os dados e a conversa com o agente.
+- **Menu da conta:** clicar no nome, no rodapé do menu lateral (ou no avatar, com o menu recolhido), abre um menu com o nome, o e-mail e o perfil, e as opções **Trocar senha** e **Sair**. Usa o `DropdownMenu` do shadcn/ui (`components/ui/dropdown-menu.tsx`).
+- **Sair:** chama o `POST /api/auth/logout` e recarrega o portal no `/login`, o que apaga da memória os dados e a conversa com o agente.
 - **Sessão vencida:** o JWT dura 15 minutos e não é renovado. A primeira chamada com 401 leva ao `/login?motivo=sessao-expirada`, com o aviso "Sua sessão expirou. Entre novamente.", e depois do login volta para a mesma tela.
 - **403:** o endereço de uma tela sem permissão mostra "Sem permissão"; uma ação recusada mostra o erro no próprio bloco. A sessão continua.
 - **Criar conta:** a tela **Usuários** (`/usuarios`, só do `ADMIN_TI`, permissão `gerenciar_usuarios`) tem o formulário de nova conta (nome, e-mail, perfil e senha inicial) e, ao lado, as telas de cada perfil. O e-mail repetido (409) aparece no campo do e-mail. O backend não lista as contas, então a tela só cria. Depois, o administrador passa a senha inicial para a pessoa.
-- **Trocar senha:** o botão com a chave, no rodapé do menu, abre um painel com a senha atual, a nova e a confirmação, para qualquer perfil. A confirmação é conferida só na tela. Senha atual errada (400) aparece no campo dela. Depois da troca, a sessão continua. A troca nunca é obrigatória (decisão do backend).
+- **Trocar senha:** abre um painel lateral com a senha atual, a nova e a confirmação, para qualquer perfil. A confirmação é conferida só na tela. Senha atual errada (400) aparece no campo dela. Depois da troca, a sessão continua. A troca nunca é obrigatória (decisão do backend).
 
 ## Chamadas à API
 
@@ -353,7 +354,7 @@ A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem lar
 Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a Gold no banco local (veja o "Como executar" do README da raiz). Os testes (`npm test`) não usam o backend: respondem com dados inventados no próprio teste ou com os de `src/mocks/`. Esses dados **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
 - `POST /api/auth/login`, `GET /api/auth/me` e `POST /api/auth/logout`: o login (veja [Login](#login)). Nos testes, as contas inventadas de `src/mocks/usuarios.ts`, uma por perfil.
-- `POST /api/auth/users` e `PATCH /api/auth/password`: criar conta (tela Usuários) e trocar a senha (rodapé do menu). Os testes usam um backend inventado no próprio teste.
+- `POST /api/auth/users` e `PATCH /api/auth/password`: criar conta (tela Usuários) e trocar a senha (menu da conta). Os testes usam um backend inventado no próprio teste.
 
 - `GET /api/filters/options`: as opções dos filtros. Nos testes, as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.

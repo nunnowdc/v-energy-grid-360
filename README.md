@@ -569,7 +569,7 @@ Depois, crie a primeira conta, a do administrador (perfil `ADMIN_TI`):
 
 3. Pronto: você entra no portal com o e-mail `adminti.vgrid360@visagio.com` e essa senha. A senha fica guardada no banco só como hash, então a linha do `BOOTSTRAP_ADMIN_PASSWORD` pode ser apagada do `backend/.env.local`.
 
-Rodar o script de novo não muda a conta nem a senha (aparece `Conta ADMIN_TI já existente.`). As contas dos outros perfis são criadas pelo administrador, no portal, na tela **Usuários**. Cada pessoa troca a própria senha pelo botão com a chave, no rodapé do menu.
+Rodar o script de novo não muda a conta nem a senha (aparece `Conta ADMIN_TI já existente.`). As contas dos outros perfis são criadas pelo administrador, no portal, na tela **Usuários**. Cada pessoa troca a própria senha clicando no próprio nome, no rodapé do menu, e depois em **Trocar senha**.
 
 ### 8. Backend
 
@@ -605,7 +605,7 @@ Abra http://localhost:5173. O portal mostra a tela de login: entre com `adminti.
 
 | Tela | O que deve aparecer |
 |---|---|
-| Login | Depois de entrar, o rodapé do menu mostra `admin_ti` e "Administrador (TI)". O botão ao lado sai da conta e volta para o login. A sessão dura 15 minutos: depois disso, o portal pede o login de novo |
+| Login | Depois de entrar, o rodapé do menu mostra `admin_ti` e "Administrador (TI)". Clicar nele abre o menu da conta, com o e-mail, **Trocar senha** e **Sair** (que volta para o login). A sessão dura 15 minutos: depois disso, o portal pede o login de novo |
 | Indicadores | KPIs com valores, não "Algo deu errado no servidor" |
 | Receita | A ponte de receita entre os dois períodos e a tabela por município |
 | Visão 360 | Busque `UC100000`: aparecem o cadastro, o consumo e as faturas da UC |
