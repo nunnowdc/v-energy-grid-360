@@ -57,6 +57,21 @@ export function formatarDataHora(dataHora: string) {
   return `${formatarData(dataHora)} ${dataHora.slice(11, 16)}`
 }
 
+const dataHoraRecife = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'America/Recife',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
+// Instante com fuso, como o backend grava as ordens, no horário de Recife
+// (qualquer que seja o fuso do computador): "2026-10-28T21:09:39.757316Z" → "28/10/2026 18:09"
+export function formatarInstante(instante: string) {
+  return dataHoraRecife.format(new Date(instante)).replace(',', '')
+}
+
 // 203 → "203 kWh"
 export function formatarKwh(valor: number) {
   return `${formatarNumero(valor)} kWh`

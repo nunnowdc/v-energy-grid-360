@@ -5,6 +5,7 @@ import {
   formatarData,
   formatarDataHora,
   formatarEnergia,
+  formatarInstante,
   formatarKwh,
   formatarMoeda,
   formatarMoedaCompacta,
@@ -40,6 +41,12 @@ test('competência', () => {
 test('datas sem depender do fuso do computador', () => {
   expect(formatarData('2026-06-21')).toBe('21/06/2026')
   expect(formatarDataHora('2026-06-12T05:49:00')).toBe('12/06/2026 05:49')
+})
+
+test('instante em UTC aparece no horário de Recife, mesmo virando o dia', () => {
+  expect(formatarInstante('2026-10-28T21:09:39.757316Z')).toBe('28/10/2026 18:09')
+  expect(formatarInstante('2026-10-29T01:30:00Z')).toBe('28/10/2026 22:30')
+  expect(formatarInstante('2026-10-28T18:09:00-03:00')).toBe('28/10/2026 18:09')
 })
 
 test('kWh e competência curta', () => {

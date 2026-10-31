@@ -302,3 +302,100 @@ def test_receita_snapshot_gold_unico_e_efeitos_conciliados_sem_ajuste() -> None:
                 assert price is None
             else:
                 assert price == pytest.approx(revenue / consumption)
+
+
+@pytest.mark.skipif(
+    not get_settings().database_url, reason="DATABASE_URL não configurada"
+)
+def test_receita_outros_periodos_correspondem_a_serie_mensal_gold() -> None:
+    response = TestClient(app).get(
+        "/api/metrics/revenue-variance",
+        params={
+            "municipio": "Recife",
+            "inicio_p0": "2023-07",
+            "fim_p0": "2024-06",
+            "inicio_p1": "2024-07",
+            "fim_p1": "2025-06",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["periodo_p0"] == {"inicio": "2023-07", "fim": "2024-06"}
+    assert body["periodo_p1"] == {"inicio": "2024-07", "fim": "2025-06"}
+
+    with get_connection() as connection:
+        expected = (
+            connection.execute(
+                text(
+                    "SELECT "
+                    "SUM(receita_faturada) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2023-07' AND '2024-06') AS receita_p0, "
+                    "SUM(receita_faturada) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2024-07' AND '2025-06') AS receita_p1, "
+                    "SUM(consumo_kwh) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2023-07' AND '2024-06') AS kwh_p0, "
+                    "SUM(consumo_kwh) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2024-07' AND '2025-06') AS kwh_p1, "
+                    "SUM(ucs_faturadas) FILTER (WHERE mes_referencia = '2024-06') "
+                    "AS ucs_p0, "
+                    "SUM(ucs_faturadas) FILTER (WHERE mes_referencia = '2025-06') "
+                    "AS ucs_p1 "
+                    "FROM agg_receita_mensal WHERE municipio = 'Recife'"
+                )
+            )
+            .mappings()
+            .one()
+        )
+
+    total = body["total"]
+    for field, value in expected.items():
+        assert total[field] == pytest.approx(float(value), abs=0.01, rel=0)
+    assert total["receita_p1"] - total["receita_p0"] == pytest.approx(
+        total["efeito_volume"] + total["efeito_preco"], abs=0.01, rel=0
+    )
+    # Com e sem GD, e os bairros do detalhe, somam o total do recorte
+    for parts in (body["por_gd"], body["detalhamento"]["linhas"]):
+        for field in ("receita_p0", "receita_p1", "efeito_volume", "efeito_preco"):
+            assert sum(part[field] or 0 for part in parts) == pytest.approx(
+                total[field], abs=0.01, rel=0
+            )
+
+
+@pytest.mark.skipif(
+    not get_settings().database_url, reason="DATABASE_URL não configurada"
+)
+def test_receita_trimestres_de_anos_diferentes_conciliam_efeitos() -> None:
+    response = TestClient(app).get(
+        "/api/metrics/revenue-variance",
+        params={
+            "inicio_p0": "2023-01",
+            "fim_p0": "2023-03",
+            "inicio_p1": "2026-01",
+            "fim_p1": "2026-03",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    with get_connection() as connection:
+        expected = (
+            connection.execute(
+                text(
+                    "SELECT "
+                    "SUM(receita_faturada) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2023-01' AND '2023-03') AS receita_p0, "
+                    "SUM(receita_faturada) FILTER (WHERE mes_referencia "
+                    "BETWEEN '2026-01' AND '2026-03') AS receita_p1 "
+                    "FROM agg_receita_mensal"
+                )
+            )
+            .mappings()
+            .one()
+        )
+
+    total = body["total"]
+    assert total["receita_p0"] == pytest.approx(expected["receita_p0"], abs=0.01)
+    assert total["receita_p1"] == pytest.approx(expected["receita_p1"], abs=0.01)
+    assert total["receita_p1"] - total["receita_p0"] == pytest.approx(
+        total["efeito_volume"] + total["efeito_preco"], abs=0.01, rel=0
+    )

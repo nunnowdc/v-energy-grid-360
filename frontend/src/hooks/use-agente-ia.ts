@@ -38,6 +38,10 @@ export type DashboardAgente = {
     causa?: string | null
     // Só na visao_360
     id_uc?: string | null
+    // Meses consultados (yyyy-MM), ex.: { de: "2024-01", ate: "2024-12" } para "em 2024"
+    periodo?: { de: string; ate: string } | null
+    // Só quando a consulta compara dois períodos (2023 e 2024): o mais antigo
+    periodo_base?: { de: string; ate: string } | null
   }
 }
 

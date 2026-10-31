@@ -4,7 +4,7 @@ scripts/carga_banco_local.py
 V-Energy Grid 360 · Ingestão e Seed Local das Tabelas da Camada Gold
 
 Este script automatiza o processo de:
-1. Localização e extração do arquivo .zip da release com os CSVs da camada Gold;
+1. Localização dos CSVs da camada Gold em data/ ou extração do .zip da Gold;
 2. Criação automática dos esquemas DDL (tabelas e tipos);
 3. Carga em massa ultra-rápida no PostgreSQL (via COPY nativo) ou SQLite (fallback/opcional).
 
@@ -20,13 +20,16 @@ import glob
 import time
 import zipfile
 import argparse
-import subprocess
 
 from dotenv import load_dotenv
 
 load_dotenv()
 # Configuração de diretórios
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from scripts.validador_qualidade import validar_banco_sqlite, validar_banco_postgres
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 SQLITE_DB_PATH = os.path.join(DATA_DIR, "v_energy_gold.db")
 
@@ -355,41 +358,51 @@ DDL_POSTGRES = {
 }
 
 
-def garantir_extracao_csvs():
-    """Localiza o arquivo .zip da release e descompacta na pasta data/ se necessário."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    
-    # Procura por CSVs já existentes
+def csvs_da_gold():
+    """Lista os CSVs de data/ com o nome de uma tabela Gold (os CSVs brutos do case não contam)."""
     csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
+    return [c for c in csvs if os.path.basename(c).replace(".csv", "") in DDL_POSTGRES]
+
+
+def garantir_extracao_csvs(reset_data=False):
+    """Localiza os CSVs da Gold em data/ ou descompacta o .zip da Gold, se necessário."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    if reset_data:
+        # Apaga só os CSVs da Gold já extraídos: o .zip e os dados brutos do case ficam
+        print("\n-> Flag --reset-data ativada: apagando os CSVs da Gold extraídos em data/...")
+        for arq in csvs_da_gold():
+            os.remove(arq)
+        print("-> CSVs da Gold apagados.")
+
+    # Procura por CSVs da Gold já extraídos
+    csvs = csvs_da_gold()
     if csvs:
-        print(f"-> Localizados {len(csvs)} arquivos CSV na pasta de dados.")
+        print(f"-> Localizados {len(csvs)} arquivos CSV da Gold na pasta de dados.")
         return csvs
 
-    # Se não houver CSVs, procura por arquivos .zip
+    # Se não houver CSVs da Gold, procura pelo .zip
     zips = glob.glob(os.path.join(DATA_DIR, "*.zip")) + glob.glob(os.path.join(ROOT_DIR, "*.zip"))
-    
-    if not zips:
-        print("\n[!] Nenhum CSV ou arquivo .zip encontrado na pasta 'data/'.")
-        print("    Tentando baixar release mais recente via GitHub CLI ('gh')...")
-        try:
-            subprocess.run(["gh", "release", "download", "--pattern", "*.zip", "--dir", DATA_DIR], check=True)
-            zips = glob.glob(os.path.join(DATA_DIR, "*.zip"))
-        except Exception:
-            pass
 
     if not zips:
-        print("\n[X] Arquivo .zip da release não encontrado automaticamente.")
-        print(f"    Por favor, baixe o .zip da Release do GitHub e coloque em: {DATA_DIR}")
+        print("\n[X] Nenhum CSV da Gold nem arquivo .zip encontrado.")
+        print(f"    Coloque o .zip da Gold (ou os CSVs extraídos) em: {DATA_DIR}")
+        sys.exit(1)
+
+    if len(zips) > 1:
+        print("\n[X] Mais de um arquivo .zip encontrado:")
+        for caminho in zips:
+            print(f"    {caminho}")
+        print("    Deixe só o .zip da Gold mais recente e rode de novo.")
         sys.exit(1)
 
     zip_alvo = zips[0]
-    print(f"-> Descompactando arquivo da release: {os.path.basename(zip_alvo)}...")
+    print(f"-> Descompactando o .zip da Gold: {os.path.basename(zip_alvo)}...")
     with zipfile.ZipFile(zip_alvo, "r") as zf:
         zf.extractall(DATA_DIR)
     print("-> Extração concluída com sucesso.")
-    
-    csvs = glob.glob(os.path.join(DATA_DIR, "**", "*.csv"), recursive=True)
-    return csvs
+
+    return csvs_da_gold()
 
 
 def mapear_arquivos_csv(csv_list):
@@ -399,6 +412,13 @@ def mapear_arquivos_csv(csv_list):
         nome_arquivo = os.path.basename(caminho).replace(".csv", "")
         # Normaliza nomes de tabela
         if nome_arquivo in DDL_POSTGRES:
+            # Duas cópias da mesma tabela (ex.: Gold antiga e nova) deixariam a carga ambígua
+            if nome_arquivo in mapa:
+                print(f"\n[X] Mais de um CSV para a tabela {nome_arquivo}:")
+                print(f"    {mapa[nome_arquivo]}")
+                print(f"    {caminho}")
+                print("    Apague a cópia antiga da Gold em data/ e rode de novo.")
+                sys.exit(1)
             mapa[nome_arquivo] = caminho
     return mapa
 
@@ -431,7 +451,7 @@ def carregar_postgres(mapa_csv, args):
     except Exception as e:
         print(f"\n[X] Falha na conexão com PostgreSQL: {e}")
         print("\n💡 Dica: Se não tiver o Postgres rodando localmente, você pode:")
-        print("   1. Subir o container Docker: docker compose up -d")
+        print("   1. Ligar o container Docker: docker start postgres-venergy")
         print("   2. Ou rodar em modo SQLite: python scripts/carga_banco_local.py --sqlite")
         sys.exit(1)
 
@@ -469,6 +489,22 @@ def carregar_postgres(mapa_csv, args):
         tempo = time.time() - t0
         print(f"OK ({qtd:,} linhas em {tempo:.2f}s)")
 
+    # 3. Data Quality Gate (Validação Automatizada)
+    if not getattr(args, "skip_quality_check", False):
+        print("\n[3/3] Executando Data Quality Gate...")
+        res = validar_banco_postgres(cursor)
+        print(f"-> Total de verificações executadas: {res.total_verificacoes}")
+        if not res.sucesso:
+            print("\n❌ FALHA NO DATA QUALITY GATE! A carga violou o Contrato de Dados da Gold:")
+            for erro in res.erros:
+                print(f"   ❌ {erro}")
+            print("\n⛔ Operação abortada para proteger o Portal Web. O banco não foi liberado.")
+            conn.close()
+            sys.exit(1)
+        print("✅ Data Quality Gate aprovado com sucesso! Nenhuma inconsistência detectada.")
+    else:
+        print("\n⚠️ AVISO: Data Quality Gate ignorado via flag --skip-quality-check.")
+
     conn.close()
     tempo_total = time.time() - inicio_total
     print(f"\n✨ Carga concluída com sucesso no PostgreSQL!")
@@ -476,7 +512,7 @@ def carregar_postgres(mapa_csv, args):
     print(f"-> Tempo total de processamento: {tempo_total:.2f} segundos")
 
 
-def carregar_sqlite(mapa_csv):
+def carregar_sqlite(mapa_csv, args=None):
     """Executa a carga em massa no SQLite local (data/v_energy_gold.db)."""
     import sqlite3
     import csv
@@ -526,6 +562,24 @@ def carregar_sqlite(mapa_csv):
             tempo = time.time() - t0
             print(f"OK ({qtd:,} linhas em {tempo:.2f}s)")
 
+    # 3. Data Quality Gate (Validação Automatizada)
+    if not getattr(args, "skip_quality_check", False):
+        print("\n-> Executando Data Quality Gate no SQLite...")
+        res = validar_banco_sqlite(conn)
+        print(f"-> Total de verificações executadas: {res.total_verificacoes}")
+        if not res.sucesso:
+            print("\n❌ FALHA NO DATA QUALITY GATE! A carga violou o Contrato de Dados da Gold:")
+            for erro in res.erros:
+                print(f"   ❌ {erro}")
+            print("\n⛔ Operação abortada para proteger o Portal Web.")
+            conn.close()
+            if os.path.exists(SQLITE_DB_PATH):
+                os.remove(SQLITE_DB_PATH)
+            sys.exit(1)
+        print("✅ Data Quality Gate aprovado com sucesso! Nenhuma inconsistência detectada.")
+    else:
+        print("\n⚠️ AVISO: Data Quality Gate ignorado via flag --skip-quality-check.")
+
     conn.close()
     tempo_total = time.time() - inicio_total
     print(f"\n✨ Carga concluída com sucesso no SQLite!")
@@ -536,6 +590,8 @@ def carregar_sqlite(mapa_csv):
 def main():
     parser = argparse.ArgumentParser(description="Seed do Banco de Dados Local da V-Energy Grid 360")
     parser.add_argument("--sqlite", action="store_true", help="Carrega no banco SQLite local em vez do PostgreSQL")
+    parser.add_argument("--skip-quality-check", action="store_true", help="Ignora a validação automatizada de qualidade de dados")
+    parser.add_argument("--reset-data", action="store_true", dest="reset_data", help="Apaga os CSVs da Gold extraídos em data/ e extrai o .zip da Gold de novo (use com uma Gold nova)")
     parser.add_argument("--url", type=str, default=None, help="Database URL (ex: postgresql://user:pass@localhost:5432/v_energy)")
     parser.add_argument("--host", type=str, default=os.getenv("PGHOST", "localhost"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PGPORT", 5432)))
@@ -550,7 +606,7 @@ def main():
     print("=" * 70)
 
     # 1. Garante extração dos CSVs
-    lista_csvs = garantir_extracao_csvs()
+    lista_csvs = garantir_extracao_csvs(reset_data=args.reset_data)
     mapa_tabelas = mapear_arquivos_csv(lista_csvs)
 
     if not mapa_tabelas:
@@ -562,7 +618,7 @@ def main():
 
     # 2. Executa a carga no destino solicitado
     if args.sqlite:
-        carregar_sqlite(mapa_tabelas)
+        carregar_sqlite(mapa_tabelas, args)
     else:
         carregar_postgres(mapa_tabelas, args)
 

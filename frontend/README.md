@@ -55,6 +55,7 @@ src/
 ├── components/
 │   ├── AppHeader/AppHeader.tsx
 │   ├── AppSidebar/AppSidebar.tsx
+│   ├── AvisoSazonalidade/AvisoSazonalidade.tsx ← aviso quando os períodos comparados cobrem meses diferentes do ano
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
 │   ├── BotaoAgente/BotaoAgente.tsx        ← botão do cabeçalho que abre e fecha o agente de IA
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
@@ -96,6 +97,7 @@ src/
 │   ├── SeloBandeira/SeloBandeira.tsx      ← bandeira tarifária com cor e nome
 │   ├── SeloBase/SeloBase.tsx              ← período coberto pela base, no topo
 │   ├── SeloConfianca/SeloConfianca.tsx    ← quanto dá para confiar na resposta do agente
+│   ├── SeletorPeriodo/SeletorPeriodo.tsx  ← filtro de período: botão que abre um calendário de meses
 │   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
 │   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
@@ -134,9 +136,10 @@ src/
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
+│   ├── periodos.ts          ← regras dos períodos escolhíveis (tamanho, comparação, atalhos)
 │   ├── tela-da-resposta.ts  ← tela e filtros do dashboard para uma resposta do agente
 │   └── utils.ts
-├── mocks/                   ← dados de exemplo (MSW), só no npm run dev
+├── mocks/                   ← dados inventados para os testes
 ├── pages/
 └── test/                    ← preparação dos testes e o renderizar()
 ```
@@ -296,12 +299,13 @@ Para uma linha de indicadores, use o `EstadoConsulta` direto, com `CartaoKpi` e,
 Os filtros ficam na URL, então um link compartilhado abre a tela com os mesmos filtros:
 
 ```
-/continuidade?meses=6&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
+/continuidade?base_de=2025-01&base_ate=2025-06&municipio=Recife&alimentador=ALM-REC-001&causa=VEGETACAO
 ```
 
 | Parâmetro | Formato | Sem o parâmetro |
 |---|---|---|
-| `meses` | `3`, `6` ou `12`: os últimos meses **da base**, nunca da data de hoje | Últimos 12 meses |
+| `base_de` e `base_ate` | Primeiro e último mês (`yyyy-MM`) do período base: de 1 a 24 meses, deixando espaço depois dele para o comparado | Indicadores e Continuidade: os 12 meses antes dos últimos 12. Receita: o primeiro ano da base. Sempre meses **da base**, nunca da data de hoje |
+| `comparado_de` | Primeiro mês do período comparado. O tamanho é o do base, e ele começa depois do fim do base | Os mesmos meses do base no ano mais recente que cabe |
 | `municipio` | Nome do município | Todos |
 | `bairro` | Nome do bairro (exige `municipio`) | Todos |
 | `classe` | `RESIDENCIAL`, `COMERCIAL`, `INDUSTRIAL`, `RURAL` ou `PODER_PUBLICO` | Todas |
@@ -312,44 +316,29 @@ Filtros de cada tela, combinados com o backend em `docs/backend/impl_filtros.md`
 
 | Tela | Filtros |
 |---|---|
-| Indicadores | Período, município, classe |
-| Receita | Município, bairro, classe (os períodos são fixos e aparecem só como texto) |
+| Indicadores | Período base, comparado com, município, classe |
+| Receita | Período base, comparado com, município, bairro, classe |
 | Fila de inspeção | Município, bairro, classe |
-| Continuidade | Período, município, alimentador, causa |
+| Continuidade | Período base, comparado com, município, alimentador, causa |
 | Visão 360 | Nenhum: a tela recebe o ID da UC |
 
-Para a API, o período vira `inicio` e `fim` (`yyyy-MM`) com `janelaDoPeriodo()` de `src/lib/filtros-url.ts`; o backend calcula sozinho a janela de comparação, com o mesmo tamanho. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
+As três telas com período usam os mesmos dois botões, "Período base" e "Comparado com", que abrem um calendário de meses (`SeletorPeriodo`): no base, clica no primeiro e no último mês (ou num atalho: anos jul–jun da base e anos civis); no comparado, só no primeiro mês, porque ele tem sempre o tamanho do base. Meses que não deixam espaço para a comparação ficam apagados. Escolher só o base leva o comparado para os mesmos meses do ano mais recente; com meses diferentes do ano (ex.: jan–mar × jul–set), a tela avisa que parte da variação pode ser da estação (`AvisoSazonalidade`). As regras ficam em `src/lib/periodos.ts`. Para a API, os Indicadores e a Continuidade mandam o comparado como `inicio` e `fim` e o base como `inicio_anterior` e `fim_anterior`; a Receita manda `inicio_p0`, `fim_p0`, `inicio_p1` e `fim_p1`. O alimentador depende do município: com um município escolhido, só aparecem os alimentadores que o atendem, e trocar para um município que ele não atende tira o alimentador da URL.
 
 Cada tela escolhe quais filtros mostra com `<FiltrosGlobais campos={[...]} />` e lê os valores com o hook `useFiltros()`, que já descarta valores inválidos. Trocar o município limpa o bairro, e cada mudança é aplicada na hora. Cada filtro aceita um valor só.
 
 A barra fica numa linha própria, abaixo do título da tela. Cada filtro tem largura fixa (definida em `FiltrosGlobais.tsx`), então escolher outro valor não muda o tamanho nem a posição dos filtros. Um valor maior que o filtro aparece cortado com "…" e inteiro ao passar o mouse. A lista de opções usa o `Select` do shadcn/ui, no visual do portal.
 
-## Dados de exemplo (MSW)
+## Rotas do backend
 
-Enquanto o backend não tem todas as rotas, o [MSW](https://mswjs.io/) responde com dados de exemplo **só no `npm run dev`**. Nada disso vai para o build de produção.
+Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a Gold no banco local (veja o "Como executar" do README da raiz). Os testes (`npm test`) não usam o backend: respondem com dados inventados no próprio teste ou com os de `src/mocks/`. Esses dados **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
 
-- Ligar e desligar: `VITE_USAR_DADOS_EXEMPLO=true` ou `false` no `.env.local`, e reiniciar o `npm run dev`.
-- As respostas ficam em `src/mocks/handlers.ts`. As rotas sem exemplo seguem para o backend de verdade.
-- Quando uma rota real ficar pronta, apague o handler dela.
-- Os dados de exemplo **nunca** podem vir da base real (nomes, CPFs, endereços): use só valores inventados ou públicos.
-
-Rotas com exemplo hoje (números inventados):
-
-| Rota | Tela | Exemplo | Formato (proposta ao backend) |
-|---|---|---|---|
-| `GET /api/metrics/general` | Indicadores | `src/mocks/indicadores.ts` | `src/hooks/use-indicadores.ts` |
-| `GET /api/network/continuity` | Continuidade | `src/mocks/continuidade.ts` | `src/hooks/use-continuidade.ts` |
-| `GET /api/inspections/queue` | Fila de inspeção | `src/mocks/inspecoes.ts` | `src/hooks/use-fila-inspecao.ts` |
-| `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}` | Fila de inspeção (ordens) | `src/mocks/inspecoes.ts` (ordens só na memória: somem ao recarregar) | `src/hooks/use-ordens-inspecao.ts` |
-
-Nos testes (`npm test`) os exemplos respondem sem a demora simulada.
-
-Rotas que já são reais e precisam do backend com a Gold no banco local (veja `backend/README.md`):
-
-- `GET /api/filters/options`: as opções dos filtros. Os exemplos acima usam os municípios, bairros, classes, alimentadores e causas que ela devolve (`src/mocks/opcoes-atuais.ts`), então qualquer filtro escolhido na tela tem dados. Sem backend, e nos testes, usam as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/filters/options`: as opções dos filtros. Nos testes, as opções inventadas de `src/mocks/opcoes-filtros.ts`.
+- `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
+- `GET /api/network/continuity`: a Continuidade. Os testes dela usam números redondos inventados no próprio teste. O card "Pior DEC" e o gráfico mês a mês, sem alimentador escolhido, mostram o pior DEC entre os alimentadores com 100 UCs ou mais: nos pequenos, poucas interrupções já inflam o DEC. Como a série da resposta é a do primeiro do ranking, quando ele é pequeno a tela pede a série do alimentador em destaque numa segunda consulta (`alimentadorEmDestaque` em `src/hooks/use-continuidade.ts`).
+- `GET /api/inspections/queue`, `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}`: a Fila de inspeção. As ordens ficam na tabela `ordens_inspecao`, que não vem com a Gold: crie uma vez com `backend/sql/ordens_inspecao.sql` (veja `backend/README.md`). Os testes da tela usam um backend inventado no próprio teste, com as mesmas regras (gerar é tudo ou nada; a hora vem em UTC).
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
-- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde em modo de teste. Os testes do painel usam respostas inventadas no próprio teste.
+- `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde "O serviço de IA está temporariamente indisponível". Os testes do painel usam respostas inventadas no próprio teste.
 
 ## Testes automatizados
 
@@ -364,7 +353,7 @@ Os testes usam o [Vitest](https://vitest.dev/) com a [Testing Library](https://t
   - a variação e o cartão de KPI;
   - os filtros na URL;
   - os formatos de número;
-  - os dados de exemplo.
+  - cada tela, com dados inventados no lugar do backend.
 - **Componentes com consultas ou rotas:** renderize com o `renderizar()` de `src/test/renderizar.tsx`. Ele monta os mesmos provedores do portal (cache de consultas e rotas). A opção `opcoesFiltros` já deixa as opções dos filtros no cache, sem backend.
 - **Preparação comum:** fica em `src/test/setup.ts`. Ele limpa a tela entre um teste e outro, adiciona os verificadores do jest-dom (`toBeInTheDocument`, `toBeDisabled`…) e simula o que o jsdom não tem.
 - **Antes de abrir um PR:** `npm run lint`, `npm test` e `npm run build` devem passar.

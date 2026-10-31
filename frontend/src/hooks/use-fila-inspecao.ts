@@ -4,8 +4,8 @@ import type { StatusOrdem } from '@/hooks/use-ordens-inspecao'
 import { apiFetch } from '@/lib/api/api-fetch'
 import type { Filtros } from '@/lib/filtros-url'
 
-// Formato proposto para GET /api/inspections/queue?municipio=&bairro=&classe=&pagina=&limite=
-// (ainda não existe no backend). Vem de fila_inspecao, na prioridade já calculada pela Gold.
+// GET /api/inspections/queue?municipio=&bairro=&classe=&pagina=&limite= (limite até 50; bairro
+// só com município). Vem de fila_inspecao, na prioridade já calculada pela Gold.
 // Sem nome e endereço do titular: para a fila bastam o ID e o bairro (LGPD)
 
 export type ItemFila = {
@@ -54,5 +54,7 @@ export function useFilaInspecao({ municipio, bairro, classe }: Filtros, pagina: 
     },
     // Ao trocar de página ou de filtro, a tabela anterior fica esmaecida até a nova chegar
     placeholderData: keepPreviousData,
+    // A coluna "Ordem" muda quando alguém gera ou conclui uma ordem: busca de novo ao abrir a tela
+    staleTime: 0,
   })
 }

@@ -77,3 +77,11 @@ _Evitar_: Circuito de rua, ramal de distribuição.
 **Quarentena**:
 Armazenamento segregado de registros que violam critérios de integridade referencial ou física para fins de auditoria sem interrupção do pipeline.
 _Evitar_: Tabela de erros, descarte, log de rejeição.
+
+**Barreira de Qualidade (Quality Gate)**:
+Ponto de controle automatizado e bloqueante no pipeline que valida integridade física, referencial e regras de negócio antes da liberação dos dados.
+_Evitar_: Check de sanidade, teste manual, validação tardia.
+
+**Contrato de Dados da Gold**:
+Conjunto de regras invariantes de esquema, unicidade, completude e integridade referencial que as tabelas Gold devem satisfazer antes da exportação para o portal.
+_Evitar_: Schema solto, layout informal.

@@ -18,7 +18,7 @@ if __package__ in (None, ""):
 from langgraph.graph import StateGraph, START, END
 
 from ..contratos.estado_agente import EstadoAgente
-from ..interfaces.stub_validador_sql import StubValidadorSQL
+from security.validador_sqlglot import ValidadorSQLGlotPostgres
 from ..interfaces.validador_sql_interface import ValidadorSQLInterface
 from ..nos.no_filtro_seguranca import no_filtro_seguranca, rota_pos_filtro
 from ..nos.no_completa_followup import no_completa_followup
@@ -105,11 +105,10 @@ def construir_grafo(
                                                               └─► [recusa]     no_recusa_honesta
                                                             no_sintetiza_resposta ─► no_finaliza_auditoria ► END
 
-    O RAG, o cache parametrizado e a síntese seguem o fluxo de produção; o
-    validador padrão continua sendo o stub até a entrega da frente de Segurança.
+    O RAG, o cache parametrizado e a síntese seguem o fluxo de produção.
     """
     _llm = llm or ClienteLLM()
-    _validador = validador or StubValidadorSQL()
+    _validador = validador or ValidadorSQLGlotPostgres()
     _executor = executor or SQLExecutor(db_url=db_url or os.getenv("DATABASE_URL"))
     _db_url = db_url or os.getenv("DATABASE_URL")
 

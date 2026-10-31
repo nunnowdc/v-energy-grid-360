@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # 00 · Utils: funções compartilhadas do pipeline V-Energy Grid 360
 # MAGIC
-# MAGIC Incluído nas Silvers com `%run ./00_utils`. Concentra as regras que valem para mais de uma tabela,
+# MAGIC Incluído nos notebooks de `bronze/`, `silver/` e `gold/` com `%run ../00_utils`. Concentra as regras que valem para mais de uma tabela,
 # MAGIC para que uma correção seja feita num lugar só:
 # MAGIC
 # MAGIC | Função | Para quê | Decisão documentada |

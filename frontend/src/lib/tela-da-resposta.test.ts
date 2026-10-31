@@ -59,6 +59,44 @@ describe('com consulta, a tela vem do agente', () => {
     )
   })
 
+  test('o período consultado vai para o "Comparado com", com o ano anterior no base', () => {
+    // "Qual o faturamento em Recife no ano de 2024?": os KPIs mostram 2024
+    expect(
+      telaDoAgente(
+        { tela: 'indicadores', filtros: { municipio: 'recife', periodo: { de: '2024-01', ate: '2024-12' } } },
+        opcoes,
+      ),
+    ).toEqual({
+      caminho: '/?municipio=Recife&base_de=2023-01&base_ate=2023-12&comparado_de=2024-01',
+      filtros: ['Recife', 'jan/2024 – dez/2024 comparado com jan/2023 – dez/2023'],
+    })
+    // A consulta comparou março de 2023 com março de 2025
+    expect(
+      telaDoAgente(
+        {
+          tela: 'continuidade',
+          filtros: { periodo: { de: '2025-03', ate: '2025-03' }, periodo_base: { de: '2023-03', ate: '2023-03' } },
+        },
+        opcoes,
+      )?.caminho,
+    ).toBe('/continuidade?base_de=2023-03&base_ate=2023-03&comparado_de=2025-03')
+    expect(
+      telaDoAgente({ tela: 'receita', filtros: { periodo: { de: '2025-01', ate: '2025-12' } } }, opcoes)?.caminho,
+    ).toBe('/receita?base_de=2024-01&base_ate=2024-12&comparado_de=2025-01')
+  })
+
+  test('período sem base que caiba ou numa tela sem período fica de fora', () => {
+    expect(
+      telaDoAgente({ tela: 'indicadores', filtros: { periodo: { de: '2022-07', ate: '2022-12' } } }, opcoes),
+    ).toEqual({ caminho: '/', filtros: [] })
+    expect(
+      telaDoAgente(
+        { tela: 'inspecoes', filtros: { municipio: 'Olinda', periodo: { de: '2024-01', ate: '2024-12' } } },
+        opcoes,
+      )?.caminho,
+    ).toBe('/inspecoes?municipio=Olinda')
+  })
+
   test('o município sai se o alimentador não o atende', () => {
     expect(
       telaDoAgente({ tela: 'continuidade', filtros: { municipio: 'Recife', alimentador: 'ALM-OLI-001' } }, opcoes)?.caminho,

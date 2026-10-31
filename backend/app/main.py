@@ -4,15 +4,17 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.controllers.filters import router as filters_router
 from app.controllers.health import router as health_router
 from app.controllers.inspections import router as inspections_router
 from app.controllers.metrics import router as metrics_router
+from app.controllers.network import router as network_router
 from app.controllers.uc import router as uc_router
 from app.core.config import ENV_LOCAL_PATH, get_settings
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 settings = get_settings()
 
@@ -41,6 +43,7 @@ app.include_router(health_router, prefix="/api")
 app.include_router(filters_router, prefix="/api")
 app.include_router(inspections_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
+app.include_router(network_router, prefix="/api")
 app.include_router(uc_router, prefix="/api")
 app.include_router(ai_router, prefix="/api")
 

@@ -1,4 +1,5 @@
 import { Info } from 'lucide-react'
+import AvisoSazonalidade from '@/components/AvisoSazonalidade/AvisoSazonalidade'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -9,7 +10,7 @@ import GraficosMensais from '@/components/GraficosMensais/GraficosMensais'
 import OcorrenciasPorCausa from '@/components/OcorrenciasPorCausa/OcorrenciasPorCausa'
 import RankingAlimentadores from '@/components/RankingAlimentadores/RankingAlimentadores'
 import { rotuloCausa } from '@/config/causas'
-import { useContinuidade, type ContinuidadeRede } from '@/hooks/use-continuidade'
+import { alimentadorEmDestaque, useContinuidade, type ContinuidadeRede } from '@/hooks/use-continuidade'
 import { useFiltros } from '@/hooks/use-filtros'
 import { variacaoPercentual } from '@/lib/comparacao'
 import { formatarNumero, formatarPeriodo } from '@/lib/formatacao'
@@ -21,7 +22,9 @@ const horas = (valor: number) => `${formatarNumero(valor)} h`
 
 function Kpis({ dados, causa }: { dados: ContinuidadeRede; causa?: string }) {
   const { periodo, periodo_anterior, ranking, ocorrencias } = dados
-  const pior = ranking[0]
+  const pior = alimentadorEmDestaque(ranking)
+  // Os alimentadores pequenos com DEC maior ficaram de fora do destaque
+  const semPequenos = pior !== ranking[0]
   const pequenos = ranking.filter((linha) => linha.alimentador_pequeno).length
   const principal = ocorrencias.por_causa[0]
 
@@ -31,6 +34,7 @@ function Kpis({ dados, causa }: { dados: ContinuidadeRede; causa?: string }) {
         <span className="font-semibold text-foreground">{formatarPeriodo(periodo.inicio, periodo.fim)}</span>, comparado
         com {formatarPeriodo(periodo_anterior.inicio, periodo_anterior.fim)}
       </p>
+      <AvisoSazonalidade base={periodo_anterior} comparado={periodo} />
       <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
         <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         DEC e FEC são sempre do alimentador inteiro, inclusive das UCs de outros municípios. O município só escolhe
@@ -43,7 +47,7 @@ function Kpis({ dados, causa }: { dados: ContinuidadeRede; causa?: string }) {
           detalhe={pequenos > 0 ? `${formatarNumero(pequenos)} com menos de 100 UCs` : undefined}
         />
         <CartaoKpi
-          titulo="Pior DEC"
+          titulo={semPequenos ? 'Pior DEC (100 UCs ou mais)' : 'Pior DEC'}
           valor={horas(pior.dec)}
           detalhe={`${pior.alimentador} · ${pior.municipio_principal}`}
         />
@@ -81,10 +85,19 @@ function KpisEsqueleto() {
 function ContinuidadePage() {
   const { filtros, alterarFiltro } = useFiltros()
   const consulta = useContinuidade(filtros)
+  // A série que vem na resposta é a do primeiro do ranking. Sem alimentador escolhido, se ele for
+  // pequeno, o gráfico busca a série do alimentador em destaque numa consulta só para ele
+  const destaque = consulta.data && !filtros.alimentador ? alimentadorEmDestaque(consulta.data.ranking) : undefined
+  const outraSerie = destaque !== undefined && consulta.data?.serie?.alimentador !== destaque.alimentador
+  const consultaSerie = useContinuidade(
+    { ...filtros, alimentador: destaque?.alimentador },
+    // Enquanto um filtro novo carrega, o destaque ainda é o dos números antigos
+    outraSerie && !consulta.isPlaceholderData,
+  )
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['periodo', 'municipio', 'alimentador', 'causa']} />} />
+      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'alimentador', 'causa']} />} />
 
       <EstadoConsulta
         consulta={consulta}
@@ -99,8 +112,8 @@ function ContinuidadePage() {
         <BlocoDados
           className="xl:col-span-3"
           titulo="DEC e FEC por mês"
-          descricao="Do alimentador escolhido ou, sem escolha, do pior DEC do recorte"
-          consulta={consulta}
+          descricao="Do alimentador escolhido ou, sem escolha, do pior DEC entre os com 100 UCs ou mais"
+          consulta={outraSerie ? consultaSerie : consulta}
           estaVazio={(dados) => dados.serie === null}
           mensagemVazio={MENSAGEM_VAZIO}
         >
