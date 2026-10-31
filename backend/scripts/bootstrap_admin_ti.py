@@ -10,13 +10,14 @@ import sys
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from dotenv import dotenv_values
+from sqlalchemy.engine import Connection
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.core import config
 from app.core.database import get_connection
 from app.repositories.users import UsersRepository
 from app.security.passwords import hash_password
-from dotenv import dotenv_values
-from sqlalchemy.engine import Connection
-from sqlalchemy.exc import SQLAlchemyError
 
 ADMIN_EMAIL = "adminti.vgrid360@visagio.com"
 PASSWORD_VARIABLE = "BOOTSTRAP_ADMIN_PASSWORD"

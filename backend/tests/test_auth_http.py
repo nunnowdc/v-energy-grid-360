@@ -4,10 +4,11 @@ from contextlib import contextmanager, nullcontext
 from uuid import UUID
 
 import pytest
-from app.main import app
-from app.security.passwords import hash_password
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
+
+from app.main import app
+from app.security.passwords import hash_password
 
 USER_ID = UUID("550e8400-e29b-41d4-a716-446655440000")
 SECRET = "segredo-sintetico-para-testes-com-mais-de-32-caracteres"
@@ -121,6 +122,27 @@ def test_login_invalido_nao_revela_existencia_da_conta(
 def test_login_payload_invalido_retorna_422(auth_client, body) -> None:
     client, users = auth_client
     assert client.post("/api/auth/login", json=body).status_code == 422
+    assert users.lookups == []
+
+
+@pytest.mark.parametrize(
+    "body, expected_field",
+    [
+        ({"senha": "senha-sintetica-sensivel"}, "email"),
+        ([{"senha": "senha-sintetica-sensivel"}], "body"),
+        ({"email": "invalido", "senha": "senha-sintetica-sensivel"}, "email"),
+    ],
+)
+def test_login_422_indica_campos_sem_ecoar_credenciais(
+    auth_client, body, expected_field
+) -> None:
+    client, users = auth_client
+
+    response = client.post("/api/auth/login", json=body)
+
+    assert response.status_code == 422
+    assert "senha-sintetica-sensivel" not in response.text
+    assert any(expected_field in error["loc"] for error in response.json()["detail"])
     assert users.lookups == []
 
 
@@ -256,6 +278,66 @@ def test_erro_inesperado_retorna_500_sem_detalhes(auth_client) -> None:
     )
     assert response.status_code == 500
     assert "segredo" not in response.text
+
+
+def test_runtime_error_inesperado_no_login_retorna_500(
+    auth_client, monkeypatch
+) -> None:
+    client, users = auth_client
+
+    def fail(_email):
+        raise RuntimeError("detalhe interno sintético")
+
+    monkeypatch.setattr(users, "get_by_email", fail)
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "usuario@exemplo.com", "senha": "senha-ficticia"},
+    )
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Erro interno"}
+
+
+def test_runtime_error_inesperado_na_identidade_retorna_500(
+    auth_client, monkeypatch
+) -> None:
+    client, users = auth_client
+    assert (
+        client.post(
+            "/api/auth/login",
+            json={"email": "usuario@exemplo.com", "senha": "senha-ficticia"},
+        ).status_code
+        == 200
+    )
+
+    def fail(_user_id):
+        raise RuntimeError("detalhe interno sintético")
+
+    monkeypatch.setattr(users, "get_by_id", fail)
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Erro interno"}
+
+
+def test_runtime_error_inesperado_no_token_retorna_500_seguro(
+    auth_client, monkeypatch
+) -> None:
+    from app.security import dependencies
+
+    _, users = auth_client
+
+    def fail(_token):
+        raise RuntimeError("detalhe interno sintético")
+
+    monkeypatch.setattr(dependencies, "read_subject", fail)
+    client = TestClient(app, raise_server_exceptions=False)
+    client.cookies.set("vgrid360_access_token", "token-sintetico")
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Erro interno"}
+    assert users.lookups == []
 
 
 def test_me_com_banco_indisponivel_retorna_503_e_fecha_contexto(auth_client) -> None:

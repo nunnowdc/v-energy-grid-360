@@ -12,6 +12,10 @@ from sqlalchemy.exc import ArgumentError
 ENV_LOCAL_PATH = Path(__file__).resolve().parents[2] / ".env.local"
 
 
+class ConfigurationUnavailableError(RuntimeError):
+    """Uma configuração necessária para atender a requisição está ausente."""
+
+
 @dataclass(frozen=True)
 class Settings:
     environment: str

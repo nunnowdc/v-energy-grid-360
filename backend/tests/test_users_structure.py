@@ -2,9 +2,10 @@
 
 from pathlib import Path
 
-from app.entities.user import Usuario
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import DateTime, String
+
+from app.entities.user import Usuario
 
 SQL_PATH = Path(__file__).resolve().parents[1] / "sql" / "usuarios.sql"
 

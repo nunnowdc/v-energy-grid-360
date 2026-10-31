@@ -2,9 +2,9 @@
 
 from contextlib import contextmanager
 
-from app.core import config
 from sqlalchemy.exc import OperationalError
 
+from app.core import config
 from scripts import bootstrap_admin_ti
 
 

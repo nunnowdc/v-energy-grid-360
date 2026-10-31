@@ -8,15 +8,16 @@ from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+from psycopg import sql
+from sqlalchemy import create_engine, insert, select, text
+from sqlalchemy.engine import Engine, make_url
+from sqlalchemy.exc import IntegrityError, ProgrammingError
+
 from app.core.config import get_settings
 from app.entities.user import Usuario
 from app.repositories.users import UsersRepository
 from app.security.passwords import verify_password
-from psycopg import sql
 from scripts.bootstrap_admin_ti import ADMIN_EMAIL, bootstrap_admin
-from sqlalchemy import create_engine, insert, select, text
-from sqlalchemy.engine import Engine, make_url
-from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 SQL_PATH = Path(__file__).resolve().parents[1] / "sql" / "usuarios.sql"
 

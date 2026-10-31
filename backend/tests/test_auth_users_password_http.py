@@ -4,11 +4,12 @@ from contextlib import nullcontext
 from uuid import UUID
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
+
 from app.main import app
 from app.security.dependencies import get_user_repository
 from app.security.passwords import hash_password, verify_password
-from fastapi.testclient import TestClient
-from sqlalchemy.exc import OperationalError
 
 ADMIN_ID = UUID("550e8400-e29b-41d4-a716-446655440000")
 SECRET = "segredo-sintetico-para-testes-com-mais-de-32-caracteres"
@@ -335,5 +336,46 @@ def test_unexpected_creation_failure_returns_safe_500(auth_client, monkeypatch):
             "senha": "senha inicial",
         },
     )
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Erro interno"}
+
+
+def test_unexpected_runtime_error_during_creation_returns_500(auth_client, monkeypatch):
+    client, users = auth_client
+    assert _login(client).status_code == 200
+
+    def fail(**_kwargs):
+        raise RuntimeError("detalhe interno sintético")
+
+    monkeypatch.setattr(users, "create", fail)
+    response = client.post(
+        "/api/auth/users",
+        json={
+            "nome": "Pessoa Teste",
+            "email": "pessoa@example.invalid",
+            "perfil": "PERDAS",
+            "senha": "senha inicial",
+        },
+    )
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Erro interno"}
+
+
+def test_unexpected_runtime_error_during_password_change_returns_500(
+    auth_client, monkeypatch
+):
+    client, users = auth_client
+    assert _login(client).status_code == 200
+
+    def fail(_user_id, _new_hash):
+        raise RuntimeError("detalhe interno sintético")
+
+    monkeypatch.setattr(users, "update_password", fail)
+    response = client.patch(
+        "/api/auth/password",
+        json={"senha_atual": "senha antiga", "nova_senha": "senha nova 123"},
+    )
+
     assert response.status_code == 500
     assert response.json() == {"detail": "Erro interno"}

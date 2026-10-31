@@ -1,6 +1,7 @@
 """Política de senha para contas operacionais."""
 
 import pytest
+
 from app.security.passwords import hash_password, validate_new_password, verify_password
 
 

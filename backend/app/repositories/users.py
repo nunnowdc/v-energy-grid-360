@@ -3,10 +3,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from app.entities.user import Usuario
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection
+
+from app.entities.user import Usuario
 
 
 class UsersRepository:

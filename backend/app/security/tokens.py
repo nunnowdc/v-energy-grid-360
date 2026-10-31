@@ -4,7 +4,8 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import jwt
-from app.core.config import get_settings
+
+from app.core.config import ConfigurationUnavailableError, get_settings
 
 COOKIE_NAME = "vgrid360_access_token"
 TOKEN_LIFETIME_SECONDS = 900
@@ -18,7 +19,7 @@ class InvalidSessionToken(Exception):
 def _secret() -> str:
     secret = get_settings().jwt_secret_key
     if not secret:
-        raise RuntimeError("JWT_SECRET_KEY não configurada")
+        raise ConfigurationUnavailableError("JWT_SECRET_KEY não configurada")
     return secret
 
 

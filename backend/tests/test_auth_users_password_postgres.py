@@ -6,15 +6,16 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import func, insert, select
+from test_users_postgres import _apply_ddl
+
 from app.entities.user import Usuario
 from app.main import app
 from app.repositories.users import UsersRepository
 from app.security.dependencies import get_user_repository
 from app.security.passwords import hash_password, verify_password
 from app.security.tokens import COOKIE_NAME, issue_token
-from fastapi.testclient import TestClient
-from sqlalchemy import func, insert, select
-from test_users_postgres import _apply_ddl
 
 pytest_plugins = ["test_users_postgres"]
 
@@ -126,7 +127,8 @@ def test_password_update_failure_rolls_back(database_client, monkeypatch):
         "/api/auth/password",
         json={"senha_atual": "senha antiga", "nova_senha": "senha nova 123"},
     )
-    assert response.status_code == 503
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Erro interno"}
     assert "UPDATE" not in response.text
     with engine.connect() as connection:
         current_hash = UsersRepository(connection).get_by_id(ADMIN_ID)["senha_hash"]

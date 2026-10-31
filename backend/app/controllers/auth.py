@@ -3,6 +3,10 @@
 from contextlib import AbstractContextManager
 from typing import Annotated
 
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
+
+from app.core.config import ConfigurationUnavailableError
 from app.repositories.users import UsersRepository
 from app.schemas.auth import (
     AuthUser,
@@ -24,8 +28,6 @@ from app.services.auth import (
     change_own_password,
     create_user,
 )
-from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 
 router = APIRouter()
 
@@ -54,7 +56,12 @@ def login(
         result = AuthUser.model_validate(user)
     except InvalidCredentials as exc:
         raise HTTPException(status_code=401, detail="Credenciais inválidas") from exc
-    except (InterfaceError, OperationalError, TimeoutError, RuntimeError) as exc:
+    except (
+        InterfaceError,
+        OperationalError,
+        TimeoutError,
+        ConfigurationUnavailableError,
+    ) as exc:
         raise HTTPException(
             status_code=503, detail="Autenticação indisponível"
         ) from exc
@@ -139,7 +146,12 @@ def register_user(
         return AuthUser.model_validate(created)
     except DuplicateEmail as exc:
         raise HTTPException(status_code=409, detail="Email já cadastrado") from exc
-    except (InterfaceError, OperationalError, TimeoutError, RuntimeError) as exc:
+    except (
+        InterfaceError,
+        OperationalError,
+        TimeoutError,
+        ConfigurationUnavailableError,
+    ) as exc:
         raise HTTPException(
             status_code=503, detail="Autenticação indisponível"
         ) from exc
@@ -173,7 +185,12 @@ def change_password(
         raise HTTPException(status_code=400, detail="Senha atual inválida") from exc
     except InvalidCredentials as exc:
         raise HTTPException(status_code=401, detail="Não autenticado") from exc
-    except (InterfaceError, OperationalError, TimeoutError, RuntimeError) as exc:
+    except (
+        InterfaceError,
+        OperationalError,
+        TimeoutError,
+        ConfigurationUnavailableError,
+    ) as exc:
         raise HTTPException(
             status_code=503, detail="Autenticação indisponível"
         ) from exc

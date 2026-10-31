@@ -6,11 +6,12 @@ from uuid import UUID, uuid4
 
 import jwt
 import pytest
+from fastapi.testclient import TestClient
+
 from app.core import config
 from app.main import app
 from app.security.dependencies import get_user_repository
 from app.security.tokens import COOKIE_NAME, issue_token
-from fastapi.testclient import TestClient
 
 SECRET = "segredo-sintetico-para-testes-com-mais-de-32-caracteres"
 USER_ID = UUID("550e8400-e29b-41d4-a716-446655440000")

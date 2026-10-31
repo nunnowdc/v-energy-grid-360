@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import Cookie, Depends, HTTPException, Request
 from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 
+from app.core.config import ConfigurationUnavailableError
 from app.core.database import get_connection
 from app.repositories.users import UsersRepository
 from app.security.permissions import ROUTE_PERMISSIONS
@@ -45,15 +46,22 @@ def get_current_user(
         user_id = read_subject(token)
     except InvalidSessionToken as exc:
         raise HTTPException(status_code=401, detail="Não autenticado") from exc
-    except RuntimeError as exc:
+    except ConfigurationUnavailableError as exc:
         raise HTTPException(
             status_code=503, detail="Autenticação indisponível"
         ) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Erro interno") from exc
 
     try:
         with repository_context as users:
             user = users.get_by_id(user_id)
-    except (InterfaceError, OperationalError, TimeoutError, RuntimeError) as exc:
+    except (
+        InterfaceError,
+        OperationalError,
+        TimeoutError,
+        ConfigurationUnavailableError,
+    ) as exc:
         raise HTTPException(
             status_code=503, detail="Autenticação indisponível"
         ) from exc
