@@ -199,7 +199,17 @@ test('cancelar uma ordem', async () => {
   await screen.findByText(/1 ordem de inspeção gerada\./)
 
   fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
-  fireEvent.click(await within(screen.getByRole('tabpanel')).findByRole('button', { name: 'Cancelar' }))
+  fireEvent.click(await within(screen.getByRole('tabpanel')).findByRole('button', { name: 'Cancelar ordem' }))
+
+  // Pede confirmação e diz o que acontece com a UC; desistir não cancela
+  const confirmacao = await screen.findByRole('alertdialog')
+  expect(within(confirmacao).getByText(/UC900001 volta para a fila de suspeitas/)).toBeInTheDocument()
+  fireEvent.click(within(confirmacao).getByRole('button', { name: 'Manter a ordem' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+  expect(within(screen.getByRole('tabpanel')).getByText('Aberta')).toBeInTheDocument()
+
+  fireEvent.click(within(screen.getByRole('tabpanel')).getByRole('button', { name: 'Cancelar ordem' }))
+  fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancelar ordem' }))
   expect(await screen.findByText('Cancelada')).toBeInTheDocument()
 })
 

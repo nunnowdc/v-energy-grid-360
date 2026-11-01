@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import CancelarOrdem from '@/components/CancelarOrdem/CancelarOrdem'
 import StatusOrdem from '@/components/StatusOrdem/StatusOrdem'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -30,7 +31,7 @@ type OrdensInspecaoProps = {
 }
 
 // Ordens geradas a partir da fila. Cada uma anda: aberta → em campo → concluída
-// (com o resultado da inspeção). Até concluir, dá para cancelar
+// (com o resultado da inspeção). Até concluir, dá para cancelar, com confirmação
 function OrdensInspecao({ ordens }: OrdensInspecaoProps) {
   const mudar = useMudarOrdem()
   const cancelar = useCancelarOrdem()
@@ -100,14 +101,11 @@ function OrdensInspecao({ ordens }: OrdensInspecaoProps) {
                       </Button>
                     ))}
                   {(ordem.status === 'ABERTA' || ordem.status === 'EM_CAMPO') && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={ocupado}
-                      onClick={() => cancelar.mutate(ordem.id_ordem)}
-                    >
-                      Cancelar
-                    </Button>
+                    <CancelarOrdem
+                      ordem={ordem}
+                      desabilitado={ocupado}
+                      aoConfirmar={() => cancelar.mutate(ordem.id_ordem)}
+                    />
                   )}
                 </div>
               </TableCell>

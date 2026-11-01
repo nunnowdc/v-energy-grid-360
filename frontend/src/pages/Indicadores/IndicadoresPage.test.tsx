@@ -97,7 +97,7 @@ test('mostra os KPIs com a variação contra o período anterior', async () => {
   expect(await screen.findByText(/comparado com jan\/2026 – mar\/2026/)).toBeInTheDocument()
   expect(screen.getAllByText('abr/2026 – jun/2026')).toHaveLength(2)
   // jan–mar contra abr–jun: meses diferentes do ano
-  expect(screen.getByText(/meses diferentes do ano/)).toBeInTheDocument()
+  expect(screen.getByText(/Meses diferentes do ano/)).toBeInTheDocument()
   // Receita: 3,3 mi contra 3 mi = +10%
   expect(screen.getAllByText('+10,0%')).not.toHaveLength(0)
   // Atraso: 90 de 3.000 faturas, contra 60 antes = +50%
