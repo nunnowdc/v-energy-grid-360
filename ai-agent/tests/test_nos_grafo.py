@@ -178,7 +178,7 @@ def test_no_valida_sql_aprovado():
     """Query legítima com tabelas permitidas deve ser aprovada para execução."""
     validador = StubValidadorSQL()
     estado = {
-        "sql_gerado": "SELECT uc_id, receita_faturada FROM fact_faturamento WHERE ano = 2023",
+        "sql_gerado": "SELECT id_uc, receita_faturada FROM fact_faturamento WHERE ano = 2023",
         "tentativas_sql": 1,
     }
     resultado = no_valida_sql(estado, validador=validador)
@@ -269,8 +269,9 @@ def test_no_sintetiza_resposta(fake_llm_factory):
     texto_executivo = "Em 2023, o faturamento comercial em Olinda totalizou R$ 1.575,00."
     fake_llm = fake_llm_factory(resposta_padrao=texto_executivo)
     estado = {
-        "pergunta_autonoma": "Qual o faturamento comercial em Olinda em 2023?",
-        "dados_sql": [{"classe": "Comercial", "total_receita": 1575.0}],
+        "pergunta_autonoma": "Qual o faturamento comercial em Olinda?",
+        "rota": "sql",
+        "dados_sql": [{"classe": "Comercial", "ano": 2023, "total_receita": 1575.0}],
         "contexto_rag": [],
         "chamadas_llm": 0,
         "hit_cache": False,
@@ -296,3 +297,21 @@ def test_no_finaliza_auditoria():
 
     assert resultado["audit_id"] == "test-uuid-001"
     assert resultado["tempo_total_ms"] > 0
+
+
+def test_no_finaliza_auditoria_desativada_nao_monta_ou_registra_amostra(caplog):
+    """Execução opt-in pode omitir auditoria sem logar dados retornados do banco."""
+    estado = {
+        "audit_id": "test-uuid-002",
+        "tempo_inicio_ts": 1000.0,
+        "dados_sql": [{"nome_titular": "Cliente confidencial"}],
+    }
+
+    resultado = no_finaliza_auditoria(
+        estado,
+        db_url="postgresql://localhost/v_energy",
+        persistir=False,
+    )
+
+    assert resultado["audit_id"] == "test-uuid-002"
+    assert "Cliente confidencial" not in caplog.text

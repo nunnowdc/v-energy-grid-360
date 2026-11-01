@@ -68,6 +68,7 @@ def executar_agente(
     validador: Optional[ValidadorSQLInterface] = None,
     executor: Optional[SQLExecutor] = None,
     db_url: Optional[str] = None,
+    persistir_auditoria: bool = True,
     user_id: Optional[str] = None,
     contexto_tela: Optional[Dict[str, Any]] = None,
 ) -> RespostaAgente:
@@ -82,6 +83,7 @@ def executar_agente(
         validador:   Validador SQL (usa ValidadorSQLGlotPostgres se None).
         executor:    Executor SQL (usa SQLExecutor padrão se None).
         db_url:      URL de conexão ao PostgreSQL (usa DATABASE_URL do env se None).
+        persistir_auditoria: Se False, omite a persistência e log de amostras da auditoria.
         user_id:     Identificador do usuário autenticado (virá da autenticação no futuro).
         contexto_tela: Contexto da tela aberta no portal (page, id_uc, etc.).
 
@@ -96,6 +98,7 @@ def executar_agente(
         validador=validador,
         executor=executor,
         db_url=db_url,
+        persistir_auditoria=persistir_auditoria,
     )
 
     estado_inicial = inicializar(
