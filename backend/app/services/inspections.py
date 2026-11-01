@@ -80,6 +80,8 @@ def change_inspection_order(
             "status": row["status"],
             "resultado": row["resultado"],
             "criada_em": timestamp.astimezone(UTC),
+            "criada_por_nome": row["criada_por_nome"],
+            "atualizada_por_nome": row["atualizada_por_nome"],
         }
 
 
@@ -129,6 +131,8 @@ def list_inspection_orders(
                 "status": row["status"],
                 "resultado": row["resultado"],
                 "criada_em": timestamp.astimezone(UTC),
+                "criada_por_nome": row["criada_por_nome"],
+                "atualizada_por_nome": row["atualizada_por_nome"],
             }
         )
     return {"itens": items}
@@ -195,6 +199,8 @@ def create_inspection_orders(
                         "status": row["status"],
                         "resultado": row["resultado"],
                         "criada_em": timestamp.astimezone(UTC),
+                        "criada_por_nome": row["criada_por_nome"],
+                        "atualizada_por_nome": row["atualizada_por_nome"],
                     }
                 )
     except ActiveOrderRaceError as exc:

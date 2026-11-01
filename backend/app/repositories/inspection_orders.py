@@ -15,11 +15,14 @@ from sqlalchemy import (
     Uuid,
     func,
     insert,
+    select,
     text,
     update,
 )
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
+
+from app.entities.user import Usuario
 
 ORDENS_INSPECAO = Table(
     "ordens_inspecao",
@@ -41,6 +44,15 @@ ORDENS_INSPECAO = Table(
     # Conta da sessão que gerou e que mudou por último (sql/ordens_inspecao_autoria.sql)
     Column("criada_por", Uuid),
     Column("atualizada_por", Uuid),
+)
+
+
+# Nome de quem gerou e de quem mudou por último. LEFT JOIN: ordens de antes da
+# autoria não têm autor, e a ordem continua aparecendo
+_AUTORES = "cp.nome AS criada_por_nome, ap.nome AS atualizada_por_nome "
+_JOIN_AUTORES = (
+    "LEFT JOIN usuarios AS cp ON cp.id = o.criada_por "
+    "LEFT JOIN usuarios AS ap ON ap.id = o.atualizada_por "
 )
 
 
@@ -86,10 +98,12 @@ class InspectionOrdersRepository:
         rows = self.connection.execute(
             text(
                 "SELECT o.id, o.id_uc, uc.municipio, uc.bairro, "
-                "o.status, o.resultado, o.criada_em "
-                "FROM ordens_inspecao AS o "
-                "JOIN dim_unidade_consumidora AS uc ON uc.id_uc = o.id_uc"
-                f"{where} ORDER BY o.criada_em DESC, o.id DESC"
+                "o.status, o.resultado, o.criada_em, "
+                + _AUTORES
+                + "FROM ordens_inspecao AS o "
+                "JOIN dim_unidade_consumidora AS uc ON uc.id_uc = o.id_uc "
+                + _JOIN_AUTORES
+                + f"{where.strip()} ORDER BY o.criada_em DESC, o.id DESC"
             ),
             values,
         )
@@ -100,10 +114,12 @@ class InspectionOrdersRepository:
             self.connection.execute(
                 text(
                     "SELECT o.id, o.id_uc, uc.municipio, uc.bairro, "
-                    "o.status, o.resultado, o.criada_em "
-                    "FROM ordens_inspecao AS o "
+                    "o.status, o.resultado, o.criada_em, "
+                    + _AUTORES
+                    + "FROM ordens_inspecao AS o "
                     "LEFT JOIN dim_unidade_consumidora AS uc ON uc.id_uc = o.id_uc "
-                    "WHERE o.id = :id"
+                    + _JOIN_AUTORES
+                    + "WHERE o.id = :id"
                 ),
                 {"id": order_id},
             )
@@ -143,7 +159,7 @@ class InspectionOrdersRepository:
     def insert_orders(
         self, ids_uc: list[str], *, user_id: UUID
     ) -> list[dict[str, object]]:
-        statement = (
+        novas = (
             insert(ORDENS_INSPECAO)
             .values(
                 [
@@ -162,6 +178,25 @@ class InspectionOrdersRepository:
                 ORDENS_INSPECAO.c.status,
                 ORDENS_INSPECAO.c.resultado,
                 ORDENS_INSPECAO.c.criada_em,
+                ORDENS_INSPECAO.c.criada_por,
+                ORDENS_INSPECAO.c.atualizada_por,
+            )
+            .cte("novas")
+        )
+        # O nome dos autores vem do banco no mesmo comando, como na listagem
+        criou = Usuario.__table__.alias("cp")
+        mudou = Usuario.__table__.alias("ap")
+        statement = select(
+            novas.c.id,
+            novas.c.id_uc,
+            novas.c.status,
+            novas.c.resultado,
+            novas.c.criada_em,
+            criou.c.nome.label("criada_por_nome"),
+            mudou.c.nome.label("atualizada_por_nome"),
+        ).select_from(
+            novas.outerjoin(criou, criou.c.id == novas.c.criada_por).outerjoin(
+                mudou, mudou.c.id == novas.c.atualizada_por
             )
         )
         try:

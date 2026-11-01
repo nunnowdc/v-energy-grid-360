@@ -301,6 +301,9 @@ def test_order_keeps_who_created_it_and_who_changed_it_last(
         nova = _order_row(transition_engine, id_ordem)
         assert str(nova.criada_por) == ADMIN_DE_TESTE
         assert str(nova.atualizada_por) == ADMIN_DE_TESTE
+        assert created.json()["ordens"][0]["criada_por_nome"] == (
+            "Administrador de teste"
+        )
 
         # Outra pessoa da equipe manda a ordem para campo
         app.dependency_overrides[get_current_user] = lambda: perdas
@@ -308,9 +311,17 @@ def test_order_keeps_who_created_it_and_who_changed_it_last(
             f"/api/inspections/{id_ordem}", json={"status": "EM_CAMPO"}
         )
         assert field.status_code == 200
+        listed = client.get("/api/inspections/orders").json()["itens"]
 
     em_campo = _order_row(transition_engine, id_ordem)
     assert str(em_campo.criada_por) == ADMIN_DE_TESTE
     assert em_campo.atualizada_por == perdas["id"]
-    # A autoria fica no banco: o contrato da API não muda
+    # A API devolve o nome, nunca o id da conta
+    assert field.json()["criada_por_nome"] == "Administrador de teste"
+    assert field.json()["atualizada_por_nome"] == "Pessoa de Perdas"
     assert "criada_por" not in field.json()
+    item = next(item for item in listed if item["id_ordem"] == id_ordem)
+    assert (item["criada_por_nome"], item["atualizada_por_nome"]) == (
+        "Administrador de teste",
+        "Pessoa de Perdas",
+    )

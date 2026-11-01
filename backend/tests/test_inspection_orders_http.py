@@ -43,6 +43,8 @@ class OrdersFake:
                 "status": "ABERTA",
                 "resultado": None,
                 "criada_em": datetime(2026, 10, 28, 13, 44, tzinfo=UTC),
+                "criada_por_nome": "Administrador de teste",
+                "atualizada_por_nome": "Administrador de teste",
             }
             for index, uc in enumerate(ids, start=1)
         ]
@@ -72,6 +74,8 @@ def test_post_order_creates_one_order_with_frontend_contract() -> None:
                 "status": "ABERTA",
                 "resultado": None,
                 "criada_em": "2026-10-28T13:44:00Z",
+                "criada_por_nome": "Administrador de teste",
+                "atualizada_por_nome": "Administrador de teste",
             }
         ]
     }

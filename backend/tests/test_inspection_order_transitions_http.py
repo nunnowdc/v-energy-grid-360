@@ -19,6 +19,8 @@ class OrdersFake:
             "status": status,
             "resultado": None,
             "criada_em": datetime(2026, 10, 28, 13, 44, tzinfo=UTC),
+            "criada_por_nome": "Pessoa que gerou",
+            "atualizada_por_nome": "Pessoa que gerou",
         }
 
     def transaction(self):
@@ -61,6 +63,8 @@ def test_patch_moves_open_order_to_field_with_frontend_schema() -> None:
         "status": "EM_CAMPO",
         "resultado": None,
         "criada_em": "2026-10-28T13:44:00Z",
+        "criada_por_nome": "Pessoa que gerou",
+        "atualizada_por_nome": "Pessoa que gerou",
     }
 
 
@@ -93,6 +97,8 @@ def test_delete_cancels_open_or_field_order_and_returns_same_schema() -> None:
             "status",
             "resultado",
             "criada_em",
+            "criada_por_nome",
+            "atualizada_por_nome",
         }
 
 
