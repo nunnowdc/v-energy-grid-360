@@ -54,8 +54,8 @@ def test_pipeline_caminho_feliz_sql(sql_executor_teste: SQLExecutor, fake_llm_fa
     assert len(resultado.passos_executados) > 3
     assert resultado.dashboard is not None
     assert resultado.dashboard.tela == "indicadores"
-    assert resultado.dashboard.filtros.municipio == "Olinda"
-    assert resultado.dashboard.filtros.classe == "Comercial"
+    assert resultado.dashboard.filtros.municipio == "olinda"
+    assert resultado.dashboard.filtros.classe == "comercial"
 
 
 def test_pipeline_loop_autocorrecao_retry(sql_executor_teste: SQLExecutor):
