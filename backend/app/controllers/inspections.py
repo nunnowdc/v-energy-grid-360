@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response
 from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 
 from app.core.database import get_connection
@@ -29,8 +29,10 @@ from app.services.inspections import (
     change_inspection_order,
     create_inspection_orders,
     get_inspection_queue,
+    get_inspection_queue_export,
     list_inspection_orders,
 )
+from app.services.inspections_export import build_queue_workbook
 
 router = APIRouter()
 
@@ -288,3 +290,62 @@ def read_inspection_queue(
         raise HTTPException(status_code=500, detail="Erro interno") from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Erro interno") from exc
+
+
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@router.get(
+    "/inspections/queue/export",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "Fila inteira do recorte em Excel, para a equipe de campo",
+            "content": {XLSX_MEDIA_TYPE: {}},
+        },
+        422: {"description": "Filtros inválidos"},
+        503: {"description": "Gold indisponível ou snapshot da fila vazio"},
+        500: {"description": "Erro interno"},
+    },
+)
+def export_inspection_queue(
+    repository_context: Annotated[
+        AbstractContextManager[InspectionsRepository],
+        Depends(get_inspections_repository),
+    ],
+    request: Request,
+    municipio: str | None = None,
+    bairro: str | None = None,
+    classe: str | None = None,
+) -> Response:
+    allowed = {"municipio", "bairro", "classe"}
+    if any(
+        key not in allowed or len(request.query_params.getlist(key)) != 1
+        for key in request.query_params
+    ):
+        raise HTTPException(status_code=422, detail="Parâmetro inválido ou repetido")
+    if bairro and not municipio:
+        raise HTTPException(status_code=422, detail="Bairro exige município")
+
+    try:
+        with repository_context as repository:
+            export = get_inspection_queue_export(repository, municipio, bairro, classe)
+    except InvalidQueueFilterError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except QueueSnapshotUnavailableError as exc:
+        raise HTTPException(status_code=503, detail="Fila Gold indisponível") from exc
+    except (InterfaceError, OperationalError, TimeoutError) as exc:
+        raise HTTPException(status_code=503, detail="Gold indisponível") from exc
+    except RuntimeError as exc:
+        if str(exc) == "DATABASE_URL não configurada":
+            raise HTTPException(status_code=503, detail="Gold indisponível") from exc
+        raise HTTPException(status_code=500, detail="Erro interno") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Erro interno") from exc
+
+    filename = f"fila-inspecao_{export['data_referencia'].isoformat()}.xlsx"
+    return Response(
+        content=build_queue_workbook(export),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

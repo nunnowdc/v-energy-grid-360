@@ -28,6 +28,7 @@ ROUTE_PERMISSIONS: dict[tuple[str, str], frozenset[str]] = {
     ("GET", "/api/uc/{uc_id}/360"): CUSTOMER_SERVICE,
     ("GET", "/api/network/continuity"): OPERATIONS,
     ("GET", "/api/inspections/queue"): LOSSES,
+    ("GET", "/api/inspections/queue/export"): LOSSES,
     ("GET", "/api/inspections/orders"): LOSSES,
     ("POST", "/api/inspections/order"): LOSSES,
     ("PATCH", "/api/inspections/{id}"): LOSSES,

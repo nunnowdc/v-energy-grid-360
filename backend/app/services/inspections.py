@@ -244,3 +244,33 @@ def get_inspection_queue(
             {**row, "ordem_aberta": active_by_uc.get(row["id_uc"])} for row in rows
         ],
     }
+
+
+ORDER_STATUS_LABELS = {"ABERTA": "Aberta", "EM_CAMPO": "Em campo"}
+
+
+def get_inspection_queue_export(
+    repository: InspectionsRepository,
+    municipio: str | None,
+    bairro: str | None,
+    classe: str | None,
+) -> dict[str, object]:
+    municipio, bairro, classe = _validate_filters(repository, municipio, bairro, classe)
+
+    data_referencia = repository.get_snapshot_date()
+    if data_referencia is None:
+        raise QueueSnapshotUnavailableError
+
+    rows = repository.get_export_items(municipio, bairro, classe)
+    active_orders = repository.orders.get_active_orders([row["id_uc"] for row in rows])
+    active_by_uc = {
+        row["id_uc"]: f"OI-{row['id']:05d} ({ORDER_STATUS_LABELS[row['status']]})"
+        for row in active_orders
+    }
+    return {
+        "data_referencia": data_referencia,
+        "filtros": {"municipio": municipio, "bairro": bairro, "classe": classe},
+        "itens": [
+            {**row, "ordem_aberta": active_by_uc.get(row["id_uc"])} for row in rows
+        ],
+    }

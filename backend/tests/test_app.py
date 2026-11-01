@@ -42,6 +42,7 @@ def test_openapi_groups_each_existing_operation_once() -> None:
         ("PATCH", "/api/inspections/{id}"): "Fila de Inspeção",
         ("DELETE", "/api/inspections/{id}"): "Fila de Inspeção",
         ("GET", "/api/inspections/queue"): "Fila de Inspeção",
+        ("GET", "/api/inspections/queue/export"): "Fila de Inspeção",
         ("GET", "/api/metrics/general"): "Indicadores",
         ("GET", "/api/metrics/revenue-variance"): "Receita",
         ("GET", "/api/network/continuity"): "Continuidade",

@@ -46,6 +46,8 @@ const fila: Omit<ItemFila, 'ordem_aberta'>[] = [
 // (ou cancelada antes de concluir) e a hora vem em UTC
 let ordens: OrdemInspecao[]
 let fetch: MockInstance<typeof globalThis.fetch>
+// Resposta da exportação: a planilha (ou um erro), no formato da rota real
+let respostaExportacao: () => Response
 
 const permitidas: Partial<Record<StatusOrdem, StatusOrdem[]>> = {
   ABERTA: ['EM_CAMPO', 'CANCELADA'],
@@ -124,8 +126,16 @@ function backend(metodo: string, url: URL, corpo: unknown): [number, unknown] {
 
 beforeEach(() => {
   ordens = []
+  respostaExportacao = () =>
+    new Response('planilha', {
+      status: 200,
+      headers: { 'Content-Disposition': 'attachment; filename="fila-inspecao_2026-06-01.xlsx"' },
+    })
   fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (entrada, init) => {
     const url = new URL(String(entrada), location.origin)
+    if (url.pathname === '/api/inspections/queue/export') {
+      return respostaExportacao()
+    }
     const corpo = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
     const [status, resposta] = backend(init?.method ?? 'GET', url, corpo)
     return new Response(JSON.stringify(resposta), { status, headers: { 'Content-Type': 'application/json' } })
@@ -133,6 +143,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
@@ -250,4 +261,82 @@ test('ordem que outra pessoa mudou antes: avisa e mostra a situação atual', as
     await within(painel).findByText('Essa ordem já tinha mudado de situação. A lista foi atualizada.'),
   ).toBeInTheDocument()
   expect(await within(painel).findByText('Cancelada')).toBeInTheDocument()
+})
+
+// O jsdom não baixa arquivo: guarda o link que o portal clicaria para salvar a planilha
+function capturarDownloads() {
+  const baixados: { nome: string; endereco: string }[] = []
+  class URLComArquivos extends URL {
+    static createObjectURL = () => 'blob:planilha'
+    static revokeObjectURL = () => {}
+  }
+  vi.stubGlobal('URL', URLComArquivos)
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    baixados.push({ nome: this.download, endereco: this.href })
+  })
+  return baixados
+}
+
+test('exportar para Excel baixa a fila inteira do recorte', async () => {
+  const baixados = capturarDownloads()
+  abrir('/inspecoes?municipio=Recife&classe=RESIDENCIAL')
+  await screen.findAllByRole('checkbox')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Exportar Excel' }))
+
+  await waitFor(() => expect(baixados).toEqual([{ nome: 'fila-inspecao_2026-06-01.xlsx', endereco: 'blob:planilha' }]))
+  expect(enderecosChamados()).toContain('/api/inspections/queue/export?municipio=Recife&classe=RESIDENCIAL')
+})
+
+test('enquanto exporta, o botão mostra que está carregando e a porcentagem baixada', async () => {
+  const baixados = capturarDownloads()
+  let servidor!: ReadableStreamDefaultController<Uint8Array>
+  respostaExportacao = () =>
+    new Response(
+      new ReadableStream<Uint8Array>({
+        start(controle) {
+          servidor = controle
+        },
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Length': '4',
+          'Content-Disposition': 'attachment; filename="fila-inspecao_2026-06-01.xlsx"',
+        },
+      },
+    )
+  abrir()
+  await screen.findAllByRole('checkbox')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Exportar Excel' }))
+  // O servidor ainda monta a planilha: carregando, sem porcentagem
+  expect(await screen.findByRole('button', { name: 'Exportando…' })).toBeDisabled()
+
+  servidor.enqueue(new Uint8Array([1]))
+  expect(await screen.findByRole('button', { name: 'Exportando… 25%' })).toBeDisabled()
+
+  servidor.enqueue(new Uint8Array([2, 3, 4]))
+  servidor.close()
+  await waitFor(() => expect(baixados).toHaveLength(1))
+  expect(await screen.findByRole('button', { name: 'Exportar Excel' })).toBeEnabled()
+})
+
+test('exportar com erro avisa e não baixa nada', async () => {
+  const baixados = capturarDownloads()
+  respostaExportacao = () => new Response(JSON.stringify({ detail: 'Fila Gold indisponível' }), { status: 503 })
+  abrir()
+  await screen.findAllByRole('checkbox')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Exportar Excel' }))
+
+  expect(await screen.findByText('Fila Gold indisponível')).toBeInTheDocument()
+  expect(baixados).toEqual([])
+})
+
+test('com a fila vazia não há o que exportar', async () => {
+  abrir('/inspecoes?municipio=Paulista')
+
+  expect(await screen.findByText('Nenhuma UC suspeita para esses filtros.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Exportar Excel' })).toBeDisabled()
 })

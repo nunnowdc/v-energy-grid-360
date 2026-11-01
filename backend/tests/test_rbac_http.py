@@ -35,6 +35,7 @@ CASES = (
     ("GET", "/api/network/continuity?inicio=bad&fim=bad", NETWORK),
     ("GET", "/api/uc/INVALID/360", UC),
     ("GET", "/api/inspections/queue?pagina=0", LOSSES),
+    ("GET", "/api/inspections/queue/export?bairro=sem_municipio", LOSSES),
     ("GET", "/api/inspections/orders?bairro=sem_municipio", LOSSES),
     ("POST", "/api/inspections/order", LOSSES),
     ("PATCH", "/api/inspections/OI-INVALID", LOSSES),
