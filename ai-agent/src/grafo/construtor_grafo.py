@@ -78,6 +78,7 @@ def construir_grafo(
     validador: Optional[ValidadorSQLInterface] = None,
     executor: Optional[SQLExecutor] = None,
     db_url: Optional[str] = None,
+    persistir_auditoria: bool = True,
 ) -> Any:
     """
     Compila e retorna o grafo LangGraph com todas as Fatias 1 e 2.
@@ -153,7 +154,11 @@ def construir_grafo(
         return no_recusa_honesta(s)
 
     def _no_finaliza_auditoria(s: EstadoAgente) -> Dict[str, Any]:
-        return no_finaliza_auditoria(s, db_url=_db_url)
+        return no_finaliza_auditoria(
+            s,
+            db_url=_db_url,
+            persistir=persistir_auditoria,
+        )
 
     # ── Montagem do Grafo ──
     grafo = StateGraph(EstadoAgente)
