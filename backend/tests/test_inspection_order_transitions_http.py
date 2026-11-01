@@ -19,6 +19,8 @@ class OrdersFake:
             "status": status,
             "resultado": None,
             "criada_em": datetime(2026, 10, 28, 13, 44, tzinfo=UTC),
+            "criada_por_nome": "Pessoa que gerou",
+            "atualizada_por_nome": "Pessoa que gerou",
         }
 
     def transaction(self):
@@ -27,11 +29,14 @@ class OrdersFake:
     def get_order(self, order_id: int):
         return self.row if order_id == 1 else None
 
-    def update_if_status(self, order_id, expected_status, status, resultado):
+    def update_if_status(
+        self, order_id, expected_status, status, resultado, *, user_id
+    ):
         if self.row["status"] != expected_status:
             return False
         self.row["status"] = status
         self.row["resultado"] = resultado
+        self.updated_by = user_id
         return True
 
 
@@ -58,6 +63,8 @@ def test_patch_moves_open_order_to_field_with_frontend_schema() -> None:
         "status": "EM_CAMPO",
         "resultado": None,
         "criada_em": "2026-10-28T13:44:00Z",
+        "criada_por_nome": "Pessoa que gerou",
+        "atualizada_por_nome": "Pessoa que gerou",
     }
 
 
@@ -90,6 +97,8 @@ def test_delete_cancels_open_or_field_order_and_returns_same_schema() -> None:
             "status",
             "resultado",
             "criada_em",
+            "criada_por_nome",
+            "atualizada_por_nome",
         }
 
 
@@ -136,7 +145,7 @@ def test_unknown_order_returns_404() -> None:
 
 def test_conditional_update_rejects_concurrent_state_change() -> None:
     class RaceOrders(OrdersFake):
-        def update_if_status(self, order_id, expected_status, status, resultado):
+        def update_if_status(self, order_id, expected_status, status, resultado, **_):
             self.row["status"] = "CANCELADA"
             return False
 
@@ -151,3 +160,12 @@ def test_openapi_documents_mutations_and_errors() -> None:
     for method in ("patch", "delete"):
         responses = paths["/api/inspections/{id}"][method]["responses"]
         assert set(responses) >= {"200", "404", "409", "422", "503", "500"}
+
+
+def test_patch_and_cancel_record_the_session_account_as_last_author() -> None:
+    for method, body in (("PATCH", {"status": "EM_CAMPO"}), ("DELETE", None)):
+        orders = OrdersFake()
+        response = request(method, "/api/inspections/OI-00001", body, orders)
+
+        assert response.status_code == 200
+        assert str(orders.updated_by) == "550e8400-e29b-41d4-a716-446655440000"

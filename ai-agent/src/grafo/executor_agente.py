@@ -70,6 +70,7 @@ def executar_agente(
     db_url: Optional[str] = None,
     persistir_auditoria: bool = True,
     user_id: Optional[str] = None,
+    perfil: Optional[str] = None,
     contexto_tela: Optional[Dict[str, Any]] = None,
 ) -> RespostaAgente:
     """
@@ -85,6 +86,8 @@ def executar_agente(
         db_url:      URL de conexão ao PostgreSQL (usa DATABASE_URL do env se None).
         persistir_auditoria: Se False, omite a persistência e log de amostras da auditoria.
         user_id:     Identificador do usuário autenticado (virá da autenticação no futuro).
+        perfil:      Perfil do usuário autenticado. No portal, os dois vêm da sessão
+                     (ai_router.usuario_logado), nunca do corpo da requisição.
         contexto_tela: Contexto da tela aberta no portal (page, id_uc, etc.).
 
     Returns:
@@ -106,6 +109,7 @@ def executar_agente(
         historico=historico,
         sessao_id=sessao_id,
         user_id=user_id,
+        perfil=perfil,
         contexto_tela=contexto_tela,
     )
 

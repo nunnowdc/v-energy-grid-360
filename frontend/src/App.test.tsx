@@ -53,6 +53,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  localStorage.clear()
+  document.documentElement.classList.remove('dark')
 })
 
 describe('menu e rotas por perfil', () => {
@@ -147,6 +149,19 @@ describe('menu e rotas por perfil', () => {
 
     fireEvent.click(within(menuConta).getByRole('menuitem', { name: 'Trocar senha' }))
     expect(await screen.findByRole('dialog', { name: 'Trocar senha' })).toBeInTheDocument()
+  })
+
+  test('o menu da conta troca o tema para o Dracula, sem fechar, e o portal lembra da escolha', async () => {
+    await abrir('/', 'OPERACAO')
+    fireEvent.click(screen.getByRole('button', { name: 'Minha conta' }))
+    const menuConta = await screen.findByRole('menu')
+    expect(within(menuConta).getByRole('menuitemradio', { name: 'Claro' })).toBeChecked()
+
+    fireEvent.click(within(menuConta).getByRole('menuitemradio', { name: 'Dracula' }))
+
+    expect(within(menuConta).getByRole('menuitemradio', { name: 'Dracula' })).toBeChecked()
+    expect(document.documentElement).toHaveClass('dark')
+    expect(localStorage.getItem('vgrid360-tema')).toBe('dracula')
   })
 })
 

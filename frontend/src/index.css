@@ -137,38 +137,74 @@
 }
 
 
+/* Tema Dracula: a paleta do tema de mesmo nome do VS Code (draculatheme.com/spec).
+   Liga com a classe dark no <html>, a mesma que os componentes do shadcn entendem
+   (veja src/lib/tema.ts). Fundos e cores de destaque são os oficiais; o texto
+   secundário e o vermelho de texto são mais claros que o Comment e o Red, que
+   ficam abaixo de 4,5:1 sobre o fundo e não servem para leitura */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+  --background: #282a36;
+  --foreground: #f8f8f2;
+  /* Background Dark atrás dos cartões; os cartões ficam no Background */
+  --canvas: #21222c;
+  /* Background Darker, o mesmo do menu lateral, um tom abaixo do canvas */
+  --agente: #191a21;
+  --card: #282a36;
+  --card-foreground: #f8f8f2;
+  --popover: #21222c;
+  --popover-foreground: #f8f8f2;
+  /* Purple: botões, links, menu ativo e barras de prioridade */
+  --primary: #bd93f9;
+  --primary-foreground: #282a36;
+  --secondary: #343746;
+  --secondary-foreground: #f8f8f2;
+  --muted: #343746;
+  /* Comment clareado: 5,7:1 sobre o muted e 6,9:1 sobre o cartão */
+  --muted-foreground: #adb5cb;
+  --accent: #44475a;
+  --accent-foreground: #f8f8f2;
+  --destructive: #ff6e6e;
+  /* Selection nas bordas; Comment no contorno dos campos (3:1 sobre o cartão) */
+  --border: #44475a;
+  --input: #6272a4;
+  --ring: #bd93f9;
+  /* Classes de consumo nesta ordem para que vizinhas num gráfico empilhado se
+     distingam também para quem não diferencia verde de vermelho (conferido no
+     validador de paleta). O verde fica de fora: é a cor de melhora */
+  --chart-1: #8be9fd; /* Residencial: Cyan */
+  --chart-2: #ffb86c; /* Comercial: Orange */
+  --chart-3: #bd93f9; /* Industrial: Purple */
+  --chart-4: #f1fa8c; /* Rural: Yellow */
+  --chart-5: #ff79c6; /* Poder público: Pink */
+  --chart-anterior: #6272a4;
+  /* O Dracula tem um vermelho só; a P2 é um tom mais fechado dele */
+  --bandeira-verde: #50fa7b;
+  --bandeira-amarela: #f1fa8c;
+  --bandeira-vermelha-p1: #ff5555;
+  --bandeira-vermelha-p2: #b83a3a;
+  /* Green, Orange e o Bright Red do terminal (#ff6e6e); o Red (#ff5555) fica
+     abaixo de 4,5:1 sobre o cartão. Fundos: a cor misturada ao cartão, com o
+     texto a 4,5:1 ou mais sobre ele */
+  --positivo: #50fa7b;
+  --positivo-fundo: #2d433e;
+  --negativo: #ff6e6e;
+  --negativo-fundo: #392f3a;
+  --atencao: #ffb86c;
+  --atencao-fundo: #423b3c;
+  --grafico-positivo: #50fa7b;
+  --grafico-negativo: #ff5555;
+  --sidebar: #191a21;
+  --sidebar-foreground: #f8f8f2;
+  --sidebar-muted: #adb5cb;
+  --sidebar-primary: #bd93f9;
+  --sidebar-primary-foreground: #282a36;
+  --sidebar-accent: #44475a;
+  --sidebar-accent-foreground: #f8f8f2;
+  --sidebar-border: rgb(255 255 255 / 10%);
+  --sidebar-ring: #bd93f9;
+  --marca-grade: #282a36;
+  --marca-energia: #f1fa8c;
 }
 
 @layer base {

@@ -2,6 +2,10 @@ resources:
   jobs:
     v_energy_validation_pipeline_completo:
       name: v-energy-validation · pipeline completo
+      trigger:
+        pause_status: UNPAUSED
+        file_arrival:
+          url: /Volumes/v-energy/raw_data/raw_data/
       tasks:
         - task_key: 01_bronze_ingestao
           notebook_task:
@@ -49,7 +53,7 @@ resources:
           notebook_task:
             notebook_path: /Workspace/v-energy-validation/02_silver_unidades_consumidoras.py
             source: WORKSPACE
-        - task_key: 03_silver_atendimentos
+        - task_key: 03_silver_atendimentos-testes
           depends_on:
             - task_key: 02_silver_leituras
             - task_key: 02_silver_unidades_consumidoras
@@ -59,9 +63,9 @@ resources:
             - task_key: 02_silver_faturas
             - task_key: 02_silver_medidores
           notebook_task:
-            notebook_path: /Workspace/v-energy-validation/03_silver_atendimentos.ipynb
+            notebook_path: /Workspace/v-energy-validation/03_silver_atendimentos-testes
             source: WORKSPACE
-        - task_key: 03_silver_leituras_ajustes
+        - task_key: 03_silver_leituras_teste
           depends_on:
             - task_key: 02_silver_leituras
             - task_key: 02_silver_unidades_consumidoras
@@ -71,19 +75,19 @@ resources:
             - task_key: 02_silver_faturas
             - task_key: 02_silver_medidores
           notebook_task:
-            notebook_path: /Workspace/v-energy-validation/03_silver_leituras_ajustes.ipynb
+            notebook_path: /Workspace/v-energy-validation/03_silver_leituras_testes
             source: WORKSPACE
         - task_key: 04_gold_dimensoes
           depends_on:
-            - task_key: 03_silver_leituras_ajustes
-            - task_key: 03_silver_atendimentos
+            - task_key: 03_silver_leituras_teste
+            - task_key: 03_silver_atendimentos-testes
           notebook_task:
             notebook_path: /Workspace/v-energy-validation/04_gold_dimensoes.py
             source: WORKSPACE
         - task_key: 04_gold_fatos
           depends_on:
-            - task_key: 03_silver_leituras_ajustes
-            - task_key: 03_silver_atendimentos
+            - task_key: 03_silver_leituras_teste
+            - task_key: 03_silver_atendimentos-testes
           notebook_task:
             notebook_path: /Workspace/v-energy-validation/04_gold_fatos.py
             source: WORKSPACE

@@ -414,6 +414,16 @@ else
     escrever_ok "Conta de administrador criada ($EMAIL_ADMIN)"
 fi
 
+# Quem fez cada coisa: as ordens e a auditoria do agente apontam para a conta que agiu.
+# Precisa da tabela usuarios, por isso vem depois dela. Rodar de novo não muda nada
+executar_quieto 'Copiar o script da autoria das ordens para o container' docker cp backend/sql/ordens_inspecao_autoria.sql "$CONTAINER:/tmp/ordens_inspecao_autoria.sql"
+executar_quieto 'Ligar as ordens às contas' \
+    docker exec "$CONTAINER" psql -q -U postgres -d v_energy -v ON_ERROR_STOP=1 -f /tmp/ordens_inspecao_autoria.sql
+cd "$RAIZ/ai-agent" || exit 1
+executar_quieto 'Ligar a auditoria do agente às contas' "$PY" -m scripts.migracoes.migracao_usuario_auditoria_agente
+cd "$RAIZ" || exit 1
+escrever_ok 'Ordens e auditoria do agente ligadas às contas'
+
 # ---------------------------------------------------------------------------
 escrever_titulo '9/9 Dependências do frontend'
 

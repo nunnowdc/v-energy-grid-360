@@ -48,6 +48,8 @@ let ordens: OrdemInspecao[]
 let fetch: MockInstance<typeof globalThis.fetch>
 // Resposta da exportação: a planilha (ou um erro), no formato da rota real
 let respostaExportacao: () => Response
+// Nome da conta logada: o backend grava quem gera e quem muda cada ordem
+let quemEsta: string
 
 const permitidas: Partial<Record<StatusOrdem, StatusOrdem[]>> = {
   ABERTA: ['EM_CAMPO', 'CANCELADA'],
@@ -67,6 +69,8 @@ function criarOrdem(idUc: string) {
     status: 'ABERTA',
     resultado: null,
     criada_em: '2026-10-28T21:09:39.757316Z',
+    criada_por_nome: quemEsta,
+    atualizada_por_nome: quemEsta,
   }
   ordens = [ordem, ...ordens]
   return ordem
@@ -120,7 +124,7 @@ function backend(metodo: string, url: URL, corpo: unknown): [number, unknown] {
   if (!permitidas[ordem.status]?.includes(mudanca.status)) {
     return [409, { detail: 'Transição de ordem inválida' }]
   }
-  Object.assign(ordem, mudanca)
+  Object.assign(ordem, mudanca, { atualizada_por_nome: quemEsta })
   return [200, ordem]
 }
 
@@ -131,6 +135,7 @@ beforeEach(() => {
       status: 200,
       headers: { 'Content-Disposition': 'attachment; filename="fila-inspecao_2026-06-01.xlsx"' },
     })
+  quemEsta = 'Ana de Perdas'
   fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (entrada, init) => {
     const url = new URL(String(entrada), location.origin)
     if (url.pathname === '/api/inspections/queue/export') {
@@ -339,4 +344,33 @@ test('com a fila vazia não há o que exportar', async () => {
 
   expect(await screen.findByText('Nenhuma UC suspeita para esses filtros.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Exportar Excel' })).toBeDisabled()
+})
+
+test('cada ordem mostra quem gerou e quem fez a última mudança', async () => {
+  abrir()
+
+  fireEvent.click((await screen.findAllByRole('checkbox'))[0])
+  fireEvent.click(screen.getByRole('button', { name: 'Gerar ordens de inspeção' }))
+  await screen.findByText(/1 ordem de inspeção gerada\./)
+  fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
+  const painel = screen.getByRole('tabpanel')
+
+  // Aberta: só quem gerou, ao lado da data
+  expect(await within(painel).findByText('por Ana de Perdas')).toBeInTheDocument()
+
+  // Outra pessoa manda para campo: aparece embaixo da situação
+  quemEsta = 'Bruno de Perdas'
+  fireEvent.click(within(painel).getByRole('button', { name: 'Enviar para campo' }))
+  expect(await within(painel).findByText('por Bruno de Perdas')).toBeInTheDocument()
+  expect(within(painel).getByText('por Ana de Perdas')).toBeInTheDocument()
+})
+
+test('ordem de antes da autoria aparece sem autor', async () => {
+  const antiga = criarOrdem('UC900001')
+  Object.assign(antiga, { status: 'EM_CAMPO', criada_por_nome: null, atualizada_por_nome: null })
+  abrir()
+
+  fireEvent.click(await screen.findByRole('tab', { name: /Ordens de inspeção/ }))
+  expect(await within(screen.getByRole('tabpanel')).findByText('Em campo')).toBeInTheDocument()
+  expect(screen.queryByText(/^por /)).not.toBeInTheDocument()
 })
