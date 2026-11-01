@@ -72,7 +72,11 @@ def test_no_valida_sql_atualiza_sql_normalizado_no_estado():
 
     resultado_no = no_valida_sql(state, validador)
 
-    # Verifica se o estado foi modificado com o SQL normalizado (que adiciona LIMIT)
+    # O nó agora retorna o SQL normalizado no dicionário resultante, que é atualizado no estado pelo grafo.
+    # Verificamos no resultado_no (e atualizamos o state caso o teste simule o comportamento do grafo).
+    if "sql_gerado" in resultado_no:
+        state["sql_gerado"] = resultado_no["sql_gerado"]
+
     assert "sql_gerado" in state
     assert "LIMIT" in state["sql_gerado"].upper()
     assert resultado_no["erro_validacao_ou_execucao"] is None
