@@ -395,7 +395,7 @@ def no_escreve_sql(
         for c in chunks_rag
     ) or "(nenhum contexto adicional)"
 
-    system = SYSTEM_PROMPT_SQL.format(contexto_rag=contexto_rag_texto)
+    system = SYSTEM_PROMPT_SQL.replace("{contexto_rag}", contexto_rag_texto)
 
     prompt = f"Pergunta: {pergunta}"
     if erro_anterior and tentativas > 1:
