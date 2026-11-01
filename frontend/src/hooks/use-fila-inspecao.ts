@@ -96,5 +96,6 @@ function salvarArquivo(arquivo: Blob, nome: string) {
   link.href = endereco
   link.download = nome
   link.click()
-  URL.revokeObjectURL(endereco)
+  // Descartar na hora pode cancelar o download no Firefox e no Safari
+  setTimeout(() => URL.revokeObjectURL(endereco))
 }

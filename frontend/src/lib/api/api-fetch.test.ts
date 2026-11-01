@@ -121,6 +121,20 @@ describe('quando a resposta nem chega', () => {
   })
 })
 
+// Conforme a versão do Node, o Blob do teste vem do Node (tem .text()) ou do jsdom
+// (não tem .text(), mas o FileReader do jsdom lê; o do Node ele recusa)
+function lerTexto(arquivo: Blob) {
+  if (typeof arquivo.text === 'function') {
+    return arquivo.text()
+  }
+  return new Promise<string>((resolver, rejeitar) => {
+    const leitor = new FileReader()
+    leitor.onload = () => resolver(String(leitor.result))
+    leitor.onerror = () => rejeitar(leitor.error)
+    leitor.readAsText(arquivo)
+  })
+}
+
 describe('baixar arquivo', () => {
   test('devolve o arquivo com o nome que o backend mandou, enviando o cookie', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
@@ -134,7 +148,7 @@ describe('baixar arquivo', () => {
     const { arquivo, nomeArquivo } = await apiBaixar('/inspections/queue/export?municipio=Recife', 'fila.xlsx')
 
     expect(nomeArquivo).toBe('fila-inspecao_2026-06-01.xlsx')
-    expect(await arquivo.text()).toBe('conteúdo da planilha')
+    expect(await lerTexto(arquivo)).toBe('conteúdo da planilha')
     const [url, opcoes] = fetchFalso.mock.calls[0]
     expect(url).toBe('/api/inspections/queue/export?municipio=Recife')
     expect(opcoes.credentials).toBe('same-origin')
@@ -172,7 +186,7 @@ describe('baixar arquivo', () => {
     const { arquivo } = await apiBaixar('/x', 'fila.xlsx', { aoProgredir })
 
     expect(aoProgredir).not.toHaveBeenCalled()
-    expect(await arquivo.text()).toBe('abcd')
+    expect(await lerTexto(arquivo)).toBe('abcd')
   })
 
   test('erro vira ErroApi com a mesma mensagem das consultas', async () => {
