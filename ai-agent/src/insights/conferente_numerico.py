@@ -21,16 +21,13 @@ _NUMERO_NO_TEXTO = re.compile(
 _MILHAR_BR = re.compile(r"\d{1,3}(?:\.\d{3})+")
 _NUMERO_EM_TEXTO_DE_FATO = re.compile(r"\d+(?:\.\d+)?")
 
-_ESCALAS = {
-    "mil": 1_000,
-    "milhao": 1_000_000, "milhão": 1_000_000, "milhoes": 1_000_000, "milhões": 1_000_000,
-    "bilhao": 1_000_000_000, "bilhão": 1_000_000_000,
-    "bilhoes": 1_000_000_000, "bilhões": 1_000_000_000,
-}
+_ESCALAS = {}
 
 
 def _numeros_dos_fatos(fatos: list[Dict[str, Any]]) -> list[float]:
-    """Todos os números permitidos: valores numéricos, partes de datas e dígitos de textos."""
+    """Todos os números permitidos: valores numéricos, partes de datas e dígitos de textos.
+
+    Além dos valores originais, aceita também o valor absoluto de números (ex.: -3.9 aceita 3.9)."""
     permitidos: list[float] = []
     for fato in fatos:
         for valor in fato.values():
@@ -40,11 +37,14 @@ def _numeros_dos_fatos(fatos: list[Dict[str, Any]]) -> list[float]:
                 numero = float(valor)
                 if math.isfinite(numero):
                     permitidos.append(numero)
+                    if numero != 0:
+                        permitidos.append(abs(numero))
             elif isinstance(valor, (date, datetime)):
                 permitidos.extend([float(valor.year), float(valor.month), float(valor.day)])
             else:
                 permitidos.extend(float(t) for t in _NUMERO_EM_TEXTO_DE_FATO.findall(str(valor)))
     return permitidos
+
 
 
 def _leituras_possiveis(inteiro: str, decimais: str | None) -> list[tuple[float, int]]:

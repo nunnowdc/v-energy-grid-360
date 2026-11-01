@@ -117,13 +117,15 @@ def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
     if not dados:
         return "Não há dados disponíveis para responder a esta pergunta no momento."
     # Preâmbulo: reutiliza a própria pergunta (sem o ponto final) como introdução.
-    preambulo = f"Conforme solicitado, {pergunta.rstrip('?').capitalize()}: "
-    primeiros = dados[0]
-    partes = [
-        f"{_NOMES_COLUNAS.get(k.lower(), k.replace('_', ' ').capitalize())}: {_formatar_valor(k, v)}"
-        for k, v in list(primeiros.items())[:6]
-    ]
-    corpo = "; ".join(partes) + "."
+    preambulo = f"Conforme solicitado, {pergunta.rstrip('?')}: "
+    partes = []
+    for linha in dados:
+        linha_parts = [
+            f"{_NOMES_COLUNAS.get(k.lower(), k.replace('_', ' ').capitalize())}: {_formatar_valor(k, v)}"
+            for k, v in list(linha.items())[:6]
+        ]
+        partes.append("; ".join(linha_parts))
+    corpo = " | ".join(partes) + "."
     if len(dados) > 1:
         corpo += f" (primeira de {len(dados)} linhas retornadas)"
     return preambulo + corpo
