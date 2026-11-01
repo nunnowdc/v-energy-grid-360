@@ -67,11 +67,20 @@ function OrdensInspecao({ ordens }: OrdensInspecaoProps) {
               <TableCell className="whitespace-nowrap">
                 {ordem.bairro} <span className="text-muted-foreground">· {ordem.municipio}</span>
               </TableCell>
-              <TableCell>{formatarInstante(ordem.criada_em)}</TableCell>
+              <TableCell>
+                {formatarInstante(ordem.criada_em)}
+                {ordem.criada_por_nome && (
+                  <span className="block text-xs text-muted-foreground">por {ordem.criada_por_nome}</span>
+                )}
+              </TableCell>
               <TableCell>
                 <StatusOrdem status={ordem.status} />
                 {ordem.resultado && (
                   <span className="block text-xs text-muted-foreground">{textoResultado[ordem.resultado]}</span>
+                )}
+                {/* Quem fez a última mudança. Na ordem aberta é quem gerou, que já aparece ao lado */}
+                {ordem.status !== 'ABERTA' && ordem.atualizada_por_nome && (
+                  <span className="block text-xs text-muted-foreground">por {ordem.atualizada_por_nome}</span>
                 )}
               </TableCell>
               <TableCell>
