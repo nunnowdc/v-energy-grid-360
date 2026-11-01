@@ -86,6 +86,7 @@ src/
 │   ├── GraficosMensais/GraficosMensais.tsx ← duas medidas por mês empilhadas, atual × anterior
 │   ├── GrafoRaciocinio/GrafoRaciocinio.tsx ← caminho do agente: um nó por passo
 │   ├── HistoricosUc/HistoricosUc.tsx      ← abas de faturas, leituras, interrupções e chamados
+│   ├── InsightIa/InsightIa.tsx            ← texto da IA sobre os dados da tela, com o selo de conferência
 │   ├── Layout/Layout.tsx
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MensagemAgente/MensagemAgente.tsx  ← resposta do agente com selo, tempo, 👍/👎 e o passo a passo
@@ -134,6 +135,7 @@ src/
 │   ├── use-fila-inspecao.ts   ← fila de UCs suspeitas (GET /api/inspections/queue)
 │   ├── use-filtros.ts         ← filtros da tela, guardados na URL
 │   ├── use-indicadores.ts     ← KPIs da tela Indicadores (GET /api/metrics/general)
+│   ├── use-insight-ia.ts      ← insight da IA de uma tela (GET /api/ai/insights/{tela}/{id})
 │   ├── use-mobile.ts
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
 │   ├── use-ordens-inspecao.ts ← listar, gerar, mudar e cancelar ordens de inspeção
@@ -257,6 +259,17 @@ Não é uma tela: o botão **Agente de IA** do cabeçalho abre o agente numa col
 - Cada pergunta leva a tela aberta como contexto (`page`, e `id_uc` na Visão 360) e as 3 perguntas anteriores, para o agente entender "e em 2023?".
 - Cada resposta mostra o selo de confiança, o tempo e o 👍/👎. O texto vem em Markdown (negrito, listas, tabelas) e é mostrado formatado; HTML no texto não é interpretado. **Ver o passo a passo** abre, dentro da própria resposta, o caminho que o agente percorreu: um nó por passo, com a consulta SQL e as primeiras linhas do resultado. Esse botão é só do Administrador (TI) (permissão `ver_auditoria_ia`), porque o backend libera `GET /api/ai/audit/{id}` só para o `ADMIN_TI` (decisão do time).
 - **O dashboard acompanha a conversa.** Cada resposta com base (dados ou documentos; recusa e erro não contam) leva a tela para onde estão os dados dela: "faturamento em Recife" abre os Indicadores de Recife, "qual alimentador teve o maior DEC" abre a Continuidade naquele alimentador, "a UC mais suspeita" abre a Visão 360 dela. Quem escolhe é o agente, pela consulta que executou: as tabelas decidem a tela e o WHERE (ou a linha única do resultado) decide os filtros, no campo `dashboard` de `/api/ai/ask`. O front (`src/lib/tela-da-resposta.ts`) só aplica os valores que existem em `/filters/options` e que a tela tem. Respostas sem consulta (glossário, normas) abrem a tela do assunto da pergunta. A resposta mostra o link "No dashboard: …" para reabrir essa visão.
+
+### Insights da IA
+
+Caixa **Insight da IA** (`components/InsightIa`) com um texto curto que a IA escreve sobre os dados da tela. Fica só na **Visão 360**, logo abaixo do resumo da UC, sobre aquela unidade consumidora. A Receita não tem insight: o bloco de destaque "Com e sem geração própria" já explica a variação, calculado direto dos dados.
+
+O texto vem de `GET /api/ai/insights/{tela}/{id}`. Na primeira vez, a IA escreve o texto na hora (pode levar alguns segundos, e a caixa mostra "A IA está analisando os dados…"); depois ele vem guardado do banco.
+
+- O selo **Números conferidos** diz que cada número do texto foi conferido com os dados consultados (`selo: auditado_llm`). Quando a conferência falha, o texto é um aviso padrão e o selo é **Sem conferência**.
+- Quando a resposta traz `fontes`, a caixa mostra as tabelas de origem.
+- Perfil sem acesso ao insight (403) não vê a caixa; o resto da tela continua igual. Erro fica dentro da caixa, com "Tentar de novo", e não tenta sozinho, porque cada tentativa pode chamar o modelo de novo.
+- Visual do wireframe: borda tracejada na cor principal, fundo claro dela e o brilho do agente. Destaca a caixa dos blocos de dados sem confundir com o bloco de destaque (lâmpada e borda contínua).
 
 ## Perfis de acesso
 
@@ -391,6 +404,7 @@ Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a 
 - `GET /api/inspections/queue`, `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}`: a Fila de inspeção. As ordens ficam na tabela `ordens_inspecao`, que não vem com a Gold: crie uma vez com `backend/sql/ordens_inspecao.sql` (veja `backend/README.md`). Os testes da tela usam um backend inventado no próprio teste, com as mesmas regras (gerar é tudo ou nada; a hora vem em UTC).
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 - `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde "O serviço de IA está temporariamente indisponível". Os testes do painel usam respostas inventadas no próprio teste.
+- `GET /api/ai/insights/{tela}/{id}`: os insights da IA (veja [Insights da IA](#insights-da-ia)). Também precisa das chaves do LLM na primeira vez de cada texto. Os testes da caixa usam respostas inventadas no próprio teste.
 
 ## Testes automatizados
 

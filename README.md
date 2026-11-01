@@ -764,6 +764,7 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 
 - **Receita:** sem escolha, compara o primeiro ano da base (jul/2022 a jun/2023) com os últimos 12 meses (jul/2025 a jun/2026), a pergunta do case. Os períodos podem ser trocados no filtro, e a conta é a mesma da Gold, refeita a partir da receita mensal.
 - **Volume:** é o consumo medido nas leituras, porque as faturas não trazem kWh.
+- **Insight da IA:** só na Visão 360, sobre a UC aberta (o case pede em pelo menos uma tela). Na Receita, o bloco "Com e sem geração própria" já explica a variação com números calculados direto da Gold, que acompanham os filtros; um texto da IA ali repetiria esses números com mais demora e mais risco de erro.
 - **"Hoje":** é o último mês da base (jun/2026), nunca a data do computador.
 - **Períodos:** Indicadores, Receita e Continuidade comparam um "Período base" com um "Comparado com", de mesmo tamanho (1 a 24 meses), e os KPIs mostram sempre o comparado. Sem escolha, Indicadores e Continuidade mostram os últimos 12 meses contra os 12 anteriores. Quando os dois períodos cobrem meses diferentes do ano, a tela avisa que parte da variação pode ser da estação.
 - **Gold:** no MVP, é um retrato fixo carregado no PostgreSQL local, sem atualização.
