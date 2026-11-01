@@ -355,7 +355,13 @@ def tela_do_dashboard(
         return None
 
     # O WHERE vale mais que a linha: "Recife" filtrado não é trocado pelo valor do resultado
-    filtros = {**_filtros_da_linha(dados), **_filtros_do_where(arvore)}
+    filtros_brutos = {**_filtros_da_linha(dados), **_filtros_do_where(arvore)}
+    filtros: Dict[str, Any] = {}
+    for chave, valor in filtros_brutos.items():
+        if isinstance(valor, str):
+            filtros[chave] = valor.lower()
+        else:
+            filtros[chave] = valor
 
     if filtros.get("id_uc"):
         return TelaDashboard(tela="visao_360", filtros=FiltrosDashboard(id_uc=filtros["id_uc"]))

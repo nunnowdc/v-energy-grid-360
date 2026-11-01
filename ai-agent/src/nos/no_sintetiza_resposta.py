@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
-from ..insights.conferente_numerico import conferir
+from ..insights.conferente_numerico import conferir, numeros_nao_encontrados
 from ..provedores.cliente_llm import ClienteLLM, ErroLLMIndisponivel
 from .no_recusa_honesta import MENSAGENS_RECUSA
 
@@ -19,7 +19,7 @@ SYSTEM_PROMPT_SINTESE = """
 Você é o assistente de dados da V‑Energy Grid 360, responsável por transformar dados tabulares em respostas claras, objetivas e executivas em português.
 
 REGRAS ABSOLUTAS:
-1. NÃO invente nem estime números que não estejam em <DADOS_SQL>.
+1. NÃO invente nem estime números que não estejam em <DADOS_SQL> ou <TOTAIS_CALCULADOS>.
 2. Se <DADOS_SQL> estiver vazio, informe que não há dados disponíveis.
 3. Formate números no padrão brasileiro (vírgula decimal, ponto milhar). Ex.: R$ 1.250.430,00.
 4. Cite fontes do <CONTEXTO_RAG> no rodapé, se utilizadas.
@@ -28,6 +28,7 @@ REGRAS ABSOLUTAS:
    • Use conectores (“Além disso”, “Portanto”).
    • Termine com um encerramento amigável (“Qualquer outra informação, estou à disposição.”).
 6. NUNCA misture dados do <CONTEXTO_RAG> com números de <DADOS_SQL>.
+7. Quando houver o bloco <TOTAIS_CALCULADOS>, cite somente os totais e percentuais expressamente calculados nele.
 """.strip()
 
 SYSTEM_PROMPT_SINTESE_RAG = """
@@ -126,8 +127,14 @@ def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
         ]
         partes.append("; ".join(linha_parts))
     corpo = " | ".join(partes) + "."
-    if len(dados) > 1:
-        corpo += f" (primeira de {len(dados)} linhas retornadas)"
+    # Se todas as linhas foram listadas (<= limite implícito de 10), indique apenas a contagem.
+    # Caso contrário, mantenha o texto original indicando que é a primeira de N linhas retornadas.
+    if len(dados) == 1:
+        corpo += f" (1 linha)"
+    elif len(dados) <= 10:
+        corpo += f" ({len(dados)} linhas)"
+    else:
+        corpo += f" (primeira de {len(dados)} linhas retornadas) ({len(dados)} linhas)"
     return preambulo + corpo
 
 
@@ -167,9 +174,63 @@ def no_sintetiza_resposta(
     dados_texto = _formatar_dados_sql(dados_sql)
     rag_texto = _formatar_contexto_rag(contexto_rag)
 
+    totais_texto = ""
+    fatos_adicionais = []
+    if rota in ("sql", "ambos") and len(dados_sql) >= 2:
+        total_linhas = len(dados_sql)
+        colunas_excluidas = {"ano", "mes", "mês", "competencia", "id", "cod", "codigo", "perfil", "classe"}
+        colunas_excluidas_aditivos = {"pct", "percent", "preco", "preço", "valor", "media", "média", "percentual"}
+        primeira_linha = dados_sql[0]
+        colunas_numericas = []
+        for k in primeira_linha.keys():
+            k_lower = k.lower()
+            if any(exc in k_lower for exc in colunas_excluidas):
+                continue
+            if any(exc in k_lower for exc in colunas_excluidas_aditivos):
+                continue
+            try:
+                if all(isinstance(row.get(k), (int, float, Decimal)) or (row.get(k) is not None and str(row.get(k)).replace('.','',1).isdigit()) for row in dados_sql):
+                    colunas_numericas.append(k)
+            except Exception:
+                pass
+
+        somas = {}
+        for col in colunas_numericas:
+            soma_val = sum(float(row[col]) for row in dados_sql if row.get(col) is not None)
+            somas[col] = soma_val
+
+        col_principal = colunas_numericas[0] if colunas_numericas else None
+        soma_principal = somas[col_principal] if col_principal else 0.0
+
+        linhas_com_pct = []
+        for idx, row in enumerate(dados_sql):
+            linha_info = dict(row)
+            if col_principal and soma_principal > 0 and row.get(col_principal) is not None:
+                val = float(row[col_principal])
+                pct = (val / soma_principal) * 100
+                linha_info["_percentual_calculado"] = round(pct, 1)
+            linhas_com_pct.append(linha_info)
+
+        totais_linhas_txt = [f"- Total de linhas: {total_linhas}"]
+        for col, soma_val in somas.items():
+            totais_linhas_txt.append(f"- Soma de {col}: {soma_val}")
+        
+        if col_principal and soma_principal > 0:
+            totais_linhas_txt.append(f"- Percentuais sobre o total de {col_principal} (1 casa decimal):")
+            for idx, l in enumerate(linhas_com_pct):
+                pct = l.get("_percentual_calculado", 0.0)
+                totais_linhas_txt.append(f"  * Linha {idx+1}: {pct}%")
+
+        totais_texto = "<TOTAIS_CALCULADOS>\n" + "\n".join(totais_linhas_txt) + "\n</TOTAIS_CALCULADOS>"
+        fatos_adicionais = [{"total_linhas": total_linhas, "somas": somas, "linhas_com_percentual": linhas_com_pct}]
+
     prompt = (
         f"Pergunta do usuário: {pergunta}\n\n"
         f"<DADOS_SQL>\n{dados_texto}\n</DADOS_SQL>\n\n"
+    )
+    if totais_texto:
+        prompt += f"{totais_texto}\n\n"
+    prompt += (
         f"<CONTEXTO_RAG>\n{rag_texto}\n</CONTEXTO_RAG>\n\n"
         "Escreva a resposta para a diretoria:"
     )
@@ -180,11 +241,8 @@ def no_sintetiza_resposta(
         SYSTEM_PROMPT_SINTESE_RAG if rota == "rag" else SYSTEM_PROMPT_SINTESE
     )
 
-    fatos = (
-        dados_sql + [{"pergunta": pergunta}]
-        if rota in ("sql", "ambos")
-        else contexto_rag + [{"pergunta": pergunta}]
-    )
+    base_fatos = dados_sql if rota in ("sql", "ambos") else contexto_rag
+    fatos = base_fatos + fatos_adicionais + [{"pergunta": pergunta}]
 
     try:
         resposta = llm.invoke(
@@ -199,14 +257,20 @@ def no_sintetiza_resposta(
         resposta_texto = resposta.texto
         passo_conferencia = "Nó 11 — Conferência numérica aprovada."
         if not conferir(fatos, resposta_texto):
+            numeros_faltantes = numeros_nao_encontrados(fatos, resposta_texto)
+            texto_llm_trecho = resposta_texto[:300]
             resposta_texto = (
                 _gerar_resposta_mock(dados_sql, pergunta)
                 if rota in ("sql", "ambos")
                 else _gerar_resposta_rag_mock(contexto_rag)
             )
             passo_conferencia = (
-                "Nó 11 — Conferência numérica reprovada; resposta determinística utilizada."
+                f"Nó 11 — Conferência numérica reprovada. "
+                f"Texto LLM (300 chars): {repr(texto_llm_trecho)} | "
+                f"Números não encontrados: {numeros_faltantes} | "
+                "Resposta determinística utilizada."
             )
+            state["erro_validacao_ou_execucao"] = f"Conferência numérica reprovada. Números faltantes: {numeros_faltantes}"
     except ErroLLMIndisponivel:
         logger.warning("Nó 11 — LLM indisponível; resposta determinística utilizada.")
         chamadas_llm = state.get("chamadas_llm", 0)
