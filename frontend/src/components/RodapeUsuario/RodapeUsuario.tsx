@@ -1,16 +1,22 @@
-import { ChevronsUpDown, KeyRound, LogOut } from 'lucide-react'
+import { ChevronsUpDown, KeyRound, LogOut, Moon, Sun } from 'lucide-react'
 import { useState } from 'react'
 import TrocaSenha from '@/components/TrocaSenha/TrocaSenha'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar'
 import { nomesPerfis } from '@/config/perfis'
+import { useTema } from '@/hooks/use-tema'
 import { useSair, useUsuario } from '@/hooks/use-usuario'
+import type { Tema } from '@/lib/tema'
 import { cn } from '@/lib/utils'
 
 // "Maria Souza" → "MS"
@@ -35,11 +41,12 @@ function Avatar({ nome, className }: { nome: string; className?: string }) {
 }
 
 // Usuário logado no rodapé do menu. Clicar abre o menu da conta, com os dados
-// da pessoa, a troca de senha e o Sair. Com o menu recolhido, só o avatar aparece
+// da pessoa, a troca de senha, o tema e o Sair. Com o menu recolhido, só o avatar aparece
 function RodapeUsuario() {
   const { usuario } = useUsuario()
   const { isMobile } = useSidebar()
   const sair = useSair()
+  const { tema, mudarTema } = useTema()
   const [trocandoSenha, setTrocandoSenha] = useState(false)
   const perfil = nomesPerfis[usuario.perfil]
 
@@ -87,6 +94,21 @@ function RodapeUsuario() {
                 <KeyRound />
                 Trocar senha
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {/* Trocar o tema não fecha o menu, para a pessoa ver a mudança e voltar se quiser */}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Tema</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={tema} onValueChange={(valor: Tema) => mudarTema(valor)}>
+                  <DropdownMenuRadioItem value="claro">
+                    <Sun />
+                    Claro
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="dracula">
+                    <Moon />
+                    Dracula
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               {/* O menu só fecha com o logout confirmado, que recarrega a página no login */}
               <DropdownMenuItem closeOnClick={false} disabled={sair.isPending} onClick={() => sair.mutate()}>

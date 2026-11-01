@@ -138,6 +138,7 @@ src/
 │   ├── use-opcoes-filtros.ts  ← opções dos filtros (GET /api/filters/options)
 │   ├── use-ordens-inspecao.ts ← listar, gerar, mudar e cancelar ordens de inspeção
 │   ├── use-receita.ts         ← efeito preço e volume (GET /api/metrics/revenue-variance, rota real)
+│   ├── use-tema.ts            ← tema escolhido no menu da conta (claro ou Dracula)
 │   ├── use-uc-360.ts          ← dados da UC (GET /api/uc/{id}/360)
 │   └── use-usuario.ts         ← quem está logado (GET /api/auth/me), entrar e sair
 ├── lib/
@@ -152,6 +153,7 @@ src/
 │   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
 │   ├── periodos.ts          ← regras dos períodos escolhíveis (tamanho, comparação, atalhos)
 │   ├── tela-da-resposta.ts  ← tela e filtros do dashboard para uma resposta do agente
+│   ├── tema.ts              ← aplica o tema e guarda a escolha no navegador
 │   └── utils.ts
 ├── mocks/                   ← dados inventados para os testes
 ├── pages/
@@ -182,6 +184,19 @@ Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o
 | Coluna do agente de IA, um tom abaixo do canvas (balões e campo de pergunta ficam brancos sobre ela) | `--agente` | `bg-agente` |
 | Menu lateral escuro em petróleo | `--sidebar`, `--sidebar-foreground`, `--sidebar-muted`… | `bg-sidebar`, `text-sidebar-muted`… |
 | Marca (só na marca e no favicon) | `--marca-grade`, `--marca-energia` | `bg-marca-energia`… |
+
+### Temas
+
+O portal tem dois temas, escolhidos no menu da conta (rodapé do menu lateral):
+
+- **Claro**, em azul-petróleo, o padrão;
+- **Dracula**, a paleta escura do tema de mesmo nome do VS Code ([draculatheme.com/spec](https://draculatheme.com/spec)): roxo no lugar do petróleo, fundos escuros e as cores de destaque do Dracula nos gráficos.
+
+As variáveis da tabela acima valem para os dois. O claro fica no `:root` e o Dracula no bloco `.dark` do `src/index.css`, então **cor nova entra nos dois blocos**. Use sempre as variáveis: cor escrita direto no componente (`text-amber-700`, `#fff`) não muda com o tema.
+
+O Dracula liga a classe `dark` no `<html>`, a mesma que os componentes do shadcn já usam (`dark:`). A escolha fica salva no navegador (`src/lib/tema.ts`), e um script no `index.html` aplica o tema salvo antes de a página aparecer, para não piscar o claro.
+
+No Dracula, o texto secundário (`--muted-foreground`) e o vermelho de texto (`--negativo`) são mais claros que o Comment e o Red oficiais, que ficam abaixo de 4,5:1 sobre o fundo. As classes de consumo usam Cyan, Orange, Purple, Yellow e Pink, nessa ordem, para que classes vizinhas num gráfico se distingam também para quem não diferencia verde de vermelho; o Green fica só para melhora.
 
 ### Tipografia
 
