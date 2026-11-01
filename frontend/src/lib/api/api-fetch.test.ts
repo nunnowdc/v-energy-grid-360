@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { apiFetch } from '@/lib/api/api-fetch'
+import { apiBaixar, apiFetch } from '@/lib/api/api-fetch'
 import { ErroApi } from '@/lib/api/erro-api'
 
 // Troca o fetch do navegador por uma resposta pronta
@@ -118,5 +118,82 @@ describe('quando a resposta nem chega', () => {
     const erro = await erroDe(apiFetch('/x', { signal: controle.signal }))
     expect(erro).not.toBeInstanceOf(ErroApi)
     expect((erro as Error).name).toBe('AbortError')
+  })
+})
+
+// Conforme a versão do Node, o Blob do teste vem do Node (tem .text()) ou do jsdom
+// (não tem .text(), mas o FileReader do jsdom lê; o do Node ele recusa)
+function lerTexto(arquivo: Blob) {
+  if (typeof arquivo.text === 'function') {
+    return arquivo.text()
+  }
+  return new Promise<string>((resolver, rejeitar) => {
+    const leitor = new FileReader()
+    leitor.onload = () => resolver(String(leitor.result))
+    leitor.onerror = () => rejeitar(leitor.error)
+    leitor.readAsText(arquivo)
+  })
+}
+
+describe('baixar arquivo', () => {
+  test('devolve o arquivo com o nome que o backend mandou, enviando o cookie', async () => {
+    const fetchFalso = vi.fn().mockResolvedValue(
+      new Response('conteúdo da planilha', {
+        status: 200,
+        headers: { 'Content-Disposition': 'attachment; filename="fila-inspecao_2026-06-01.xlsx"' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+
+    const { arquivo, nomeArquivo } = await apiBaixar('/inspections/queue/export?municipio=Recife', 'fila.xlsx')
+
+    expect(nomeArquivo).toBe('fila-inspecao_2026-06-01.xlsx')
+    expect(await lerTexto(arquivo)).toBe('conteúdo da planilha')
+    const [url, opcoes] = fetchFalso.mock.calls[0]
+    expect(url).toBe('/api/inspections/queue/export?municipio=Recife')
+    expect(opcoes.credentials).toBe('same-origin')
+  })
+
+  test('sem nome na resposta usa o nome padrão', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('x', { status: 200 })))
+    expect((await apiBaixar('/x', 'fila.xlsx')).nomeArquivo).toBe('fila.xlsx')
+  })
+
+  test('avisa a porcentagem recebida conforme o arquivo chega', async () => {
+    const corpo = new ReadableStream<Uint8Array>({
+      start(controle) {
+        controle.enqueue(new Uint8Array([1]))
+        controle.enqueue(new Uint8Array([2, 3, 4]))
+        controle.close()
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(corpo, { status: 200, headers: { 'Content-Length': '4' } })),
+    )
+    const porcentagens: number[] = []
+
+    const { arquivo } = await apiBaixar('/x', 'fila.xlsx', { aoProgredir: (valor) => porcentagens.push(valor) })
+
+    expect(porcentagens).toEqual([25, 100])
+    expect(arquivo.size).toBe(4)
+  })
+
+  test('sem o tamanho na resposta não inventa porcentagem', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('abcd', { status: 200 })))
+    const aoProgredir = vi.fn()
+
+    const { arquivo } = await apiBaixar('/x', 'fila.xlsx', { aoProgredir })
+
+    expect(aoProgredir).not.toHaveBeenCalled()
+    expect(await lerTexto(arquivo)).toBe('abcd')
+  })
+
+  test('erro vira ErroApi com a mesma mensagem das consultas', async () => {
+    responder(503, { detail: 'Fila Gold indisponível' })
+    const erro = await erroDe(apiBaixar('/inspections/queue/export', 'fila.xlsx'))
+    expect(erro).toBeInstanceOf(ErroApi)
+    expect(erro.status).toBe(503)
+    expect(erro.message).toBe('Fila Gold indisponível')
   })
 })

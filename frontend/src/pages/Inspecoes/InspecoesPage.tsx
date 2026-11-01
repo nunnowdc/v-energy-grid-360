@@ -1,4 +1,4 @@
-import { CircleCheck } from 'lucide-react'
+import { CircleCheck, Download, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
 import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
@@ -11,7 +11,7 @@ import Paginacao from '@/components/Paginacao/Paginacao'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useFilaInspecao, type FilaInspecao } from '@/hooks/use-fila-inspecao'
+import { useExportarFila, useFilaInspecao, type FilaInspecao } from '@/hooks/use-fila-inspecao'
 import { useFiltros } from '@/hooks/use-filtros'
 import { useGerarOrdens, useOrdensInspecao, type OrdemInspecao } from '@/hooks/use-ordens-inspecao'
 import { ErroApi } from '@/lib/api/erro-api'
@@ -79,6 +79,7 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
   const fila = useFilaInspecao(filtros, pagina)
   const ordens = useOrdensInspecao(filtros)
   const gerar = useGerarOrdens()
+  const exportar = useExportarFila(filtros)
 
   function marcar(idUc: string, marcada: boolean) {
     setAviso(undefined)
@@ -135,6 +136,25 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
                   para abrir a Visão 360.
                 </p>
                 <div className="ml-auto flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    disabled={!fila.data || fila.data.total === 0 || exportar.isPending}
+                    onClick={() => exportar.mutate()}
+                  >
+                    {exportar.isPending ? (
+                      <>
+                        <LoaderCircle aria-hidden="true" className="animate-spin" />
+                        <span className="tabular-nums">
+                          {exportar.progresso === undefined ? 'Exportando…' : `Exportando… ${exportar.progresso}%`}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Download aria-hidden="true" />
+                        Exportar Excel
+                      </>
+                    )}
+                  </Button>
                   <span className="text-sm whitespace-nowrap">
                     {plural(selecionadas.size, 'selecionada', 'selecionadas')}
                   </span>
@@ -151,6 +171,13 @@ function ConteudoInspecoes({ filtros }: { filtros: Filtros }) {
                   </p>
                 )}
                 {gerar.isError && <p className="text-sm text-destructive">{textoErroGerar(gerar.error)}</p>}
+                {exportar.isError && (
+                  <p className="text-sm text-destructive">
+                    {exportar.error instanceof ErroApi
+                      ? exportar.error.message
+                      : 'Não foi possível exportar a fila. Tente de novo.'}
+                  </p>
+                )}
               </div>
               <EstadoConsulta
                 consulta={fila}

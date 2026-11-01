@@ -93,3 +93,20 @@ class InspectionsRepository:
             {**values, "limite": limite, "offset": offset},
         )
         return [dict(row._mapping) for row in rows]
+
+    def get_export_items(
+        self, municipio: str | None, bairro: str | None, classe: str | None
+    ) -> list[dict[str, object]]:
+        """Fila inteira do recorte para o campo: endereço sim, nome do titular não."""
+        filters, values = self._filters(municipio, bairro, classe)
+        rows = self.connection.execute(
+            text(
+                "SELECT prioridade, id_uc, score, motivo_suspeita, "
+                "kwh_recuperavel_estimado_ano, municipio, bairro, logradouro, "
+                "numero, latitude, longitude, classe "
+                f"FROM fila_inspecao{filters} "
+                "ORDER BY prioridade ASC, id_uc ASC"
+            ),
+            values,
+        )
+        return [dict(row._mapping) for row in rows]
