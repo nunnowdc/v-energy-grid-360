@@ -5,7 +5,6 @@ import PainelAgente from '@/components/PainelAgente/PainelAgente'
 import type { Perfil } from '@/config/perfis'
 import type { AuditoriaAgente, RespostaAgente } from '@/hooks/use-agente-ia'
 import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
-import { usuarioExemplo } from '@/mocks/usuarios'
 import { renderizar } from '@/test/renderizar'
 
 // Respostas e auditorias inventadas, no formato das rotas reais do agente
@@ -141,7 +140,6 @@ test('a sugestão vira pergunta com o contexto da tela, e a resposta chega com s
 
   expect(corpoDas(fetch, '/api/ai/ask')).toEqual([
     {
-      user_id: usuarioExemplo('ADMIN_TI').id,
       session_id: '00000000-0000-4000-8000-000000000000',
       message: 'Qual o faturamento em Recife no ano de 2024?',
       context: { page: 'receita' },
@@ -205,7 +203,8 @@ test('só o ADMIN_TI vê o passo a passo; os outros perfis perguntam e avaliam n
   perguntar('Qual o faturamento em Olinda?')
 
   expect(await screen.findByText('Resposta a1')).toBeInTheDocument()
-  expect(corpoDas(fetch, '/api/ai/ask')[0].user_id).toBe(usuarioExemplo('DIRETORIA').id)
+  // Quem pergunta não vai no corpo: o backend usa a conta do cookie
+  expect(corpoDas(fetch, '/api/ai/ask')[0]).not.toHaveProperty('user_id')
   expect(screen.queryByRole('button', { name: 'Ver o passo a passo' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Resposta útil' })).toBeInTheDocument()
   expect(auditoriasBuscadas(fetch)).toEqual([])
