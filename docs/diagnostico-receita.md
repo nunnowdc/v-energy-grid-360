@@ -66,7 +66,7 @@
 |---|---:|---:|---:|
 | Consumo ÷ mesmo mês do ano anterior | 1,00 a 1,01 | 0,65 | 0,30 a 0,31 |
 
-- **Em kWh:** antes da ligação, a UC média consumia **447 kWh/mês**; depois, **135 kWh/mês**. É a energia que ela passa a gerar e deixa de comprar. Isso é legítimo e não é fraude: a fila de inspeção já exclui essas UCs (`queda_explicada_por_gd`).
+- **Em kWh:** antes da ligação, a UC média consumia **447 kWh/mês**; depois, **135 kWh/mês**. É a energia que ela passa a gerar e deixa de comprar. Isso é legítimo e não é fraude: a fila de inspeção não conta essa queda como suspeita e zera a energia a recuperar dessas UCs (`queda_explicada_por_gd`).
 - **Parte da queda ainda vai aparecer.** 916 UCs ligaram o painel durante P1 e ainda consumiram 4.257 meses-UC sem painel nesse período. Nos próximos 12 meses esse consumo some da receita, mesmo sem nenhuma ligação nova.
 
 ### 2.2 Perda não técnica em 4 bairros: causa provável
@@ -108,9 +108,9 @@ As 38.198 UCs sem painel fora desses bairros consumiram **2,4% a mais** (+R$ 3,3
 
 São **+10,9% acumulados**, em linha com o reajuste de 10,5% do enunciado. Por classe, o preço médio subiu: residencial +13,2%, comercial +18,8%, industrial +8,0%.
 
-**Bandeiras.** O primeiro ano teve 12 meses de bandeira verde. Os últimos 12 tiveram só 4: houve 3 meses de amarela, 3 de vermelha patamar 1 e 2 de vermelha patamar 2. Na tarifa residencial, a amarela soma cerca de 3% ao preço e a vermelha 2, cerca de 11%.
+**Bandeiras.** O primeiro ano teve 12 meses de bandeira verde. Os últimos 12 tiveram só 4: houve 3 meses de amarela, 3 de vermelha patamar 1 e 2 de vermelha patamar 2. Na tarifa residencial, a amarela soma cerca de 3% ao preço, a vermelha patamar 1 cerca de 8% e a vermelha patamar 2 cerca de 14%.
 
-Recalculando cada mês não verde de P1 com o preço dos meses verdes de P1 (mesma classe e mesmo grupo de geração própria), as bandeiras somaram **R$ 6,6 mi**. A receita de P1 sem bandeiras seria de R$ 163,1 mi: **+3,8%** sobre P0, e não +8,0%. Esse valor é uma estimativa (veja a seção 7).
+Recalculando cada mês não verde de P1 com o preço dos meses verdes de P1 (mesma classe e mesmo grupo de geração própria), as bandeiras somaram **R$ 6,6 mi**. A receita de P1 sem bandeiras seria de R$ 163,1 mi: **+3,8%** sobre P0, e não +8,0%. Esse valor é uma estimativa e provavelmente está um pouco abaixo do real (veja a seção 7).
 
 **Tributos.** Ficaram em 25,0% da receita faturada nos dois períodos e não mudam a variação.
 
@@ -210,12 +210,12 @@ Os impactos são **ordens de grandeza em três cenários**, não metas. Cada pre
 
 ## 7. Limitações e premissas
 
-- **Bandeiras:** a estimativa de R$ 6,6 mi usa o preço dos meses verdes de P1 (jan a abr/2026). Se a tarifa base desses meses for mais alta que a de jul a dez/2025, a parte da bandeira está subestimada.
+- **Bandeiras:** a estimativa de R$ 6,6 mi usa o preço dos meses verdes de P1 (jan a abr/2026). A amarela soma ~3,3% sobre a verde em 2024 e em 2026; aplicando isso aos meses de amarela de mai/2025 e dez/2025, a tarifa base de 2025 fica ~1,5% abaixo da de 2026. Então a parte da bandeira está provavelmente subestimada, em algo como R$ 1 mi.
 - **Decomposição:** a fórmula da Gold põe a interação entre preço e volume no efeito-preço (preço × kWh de P1). A decomposição de Shapley, prevista no plano do time, divide essa interação ao meio. Os totais não mudam; só a divisão entre os dois efeitos mudaria um pouco. Usamos a fórmula da Gold para o documento bater com a tela de Receita.
-- **Perda não técnica:** "provável" até a Gerência de Perdas confirmar o que aconteceu em mai/2025 e se a regularização depois da inspeção acontece e não foi registrada.
+- **Perda não técnica:** "provável" até a Gerência de Perdas confirmar o que aconteceu em mai/2025 e se a regularização depois da inspeção acontece e não foi registrada. As inspeções não são uma amostra aleatória: a equipe vai onde a suspeita é maior, então os 90% contra 7,8% exageram a diferença entre os bairros. O que sustenta a conclusão é o degrau de consumo em mai/2025 no bairro inteiro, que não depende de onde a equipe escolheu ir.
 - **kWh recuperado nas inspeções:** tratado como energia pontual a faturar. Se for anual, o ganho da seção 6.1 aumenta.
 - **Fila de inspeção:** os 2,57 milhões de kWh/ano são a estimativa da Gold (consumo médio do ano anterior menos o recente, × 12). A pontuação da fila não foi usada como taxa de acerto, porque a calibração atual tem vazamento (registro N-16).
-- **Base de dados:** Gold local carregada em 01/11/2026. O registro N-15 do relatório de decisões da Gold (`data-engineering/relatorio_tabelas/decisoes_de_negocio_gold.md`) traz efeito-volume −R$ 11,18 mi e efeito-preço +R$ 23,75 mi, de uma versão anterior da Gold. Os números certos são os deste documento, que batem com o portal.
+- **Base de dados:** Gold local, consultada em 01/11/2026. O registro N-15 do relatório de decisões da Gold (`data-engineering/relatorio_tabelas/decisoes_de_negocio_gold.md`) traz efeito-volume −R$ 11,18 mi e efeito-preço +R$ 23,75 mi, de uma versão anterior da Gold. Os números certos são os deste documento, que batem com o portal.
 
 ## 8. Como reproduzir
 
