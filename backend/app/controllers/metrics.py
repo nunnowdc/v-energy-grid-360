@@ -45,6 +45,7 @@ def get_metrics_repository() -> AbstractContextManager[MetricsRepository]:
 
 @router.get(
     "/metrics/general",
+    tags=["Indicadores"],
     response_model=GeneralMetricsResponse,
     responses={
         422: {"description": "Parâmetros inválidos"},
@@ -136,6 +137,7 @@ def get_revenue_repository() -> AbstractContextManager[RevenueRepository]:
 
 @router.get(
     "/metrics/revenue-variance",
+    tags=["Receita"],
     response_model=RevenueVarianceResponse,
     responses={
         500: {

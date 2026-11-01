@@ -12,10 +12,13 @@ const rotuloEfeito = new Intl.NumberFormat('pt-BR', {
   signDisplay: 'exceptZero',
 })
 
-// Receitas dos dois períodos em petróleo e os efeitos em cinza (decisão de design)
+// Receitas dos dois períodos em petróleo; o efeito que soma em verde e o que tira em
+// vermelho (decisão de design). O degrau sobe ou desce e o rótulo tem sinal: a cor não
+// é a única pista
 const configuracao = {
   total: { label: 'Receita do período', color: 'var(--primary)' },
-  efeito: { label: 'Efeito na variação', color: 'var(--chart-anterior)' },
+  aumento: { label: 'Aumentou a receita', color: 'var(--grafico-positivo)' },
+  queda: { label: 'Reduziu a receita', color: 'var(--grafico-negativo)' },
 } satisfies ChartConfig
 
 type Degrau = {
@@ -34,7 +37,7 @@ function degraus({ receita_p0, receita_p1, efeito_volume, efeito_preco }: Decomp
     base: Math.min(de, de + valor),
     altura: Math.abs(valor),
     rotulo: rotuloEfeito.format(valor),
-    tipo: 'efeito',
+    tipo: valor < 0 ? 'queda' : 'aumento',
   })
 
   return [

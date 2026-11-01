@@ -36,7 +36,7 @@ def no_valida_sql(
     tentativas = state.get("tentativas_sql", 0)
 
     # Caso especial: o LLM reconheceu que não tem dados para responder
-    if sql.strip().upper().startswith(MARCADOR_SQL_INDISPONIVEL):
+    if MARCADOR_SQL_INDISPONIVEL in sql.strip().upper():
         logger.info("Nó 8 — SQL_INDISPONIVEL declarado pelo LLM.")
         return {
             "erro_validacao_ou_execucao": (

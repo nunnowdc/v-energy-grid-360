@@ -33,8 +33,9 @@ class OrdersFake:
     def get_active_orders(self, ids: list[str]) -> list[dict[str, object]]:
         return [row for row in self.active if row["id_uc"] in ids]
 
-    def insert_orders(self, ids: list[str]) -> list[dict[str, object]]:
+    def insert_orders(self, ids: list[str], *, user_id) -> list[dict[str, object]]:
         self.created.extend(ids)
+        self.created_by = user_id
         return [
             {
                 "id": index,
@@ -42,6 +43,8 @@ class OrdersFake:
                 "status": "ABERTA",
                 "resultado": None,
                 "criada_em": datetime(2026, 10, 28, 13, 44, tzinfo=UTC),
+                "criada_por_nome": "Administrador de teste",
+                "atualizada_por_nome": "Administrador de teste",
             }
             for index, uc in enumerate(ids, start=1)
         ]
@@ -71,6 +74,8 @@ def test_post_order_creates_one_order_with_frontend_contract() -> None:
                 "status": "ABERTA",
                 "resultado": None,
                 "criada_em": "2026-10-28T13:44:00Z",
+                "criada_por_nome": "Administrador de teste",
+                "atualizada_por_nome": "Administrador de teste",
             }
         ]
     }
@@ -104,8 +109,8 @@ def test_post_order_creates_all_requested_orders_in_input_order() -> None:
 
 def test_order_id_does_not_truncate_after_five_digits() -> None:
     class LargeIdentity(OrdersFake):
-        def insert_orders(self, ids):
-            rows = super().insert_orders(ids)
+        def insert_orders(self, ids, **kwargs):
+            rows = super().insert_orders(ids, **kwargs)
             rows[0]["id"] = 123456
             return rows
 
@@ -161,7 +166,7 @@ def test_active_uc_returns_409_with_ids_and_no_partial_creation() -> None:
 
 def test_operational_failure_returns_generic_500_without_internal_details() -> None:
     class BrokenOrders(OrdersFake):
-        def insert_orders(self, ids):
+        def insert_orders(self, ids, **_):
             raise RuntimeError("segredo SQL interno")
 
     response = post_orders({"ids_uc": ["UC123456"]}, orders=BrokenOrders())
@@ -191,3 +196,12 @@ def test_postgres_unavailable_returns_503_without_internal_details() -> None:
     assert response.status_code == 503
     assert response.json() == {"detail": "Banco indisponível"}
     assert "secret" not in response.text
+
+
+def test_post_order_records_the_session_account_as_author() -> None:
+    orders = OrdersFake()
+    response = post_orders({"ids_uc": ["UC123456"]}, orders=orders)
+
+    assert response.status_code == 201
+    # A conta sintética que o conftest põe na sessão
+    assert str(orders.created_by) == "550e8400-e29b-41d4-a716-446655440000"

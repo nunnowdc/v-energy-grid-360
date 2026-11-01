@@ -55,6 +55,7 @@ def _inicializar_estado(
     historico: list[dict] | None,
     sessao_id: str,
     user_id: Optional[str] = None,
+    perfil: Optional[str] = None,
     contexto_tela: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Preenche os campos obrigatórios do EstadoAgente antes de iniciar o grafo."""
@@ -77,6 +78,8 @@ def _inicializar_estado(
     }
     if user_id is not None:
         estado["user_id"] = user_id
+    if perfil is not None:
+        estado["perfil"] = perfil
     if contexto_tela is not None:
         estado["contexto_tela"] = contexto_tela
     return estado
@@ -87,6 +90,7 @@ def construir_grafo(
     validador: Optional[ValidadorSQLInterface] = None,
     executor: Optional[SQLExecutor] = None,
     db_url: Optional[str] = None,
+    persistir_auditoria: bool = True,
 ) -> Any:
     """
     Compila e retorna o grafo LangGraph com todas as Fatias 1 e 2.
@@ -119,8 +123,7 @@ def construir_grafo(
                                                               └─► [recusa]     no_recusa_honesta
                                                             no_sintetiza_resposta ─► no_finaliza_auditoria ► END
 
-    O RAG, o cache parametrizado e a síntese seguem o fluxo de produção; o
-    validador padrão continua sendo o stub até a entrega da frente de Segurança.
+    O RAG, o cache parametrizado e a síntese seguem o fluxo de produção.
     """
     _llm = llm or ClienteLLM()
     _validador = validador or _validador_padrao()
@@ -166,7 +169,11 @@ def construir_grafo(
         return no_recusa_honesta(s)
 
     def _no_finaliza_auditoria(s: EstadoAgente) -> Dict[str, Any]:
-        return no_finaliza_auditoria(s, db_url=_db_url)
+        return no_finaliza_auditoria(
+            s,
+            db_url=_db_url,
+            persistir=persistir_auditoria,
+        )
 
     # ── Montagem do Grafo ──
     grafo = StateGraph(EstadoAgente)

@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import Layout from './components/Layout/Layout'
 import RotaInicial from './components/RotaInicial/RotaInicial'
 import RotaProtegida from './components/RotaProtegida/RotaProtegida'
+import SessaoObrigatoria from './components/SessaoObrigatoria/SessaoObrigatoria'
 import { TooltipProvider } from './components/ui/tooltip'
 import { queryClient } from './lib/api/query-client'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
@@ -11,7 +12,13 @@ import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import LoginPage from './pages/Login/LoginPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import ReceitaPage from './pages/Receita/ReceitaPage'
+import UsuariosPage from './pages/Usuarios/UsuariosPage'
 import Visao360Page from './pages/Visao360/Visao360Page'
+
+// O botão do TanStack Query cobre o rodapé do menu e apareceria nas apresentações,
+// que rodam com npm run dev. Só aparece abrindo o portal com ?devtools no endereço
+// (ex.: http://localhost:5173/?devtools) e nunca vai para o build de produção
+const mostrarDevtools = new URLSearchParams(window.location.search).has('devtools')
 
 function App() {
   return (
@@ -21,28 +28,34 @@ function App() {
           <Routes>
             {/* O login fica fora do Layout: sem menu nem cabeçalho */}
             <Route path="login" element={<LoginPage />} />
-            <Route element={<Layout />}>
-              <Route index element={<RotaInicial />} />
-              <Route element={<RotaProtegida permissao="ver_receita" />}>
-                <Route path="receita" element={<ReceitaPage />} />
+            {/* O resto só abre com alguém logado */}
+            <Route element={<SessaoObrigatoria />}>
+              <Route element={<Layout />}>
+                <Route index element={<RotaInicial />} />
+                <Route element={<RotaProtegida permissao="ver_receita" />}>
+                  <Route path="receita" element={<ReceitaPage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_visao_360" />}>
+                  <Route path="visao-360" element={<Visao360Page />} />
+                  <Route path="visao-360/:idUc" element={<Visao360Page />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_fila_inspecao" />}>
+                  <Route path="inspecoes" element={<InspecoesPage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_continuidade" />}>
+                  <Route path="continuidade" element={<ContinuidadePage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="gerenciar_usuarios" />}>
+                  <Route path="usuarios" element={<UsuariosPage />} />
+                </Route>
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
-              <Route element={<RotaProtegida permissao="ver_visao_360" />}>
-                <Route path="visao-360" element={<Visao360Page />} />
-                <Route path="visao-360/:idUc" element={<Visao360Page />} />
-              </Route>
-              <Route element={<RotaProtegida permissao="ver_fila_inspecao" />}>
-                <Route path="inspecoes" element={<InspecoesPage />} />
-              </Route>
-              <Route element={<RotaProtegida permissao="ver_continuidade" />}>
-                <Route path="continuidade" element={<ContinuidadePage />} />
-              </Route>
-              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
       {/* No canto esquerdo: à direita ficaria em cima do botão de enviar do agente */}
-      <ReactQueryDevtools buttonPosition="bottom-left" />
+      {mostrarDevtools && <ReactQueryDevtools buttonPosition="bottom-left" />}
     </QueryClientProvider>
   )
 }

@@ -35,6 +35,14 @@
   --color-bandeira-amarela: var(--bandeira-amarela);
   --color-bandeira-vermelha-p1: var(--bandeira-vermelha-p1);
   --color-bandeira-vermelha-p2: var(--bandeira-vermelha-p2);
+  --color-positivo: var(--positivo);
+  --color-positivo-fundo: var(--positivo-fundo);
+  --color-negativo: var(--negativo);
+  --color-negativo-fundo: var(--negativo-fundo);
+  --color-atencao: var(--atencao);
+  --color-atencao-fundo: var(--atencao-fundo);
+  --color-grafico-positivo: var(--grafico-positivo);
+  --color-grafico-negativo: var(--grafico-negativo);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -99,6 +107,19 @@
   --bandeira-amarela: #eda100;
   --bandeira-vermelha-p1: #e34948;
   --bandeira-vermelha-p2: #9b1c1c;
+  /* Bom e ruim: variações (receita que sobe, DEC que cai) e situações (paga, atrasada).
+     Sempre junto de seta, sinal, ícone ou texto, nunca só a cor. Texto com contraste
+     de 5:1 ou mais, sobre o branco e sobre o próprio fundo */
+  --positivo: #137333;
+  --positivo-fundo: #e7f5ec;
+  --negativo: #b42318;
+  --negativo-fundo: #fdeceb;
+  --atencao: #92400e;
+  --atencao-fundo: #fdf3dc;
+  /* Barras que sobem ou descem num gráfico: mais claras que o texto, e separáveis
+     por quem não distingue verde de vermelho (conferido no validador de paleta) */
+  --grafico-positivo: #2f9e44;
+  --grafico-negativo: #c92a2a;
   --radius: 0.5rem;
   /* Menu lateral escuro em petróleo, a identidade do portal */
   --sidebar: #0b3b47;

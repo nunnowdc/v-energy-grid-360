@@ -3,6 +3,7 @@
 from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
@@ -19,6 +20,7 @@ from app.schemas.inspections import (
     OrderTransitionRequest,
     QueueResponse,
 )
+from app.security.dependencies import get_current_user
 from app.services.inspections import (
     ActiveOrderConflictError,
     InvalidOrderBatchError,
@@ -33,6 +35,10 @@ from app.services.inspections import (
 )
 
 router = APIRouter()
+
+# Conta da sessão: é ela que fica como autora da ordem (criada_por e atualizada_por).
+# O FastAPI reaproveita a mesma conta já carregada pela checagem de permissão
+UsuarioLogado = Annotated[dict[str, object], Depends(get_current_user)]
 
 
 @contextmanager
@@ -81,10 +87,13 @@ def create_orders(
         ],
         Depends(get_order_repositories),
     ],
+    user: UsuarioLogado,
 ) -> CreateOrdersResponse:
     try:
         with repository_context as (gold, orders):
-            result = create_inspection_orders(gold, orders, body.ids_uc)
+            result = create_inspection_orders(
+                gold, orders, body.ids_uc, user_id=user["id"]
+            )
             return CreateOrdersResponse.model_validate(result)
     except InvalidOrderBatchError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -154,13 +163,16 @@ def _change_order(
     repository_context: AbstractContextManager[
         tuple[InspectionsRepository, InspectionOrdersRepository]
     ],
+    user_id: UUID,
 ) -> InspectionOrder:
     order_id = int(external_id[3:])
     if order_id > 2**63 - 1 or f"OI-{order_id:05d}" != external_id:
         raise HTTPException(status_code=422, detail="ID de ordem inválido")
     try:
         with repository_context as (_, orders):
-            result = change_inspection_order(orders, order_id, status, resultado)
+            result = change_inspection_order(
+                orders, order_id, status, resultado, user_id=user_id
+            )
             return InspectionOrder.model_validate(result)
     except OrderNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Ordem não encontrada") from exc
@@ -198,6 +210,7 @@ def update_inspection_order(
         ],
         Depends(get_order_repositories),
     ],
+    user: UsuarioLogado,
     id: str = Path(pattern=r"^OI-[0-9]{5,19}$"),
 ) -> InspectionOrder:
     return _change_order(
@@ -205,6 +218,7 @@ def update_inspection_order(
         body.status,
         body.resultado if isinstance(body, CompleteOrderRequest) else None,
         repository_context,
+        user["id"],
     )
 
 
@@ -225,9 +239,10 @@ def cancel_inspection_order(
         ],
         Depends(get_order_repositories),
     ],
+    user: UsuarioLogado,
     id: str = Path(pattern=r"^OI-[0-9]{5,19}$"),
 ) -> InspectionOrder:
-    return _change_order(id, "CANCELADA", None, repository_context)
+    return _change_order(id, "CANCELADA", None, repository_context, user["id"])
 
 
 @router.get(

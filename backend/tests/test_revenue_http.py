@@ -3,8 +3,9 @@
 from contextlib import nullcontext
 
 import pytest
-from app.main import app
 from fastapi.testclient import TestClient
+
+from app.main import app
 
 
 class RevenueGoldFake:
@@ -210,8 +211,9 @@ def test_receita_nao_ignora_parametro_temporal() -> None:
 def test_receita_falha_gold_nao_vira_resposta_vazia_e_libera_contexto() -> None:
     from contextlib import contextmanager
 
-    from app.controllers.metrics import get_revenue_repository
     from sqlalchemy.exc import OperationalError
+
+    from app.controllers.metrics import get_revenue_repository
 
     released = False
 
@@ -635,6 +637,7 @@ def test_receita_openapi_documenta_os_filtros_e_os_periodos() -> None:
         "fim_p0",
         "inicio_p1",
         "fim_p1",
+        "vgrid360_access_token",
     }
 
 
@@ -705,9 +708,10 @@ def test_receita_indisponibilidade_gold_retorna_503_sem_vazamento(
 ) -> None:
     from contextlib import contextmanager
 
+    from sqlalchemy.exc import OperationalError, TimeoutError
+
     from app.controllers import metrics as metrics_controller
     from app.controllers.metrics import get_revenue_repository
-    from sqlalchemy.exc import OperationalError, TimeoutError
 
     if failure in {"config", "connection"}:
 
@@ -745,8 +749,9 @@ def test_receita_indisponibilidade_gold_retorna_503_sem_vazamento(
 
 @pytest.mark.parametrize("failure", ["schema", "programming", "runtime"])
 def test_receita_falha_inesperada_retorna_500_sem_vazamento(failure: str) -> None:
-    from app.controllers.metrics import get_revenue_repository
     from sqlalchemy.exc import ProgrammingError
+
+    from app.controllers.metrics import get_revenue_repository
 
     class BrokenGold(RevenueGoldFake):
         def get_total(self, periods=None) -> dict[str, object]:
