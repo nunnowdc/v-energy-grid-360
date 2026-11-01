@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from uuid import UUID
 
 from sqlalchemy import (
     BigInteger,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     MetaData,
     Table,
     Text,
+    Uuid,
     func,
     insert,
     text,
@@ -36,6 +38,9 @@ ORDENS_INSPECAO = Table(
         server_default=func.now(),
     ),
     Column("concluida_em", DateTime(timezone=True)),
+    # Conta da sessão que gerou e que mudou por último (sql/ordens_inspecao_autoria.sql)
+    Column("criada_por", Uuid),
+    Column("atualizada_por", Uuid),
 )
 
 
@@ -113,11 +118,14 @@ class InspectionOrdersRepository:
         expected_status: str,
         status: str,
         resultado: str | None,
+        *,
+        user_id: UUID,
     ) -> bool:
         values: dict[str, object] = {
             "status": status,
             "resultado": resultado,
             "atualizada_em": func.clock_timestamp(),
+            "atualizada_por": user_id,
         }
         if status == "CONCLUIDA":
             values["concluida_em"] = func.clock_timestamp()
@@ -132,10 +140,22 @@ class InspectionOrdersRepository:
         )
         return result.one_or_none() is not None
 
-    def insert_orders(self, ids_uc: list[str]) -> list[dict[str, object]]:
+    def insert_orders(
+        self, ids_uc: list[str], *, user_id: UUID
+    ) -> list[dict[str, object]]:
         statement = (
             insert(ORDENS_INSPECAO)
-            .values([{"id_uc": uc, "status": "ABERTA"} for uc in ids_uc])
+            .values(
+                [
+                    {
+                        "id_uc": uc,
+                        "status": "ABERTA",
+                        "criada_por": user_id,
+                        "atualizada_por": user_id,
+                    }
+                    for uc in ids_uc
+                ]
+            )
             .returning(
                 ORDENS_INSPECAO.c.id,
                 ORDENS_INSPECAO.c.id_uc,

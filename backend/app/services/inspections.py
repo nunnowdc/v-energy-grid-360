@@ -1,6 +1,7 @@
 """Composição da fila Gold sem recalcular os valores analíticos."""
 
 from datetime import UTC, datetime
+from uuid import UUID
 
 from app.repositories.inspection_orders import (
     ActiveOrderRaceError,
@@ -42,6 +43,8 @@ def change_inspection_order(
     order_id: int,
     status: str,
     resultado: str | None = None,
+    *,
+    user_id: UUID,
 ) -> dict[str, object]:
     allowed = {
         ("ABERTA", "EM_CAMPO"),
@@ -55,7 +58,9 @@ def change_inspection_order(
             raise OrderNotFoundError
         if (current["status"], status) not in allowed:
             raise InvalidOrderTransitionError
-        if not orders.update_if_status(order_id, current["status"], status, resultado):
+        if not orders.update_if_status(
+            order_id, current["status"], status, resultado, user_id=user_id
+        ):
             if orders.get_order(order_id) is None:
                 raise OrderNotFoundError
             raise InvalidOrderTransitionError
@@ -133,6 +138,8 @@ def create_inspection_orders(
     gold: InspectionsRepository,
     orders: InspectionOrdersRepository,
     ids_uc: list[str],
+    *,
+    user_id: UUID,
 ) -> dict[str, object]:
     if len(ids_uc) != len(set(ids_uc)):
         raise InvalidOrderBatchError("IDs de UC repetidos no lote")
@@ -167,7 +174,7 @@ def create_inspection_orders(
                     [uc for uc in ids_uc if uc in active_ids]
                 )
 
-            created_rows = orders.insert_orders(ids_uc)
+            created_rows = orders.insert_orders(ids_uc, user_id=user_id)
             if len(created_rows) != len(ids_uc):
                 raise RuntimeError("Inserção incompleta de ordens")
             created = {row["id_uc"]: row for row in created_rows}

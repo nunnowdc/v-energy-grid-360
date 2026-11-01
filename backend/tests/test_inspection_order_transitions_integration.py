@@ -5,11 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date
 from threading import Barrier, Lock
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 from sqlalchemy.engine import Engine
+from test_inspection_orders_postgres import ADMIN_DE_TESTE
 
 from app.controllers.inspections import (
     get_inspections_repository,
@@ -21,6 +23,7 @@ from app.repositories.inspection_orders import (
     InspectionOrdersRepository,
 )
 from app.repositories.inspections import InspectionsRepository
+from app.security.dependencies import get_current_user
 
 pytest_plugins = ("test_inspection_orders_postgres",)
 
@@ -235,14 +238,16 @@ def test_concurrent_patch_and_delete_only_one_wins(
     lock = Lock()
     calls = 0
 
-    def synchronized_update(self, order_id, expected_status, status, resultado):
+    def synchronized_update(
+        self, order_id, expected_status, status, resultado, **kwargs
+    ):
         nonlocal calls
         with lock:
             calls += 1
             should_wait = calls <= 2
         if should_wait:
             barrier.wait(timeout=3)
-        return original(self, order_id, expected_status, status, resultado)
+        return original(self, order_id, expected_status, status, resultado, **kwargs)
 
     with _client(transition_engine) as client:
         created = client.post("/api/inspections/order", json={"ids_uc": ["UC901106"]})
@@ -269,3 +274,43 @@ def test_concurrent_patch_and_delete_only_one_wins(
             ).scalar_one()
             == 1
         )
+
+
+def test_order_keeps_who_created_it_and_who_changed_it_last(
+    transition_engine: Engine,
+) -> None:
+    perdas = {
+        "id": UUID("7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"),
+        "nome": "Pessoa de Perdas",
+        "email": "perdas@example.invalid",
+        "perfil": "PERDAS",
+    }
+    with transition_engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO usuarios (id, nome, email, senha_hash, perfil, criado_em) "
+                "VALUES (:id, :nome, :email, 'sem-senha', :perfil, now())"
+            ),
+            perdas,
+        )
+
+    with _client(transition_engine) as client:
+        created = client.post("/api/inspections/order", json={"ids_uc": ["UC901107"]})
+        assert created.status_code == 201
+        id_ordem = created.json()["ordens"][0]["id_ordem"]
+        nova = _order_row(transition_engine, id_ordem)
+        assert str(nova.criada_por) == ADMIN_DE_TESTE
+        assert str(nova.atualizada_por) == ADMIN_DE_TESTE
+
+        # Outra pessoa da equipe manda a ordem para campo
+        app.dependency_overrides[get_current_user] = lambda: perdas
+        field = client.patch(
+            f"/api/inspections/{id_ordem}", json={"status": "EM_CAMPO"}
+        )
+        assert field.status_code == 200
+
+    em_campo = _order_row(transition_engine, id_ordem)
+    assert str(em_campo.criada_por) == ADMIN_DE_TESTE
+    assert em_campo.atualizada_por == perdas["id"]
+    # A autoria fica no banco: o contrato da API não muda
+    assert "criada_por" not in field.json()
