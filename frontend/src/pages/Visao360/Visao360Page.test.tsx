@@ -7,6 +7,12 @@ import { renderizar } from '@/test/renderizar'
 
 // O gráfico precisa medir a tela, o que o jsdom não faz
 vi.mock('@/components/ConsumoDozeMeses/ConsumoDozeMeses', () => ({ default: () => null }))
+// O insight tem os próprios testes; aqui só importa qual insight a tela pede
+vi.mock('@/components/InsightIa/InsightIa', () => ({
+  default: ({ tela, entidadeId }: { tela: string; entidadeId: string }) => (
+    <output data-testid="insight">{`${tela}/${entidadeId}`}</output>
+  ),
+}))
 
 function Endereco() {
   return <output data-testid="endereco">{useLocation().pathname}</output>
@@ -63,6 +69,7 @@ test('mostra cadastro, faturas em aberto e os históricos da UC', async () => {
   expect(fetch.mock.calls[0][0]).toBe(
     '/api/uc/UC000001/360?pagina_faturas=1&pagina_leituras=1&pagina_interrupcoes=1&pagina_chamados=1&limite=10',
   )
+  expect(screen.getByTestId('insight')).toHaveTextContent('visao_360_uc/UC000001')
   expect(screen.getByText('Eletromecânico')).toBeInTheDocument()
   expect(screen.getByText('Geração na própria UC')).toBeInTheDocument()
   expect(screen.getByText('em 2 faturas')).toBeInTheDocument()
@@ -81,6 +88,7 @@ test('UC que não existe mostra "não encontrada"', async () => {
   responderCom(404, { detail: 'Unidade consumidora não encontrada' })
   abrir('/visao-360/UC999999')
   expect(await screen.findByText('Unidade consumidora não encontrada')).toBeInTheDocument()
+  expect(screen.queryByTestId('insight')).not.toBeInTheDocument()
 })
 
 test('ID fora do formato nem chega a chamar a API', () => {
