@@ -374,6 +374,21 @@ else {
     Escrever-Ok "Conta de administrador criada ($EmailAdmin)"
 }
 
+# Quem fez cada coisa: as ordens e a auditoria do agente apontam para a conta que agiu.
+# Precisa da tabela usuarios, por isso vem depois dela. Rodar de novo não muda nada
+Executar-Quieto 'Copiar o script da autoria das ordens para o container' 'docker' @('cp', 'backend\sql\ordens_inspecao_autoria.sql', "$($Container):/tmp/ordens_inspecao_autoria.sql")
+Executar-Quieto 'Ligar as ordens às contas' 'docker' @(
+    'exec', $Container, 'psql', '-q', '-U', 'postgres', '-d', 'v_energy', '-v', 'ON_ERROR_STOP=1', '-f', '/tmp/ordens_inspecao_autoria.sql'
+)
+Push-Location -LiteralPath (Join-Path $Raiz 'ai-agent')
+try {
+    Executar-Quieto 'Ligar a auditoria do agente às contas' $Py @('-m', 'scripts.migracoes.migracao_usuario_auditoria_agente')
+}
+finally {
+    Pop-Location
+}
+Escrever-Ok 'Ordens e auditoria do agente ligadas às contas'
+
 # ---------------------------------------------------------------------------
 Escrever-Titulo '9/9 Dependências do frontend'
 
