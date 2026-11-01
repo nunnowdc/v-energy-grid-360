@@ -571,6 +571,22 @@ Depois, crie a primeira conta, a do administrador (perfil `ADMIN_TI`):
 
 Rodar o script de novo não muda a conta nem a senha (aparece `Conta ADMIN_TI já existente.`). As contas dos outros perfis são criadas pelo administrador, no portal, na tela **Usuários**. Cada pessoa troca a própria senha clicando no próprio nome, no rodapé do menu, e depois em **Trocar senha**.
 
+#### 7.3. Quem fez cada coisa
+
+As ordens de inspeção e a auditoria do agente guardam a conta que agiu: quem gerou e quem mudou por último cada ordem, e quem fez cada pergunta ao agente, com o perfil. As duas apontam para a tabela `usuarios`, então este passo vem depois do 7.2. Com o ambiente ativo, a partir da raiz:
+
+```powershell
+docker cp backend/sql/ordens_inspecao_autoria.sql postgres-venergy:/tmp/ordens_inspecao_autoria.sql
+docker exec postgres-venergy psql -U postgres -d v_energy -v ON_ERROR_STOP=1 -f /tmp/ordens_inspecao_autoria.sql
+cd ai-agent
+python -m scripts.migracoes.migracao_usuario_auditoria_agente
+cd ..
+```
+
+- O último comando termina com `Migração concluída com sucesso.`
+- Ordens e perguntas de antes deste passo ficam sem autor. As perguntas antigas tinham ids de teste, de antes do login.
+- Os dois podem rodar de novo sem mudar nada. Na segunda vez, o primeiro mostra avisos `already exists, skipping`, que são normais.
+
 ### 8. Backend
 
 Com o ambiente ativo:
@@ -710,6 +726,7 @@ Com o ambiente Python ativo:
 | `Activate.ps1 não pode ser carregado` | Política de execução do PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e um terminal novo |
 | `ModuleNotFoundError` ao rodar um script ou o backend | O ambiente Python não está ativo | `backend\.venv\Scripts\Activate.ps1` a partir da raiz (macOS/Linux: `source backend/.venv/bin/activate`) |
 | `relation "ordens_inspecao" does not exist`, ou a Fila de inspeção dá erro ao listar ou gerar ordens | Falta a tabela das ordens | Passo 7.1 |
+| Depois de atualizar o projeto, a Fila de inspeção lista as ordens mas dá "Erro interno" ao gerar ou mudar uma | Faltam as colunas de autoria das ordens | Rode o setup de novo (ou o passo 7.3) |
 | O login mostra "Autenticação indisponível" | Falta o `JWT_SECRET_KEY` no `backend/.env.local`, ou o backend não foi reiniciado depois de mudar o arquivo | Rode o setup de novo (ou o passo 2.2) e reinicie o backend |
 | O login mostra "Erro interno" | Falta a tabela `usuarios` | Rode o setup de novo (ou o passo 7.2) |
 | O login mostra "E-mail ou senha incorretos." com a senha certa | A conta de administrador ainda não foi criada | Rode o setup de novo (ou o passo 7.2) |

@@ -146,10 +146,14 @@ def test_historical_orders_include_all_states_without_queue_dependency(
             "status",
             "resultado",
             "criada_em",
+            "criada_por_nome",
+            "atualizada_por_nome",
         }
         for item in items
     )
     assert len({item["id_ordem"] for item in items}) == 4
+    # Ordens gravadas sem autor (de antes da autoria) continuam na lista, sem nome
+    assert all(item["criada_por_nome"] is None for item in items)
 
     with historical_engine.connect() as connection:
         assert connection.execute(select(ORDENS_INSPECAO.c.id)).all() == before_orders

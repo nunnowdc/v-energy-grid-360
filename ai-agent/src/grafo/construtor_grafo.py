@@ -43,6 +43,7 @@ def _inicializar_estado(
     historico: list[dict] | None,
     sessao_id: str,
     user_id: Optional[str] = None,
+    perfil: Optional[str] = None,
     contexto_tela: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Preenche os campos obrigatórios do EstadoAgente antes de iniciar o grafo."""
@@ -65,6 +66,8 @@ def _inicializar_estado(
     }
     if user_id is not None:
         estado["user_id"] = user_id
+    if perfil is not None:
+        estado["perfil"] = perfil
     if contexto_tela is not None:
         estado["contexto_tela"] = contexto_tela
     return estado

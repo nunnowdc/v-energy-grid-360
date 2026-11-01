@@ -93,3 +93,6 @@ def authorize_business_route(
     profiles = ROUTE_PERMISSIONS.get((request.method, pattern))
     if profiles is None or user["perfil"] not in profiles:
         raise HTTPException(status_code=403, detail="Acesso não permitido")
+    # As rotas do ai-agent não importam o backend: leem a conta autorizada daqui,
+    # nunca de um id enviado pelo cliente
+    request.state.usuario = user
