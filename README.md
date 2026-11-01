@@ -2,6 +2,11 @@
 
 Portal interno da V-Energy: Indicadores, Receita, Visão 360, Fila de inspeção, Continuidade e um agente de IA que responde perguntas sobre os dados.
 
+## Diagnóstico da receita e dicionário de dados
+
+- **[Diagnóstico da receita](docs/diagnostico-receita.md):** a resposta à pergunta da Diretoria Comercial. O volume caiu 4% por causa das UCs que ligaram painel solar desde 2024 e de perda não técnica concentrada em 4 bairros; a receita subiu 8% pelo reajuste e pelas bandeiras tarifárias, que somaram cerca de R$ 6,6 mi. Termina com as recomendações e a ordem de grandeza do impacto. As consultas estão em [`docs/diagnostico/sql/`](docs/diagnostico/sql/).
+- **[Dicionário de dados da Gold](data-engineering/relatorio_tabelas/dicionario_dados_gold.md):** tabelas, colunas, métricas e as decisões de limpeza que as afetam.
+
 ## Como executar
 
 Este guia parte de um computador com Windows, macOS ou Linux e o VS Code aberto, e vai até o portal rodando com dados e com o agente de IA respondendo. São dois caminhos:
