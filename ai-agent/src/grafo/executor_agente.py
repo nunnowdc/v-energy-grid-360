@@ -68,7 +68,9 @@ def executar_agente(
     validador: Optional[ValidadorSQLInterface] = None,
     executor: Optional[SQLExecutor] = None,
     db_url: Optional[str] = None,
+    persistir_auditoria: bool = True,
     user_id: Optional[str] = None,
+    perfil: Optional[str] = None,
     contexto_tela: Optional[Dict[str, Any]] = None,
 ) -> RespostaAgente:
     """
@@ -79,10 +81,13 @@ def executar_agente(
         historico:   Lista de turnos anteriores no formato [{"role": "user"/"assistant", "content": "..."}].
         sessao_id:   Identificador único da sessão (gerado automaticamente se None).
         llm:         Cliente LLM (usa padrão com fallback OpenRouter → 9router se None).
-        validador:   Validador SQL (usa StubValidadorSQL se None).
+        validador:   Validador SQL (usa ValidadorSQLGlotPostgres se None).
         executor:    Executor SQL (usa SQLExecutor padrão se None).
         db_url:      URL de conexão ao PostgreSQL (usa DATABASE_URL do env se None).
+        persistir_auditoria: Se False, omite a persistência e log de amostras da auditoria.
         user_id:     Identificador do usuário autenticado (virá da autenticação no futuro).
+        perfil:      Perfil do usuário autenticado. No portal, os dois vêm da sessão
+                     (ai_router.usuario_logado), nunca do corpo da requisição.
         contexto_tela: Contexto da tela aberta no portal (page, id_uc, etc.).
 
     Returns:
@@ -96,6 +101,7 @@ def executar_agente(
         validador=validador,
         executor=executor,
         db_url=db_url,
+        persistir_auditoria=persistir_auditoria,
     )
 
     estado_inicial = inicializar(
@@ -103,6 +109,7 @@ def executar_agente(
         historico=historico,
         sessao_id=sessao_id,
         user_id=user_id,
+        perfil=perfil,
         contexto_tela=contexto_tela,
     )
 

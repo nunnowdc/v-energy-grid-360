@@ -1,11 +1,11 @@
 import { CircleAlert, CircleCheck, Clock } from 'lucide-react'
+import Etiqueta, { type TomEtiqueta } from '@/components/Etiqueta/Etiqueta'
 import type { StatusPagamento as Status } from '@/hooks/use-uc-360'
-import { cn } from '@/lib/utils'
 
-const aparencia: Record<Status, { texto: string; Icone: typeof Clock; classe: string }> = {
-  PAGA: { texto: 'Paga', Icone: CircleCheck, classe: 'text-muted-foreground' },
-  PENDENTE: { texto: 'Pendente', Icone: Clock, classe: 'text-foreground' },
-  ATRASADA: { texto: 'Atrasada', Icone: CircleAlert, classe: 'font-semibold text-destructive' },
+const aparencia: Record<Status, { texto: string; Icone: typeof Clock; tom: TomEtiqueta }> = {
+  PAGA: { texto: 'Paga', Icone: CircleCheck, tom: 'positivo' },
+  PENDENTE: { texto: 'Pendente', Icone: Clock, tom: 'atencao' },
+  ATRASADA: { texto: 'Atrasada', Icone: CircleAlert, tom: 'negativo' },
 }
 
 type StatusPagamentoProps = {
@@ -14,20 +14,19 @@ type StatusPagamentoProps = {
   diasAtraso?: number | null
 }
 
-// Alerta sempre com ícone e texto, nunca só cor (decisão de design)
+// Situação da fatura numa etiqueta com cor, ícone e texto
 function StatusPagamento({ status, diasAtraso }: StatusPagamentoProps) {
   if (!status) {
     return <span className="text-muted-foreground">—</span>
   }
-  const { texto, Icone, classe } = aparencia[status]
+  const { texto, Icone, tom } = aparencia[status]
   const comAtraso = status === 'ATRASADA' && diasAtraso ? ` (${diasAtraso} dias)` : ''
 
   return (
-    <span className={cn('inline-flex items-center gap-1 whitespace-nowrap', classe)}>
-      <Icone aria-hidden="true" className="size-3.5" />
+    <Etiqueta tom={tom} Icone={Icone}>
       {texto}
       {comAtraso}
-    </span>
+    </Etiqueta>
   )
 }
 

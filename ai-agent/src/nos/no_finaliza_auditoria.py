@@ -80,6 +80,7 @@ def _mascarar_amostra(dados: list[dict] | None, max_linhas: int = 3) -> str:
 def no_finaliza_auditoria(
     state: EstadoAgente,
     db_url: Optional[str] = None,
+    persistir: bool = True,
 ) -> Dict[str, Any]:
     """
     Grava o log de auditoria no PostgreSQL e calcula o tempo total de execução.
@@ -89,6 +90,13 @@ def no_finaliza_auditoria(
     audit_id = state.get("audit_id") or str(uuid.uuid4())
     inicio_ts = state.get("tempo_inicio_ts", time.time())
     tempo_total_ms = (time.time() - inicio_ts) * 1000
+
+    if not persistir:
+        return {
+            "audit_id": audit_id,
+            "tempo_total_ms": round(tempo_total_ms, 2),
+            "passos_executados": ["Nó 12 — Auditoria desativada para esta execução."],
+        }
 
     dados = state.get("dados_sql")
     registro = {

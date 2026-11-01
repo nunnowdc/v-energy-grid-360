@@ -148,6 +148,8 @@ def test_page_flow_filters_cards_and_history(page_engine: Engine) -> None:
                 "status",
                 "resultado",
                 "criada_em",
+                "criada_por_nome",
+                "atualizada_por_nome",
             }
 
         duplicate = client.post("/api/inspections/order", json={"ids_uc": ["UC902101"]})

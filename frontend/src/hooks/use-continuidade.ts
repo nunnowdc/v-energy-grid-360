@@ -3,8 +3,8 @@ import { useOpcoesFiltros } from '@/hooks/use-opcoes-filtros'
 import { apiFetch } from '@/lib/api/api-fetch'
 import { periodosComparados, type Filtros } from '@/lib/filtros-url'
 
-// Formato proposto para GET /api/network/continuity?inicio=&fim=&inicio_anterior=&fim_anterior=&municipio=&alimentador=&causa=
-// (ainda não existe no backend). Regras combinadas (docs/backend/impl_filtros.md):
+// Resposta de GET /api/network/continuity?inicio=&fim=&inicio_anterior=&fim_anterior=&municipio=&alimentador=&causa=
+// (backend/app/schemas/network.py). Regras combinadas (docs/backend/impl_filtros.md):
 // - DEC e FEC são sempre do alimentador INTEIRO (agg_continuidade_alimentador), nunca do município
 // - município só escolhe quais alimentadores entram; causa só filtra as ocorrências
 // Os dois períodos têm o mesmo tamanho (1 a 24 meses) e o anterior termina antes de "inicio";
@@ -44,7 +44,15 @@ export type ContinuidadeRede = {
   }
 }
 
-export function useContinuidade(filtros: Filtros) {
+// Alimentador dos destaques da tela (card "Pior DEC" e gráfico mês a mês): o pior DEC entre os
+// com 100 UCs ou mais, porque nos pequenos poucas interrupções já inflam o DEC. Se todos forem
+// pequenos (ou se só houver o alimentador escolhido), vale o primeiro do ranking
+export function alimentadorEmDestaque(ranking: AlimentadorContinuidade[]) {
+  return ranking.find((linha) => !linha.alimentador_pequeno) ?? ranking[0]
+}
+
+// habilitada: false deixa a consulta parada (ex.: a do gráfico, quando a série já veio na principal)
+export function useContinuidade(filtros: Filtros, habilitada = true) {
   const { municipio, alimentador, causa } = filtros
   const { data: opcoes } = useOpcoesFiltros()
   // Os escolhidos ou o último ano da base contra o anterior
@@ -79,7 +87,7 @@ export function useContinuidade(filtros: Filtros) {
       }
       return apiFetch<ContinuidadeRede>(`/network/continuity?${params}`, { signal })
     },
-    enabled: periodos !== undefined,
+    enabled: habilitada && periodos !== undefined,
     // Ao trocar um filtro, os números anteriores ficam esmaecidos até os novos chegarem
     placeholderData: keepPreviousData,
   })

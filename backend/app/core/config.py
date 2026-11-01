@@ -12,6 +12,10 @@ from sqlalchemy.exc import ArgumentError
 ENV_LOCAL_PATH = Path(__file__).resolve().parents[2] / ".env.local"
 
 
+class ConfigurationUnavailableError(RuntimeError):
+    """Uma configuração necessária para atender a requisição está ausente."""
+
+
 @dataclass(frozen=True)
 class Settings:
     environment: str
@@ -19,6 +23,7 @@ class Settings:
     port: int
     cors_origins: tuple[str, ...]
     database_url: str | None = field(default=None, repr=False)
+    jwt_secret_key: str | None = field(default=None, repr=False)
 
 
 def get_settings() -> Settings:
@@ -82,4 +87,5 @@ def get_settings() -> Settings:
             drivername="postgresql+psycopg"
         ).render_as_string(hide_password=False)
 
-    return Settings(environment, host, port, origins, database_url)
+    jwt_secret_key = value("JWT_SECRET_KEY", "") or None
+    return Settings(environment, host, port, origins, database_url, jwt_secret_key)
