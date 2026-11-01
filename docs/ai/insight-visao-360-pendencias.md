@@ -173,5 +173,5 @@ O front não muda com nenhum desses itens: o texto, o selo e as fontes já são 
    - "Números conferidos";
    - os números no formato brasileiro;
    - a linha "Fonte: …".
-4. Repita o passo 1 e abra a UC140669 umas 5 vezes. Nenhuma vez deve aparecer o aviso "Não foi possível validar…".
+4. Abra a UC140669 umas 5 vezes, limpando os textos guardados (passo 1) **antes de cada abertura**. Sem limpar, a página só lê o texto já guardado e não testa as novas tentativas. Nenhuma vez deve aparecer o aviso "Não foi possível validar…".
 5. Entre como `diretoria@example.test` e abra `http://localhost:5173/api/ai/insights/visao_360_uc/UC100000` na barra de endereço do navegador, que usa o mesmo login. Deve dar 403.
