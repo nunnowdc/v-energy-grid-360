@@ -52,14 +52,19 @@ def no_valida_sql(
     resultado = validador.validar(sql)
 
     if resultado.aprovado:
-        logger.info("Nó 8 — SQL aprovado pela validação.")
-        return {
+        # Se o validador oficial devolve sql_normalizado, retornamos no dicionário de resposta
+        # para que o LangGraph propague ao próximo nó corretamente.
+        sql_norm = getattr(resultado, "sql_normalizado", None)
+        resposta = {
             "erro_validacao_ou_execucao": None,
             "malicioso": False,
             "passos_executados": [
                 f"Nó 8 — Validação aprovada. Tabelas identificadas: {resultado.tabelas_detectadas}"
             ],
         }
+        if sql_norm:
+            resposta["sql_gerado"] = sql_norm
+        return resposta
 
     # SQL reprovado
     logger.warning("Nó 8 — SQL reprovado: %s (malicioso=%s)", resultado.motivo_rejeicao, resultado.malicioso)
