@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>V-Energy Grid 360</title>
+    <script>
+      // Aplica o tema salvo antes de a página aparecer, para não piscar o tema
+      // claro antes do Dracula (a chave é a mesma de src/lib/tema.ts)
+      try {
+        if (localStorage.getItem('vgrid360-tema') === 'dracula') {
+          document.documentElement.classList.add('dark')
+        }
+      } catch {
+        // Sem acesso ao armazenamento, fica o tema claro
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
