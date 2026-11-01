@@ -61,6 +61,7 @@ src/
 │   ├── BlocoDados/BlocoDados.tsx          ← cartão com título e os 4 estados
 │   ├── BotaoAgente/BotaoAgente.tsx        ← botão do cabeçalho que abre e fecha o agente de IA
 │   ├── BuscaUc/BuscaUc.tsx                ← busca da UC pelo ID completo
+│   ├── CancelarOrdem/CancelarOrdem.tsx    ← "Cancelar ordem" com confirmação (diz o que acontece com a UC)
 │   ├── CabecalhoPagina/CabecalhoPagina.tsx ← título, descrição e filtros de cada tela
 │   ├── CaixaPergunta/CaixaPergunta.tsx    ← campo da pergunta ao agente (Enter envia)
 │   ├── CampoFormulario/CampoFormulario.tsx ← rótulo, campo e a dica ou o erro embaixo
@@ -74,10 +75,13 @@ src/
 │   ├── EstadoConsulta/EstadoConsulta.tsx  ← carregando, erro, vazio e atualizando
 │   ├── EstadoErro/EstadoErro.tsx
 │   ├── EstadoVazio/EstadoVazio.tsx
+│   ├── Etiqueta/Etiqueta.tsx              ← situação numa pílula com cor, ícone e texto
 │   ├── FaturasEmAberto/FaturasEmAberto.tsx ← faturas pendentes e atrasadas da UC
 │   ├── FeedbackResposta/FeedbackResposta.tsx ← 👍/👎 de uma resposta do agente
 │   ├── FilaSuspeitas/FilaSuspeitas.tsx    ← fila de UCs suspeitas com motivos, energia e score
-│   ├── FiltroSelect/FiltroSelect.tsx      ← um filtro (rótulo + lista)
+│   ├── FiltroSelect/
+│   │   ├── FiltroSelect.tsx               ← um filtro (rótulo + lista)
+│   │   └── FiltroBusca.tsx                ← a mesma coisa com campo de busca, para lista com mais de 10 opções
 │   ├── FiltrosGlobais/FiltrosGlobais.tsx  ← barra de filtros das telas
 │   ├── GraficosMensais/GraficosMensais.tsx ← duas medidas por mês empilhadas, atual × anterior
 │   ├── GrafoRaciocinio/GrafoRaciocinio.tsx ← caminho do agente: um nó por passo
@@ -86,6 +90,7 @@ src/
 │   ├── MarcaVEnergy/MarcaVEnergy.tsx      ← marca do portal (grade 3×3)
 │   ├── MensagemAgente/MensagemAgente.tsx  ← resposta do agente com selo, tempo, 👍/👎 e o passo a passo
 │   ├── MiniTendencia/MiniTendencia.tsx    ← barrinhas de tendência do KPI
+│   ├── Nota/Nota.tsx                      ← caixa de aviso com ícone e título (regra da tela, sazonalidade)
 │   ├── OrdensInspecao/OrdensInspecao.tsx  ← ordens geradas: enviar para campo, concluir, cancelar
 │   ├── OcorrenciasPorCausa/OcorrenciasPorCausa.tsx ← barras das ocorrências por causa
 │   ├── Paginacao/Paginacao.tsx            ← anterior/próxima com "1–10 de 48"
@@ -103,13 +108,15 @@ src/
 │   ├── SeloConfianca/SeloConfianca.tsx    ← quanto dá para confiar na resposta do agente
 │   ├── SeletorPeriodo/SeletorPeriodo.tsx  ← filtro de período: botão que abre um calendário de meses
 │   ├── SessaoObrigatoria/SessaoObrigatoria.tsx ← porta da área logada: sem login, vai para o /login
-│   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, com ícone
-│   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem com ícone e texto
+│   ├── StatusChamado/StatusChamado.tsx    ← chamado em aberto ou encerrado, em etiqueta
+│   ├── StatusPagamento/StatusPagamento.tsx ← paga, pendente ou atrasada, em etiqueta
+│   ├── StatusOrdem/StatusOrdem.tsx        ← situação da ordem em etiqueta
 │   ├── SugestoesPerguntas/SugestoesPerguntas.tsx ← conversa vazia com exemplos de pergunta
 │   ├── TabelaDecomposicao/TabelaDecomposicao.tsx ← receita dos dois períodos e os efeitos, por grupo
 │   ├── TextoMarkdown/TextoMarkdown.tsx    ← resposta do agente em Markdown com o visual do portal
 │   ├── TrocaSenha/TrocaSenha.tsx          ← painel para trocar a própria senha, aberto pelo menu da conta
-│   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, sem cor
+│   ├── ValorEfeito/ValorEfeito.tsx        ← efeito na receita com sinal, verde quando soma e vermelho quando tira
+│   ├── Variacao/Variacao.tsx              ← ▲/▼ + sinal + número, verde quando melhora e vermelho quando piora
 │   └── ui/                                ← shadcn/ui
 ├── config/
 │   ├── bandeiras.ts         ← nome e cor de cada bandeira tarifária
@@ -139,7 +146,7 @@ src/
 │   │   ├── erro-api.ts      ← erro com status e mensagem pronta para a tela
 │   │   ├── query-client.ts  ← configuração do TanStack Query
 │   │   └── sessao.ts        ← sessão expirada (401) leva ao login e guarda a tela para voltar
-│   ├── comparacao.ts        ← variação percentual entre dois períodos
+│   ├── comparacao.ts        ← variação percentual e se ela é boa ou ruim (sentido da medida)
 │   ├── filtros-url.ts       ← ler e trocar filtros na URL
 │   ├── formatacao.ts        ← moeda, número, percentual, kWh e datas no padrão brasileiro
 │   ├── passos-agente.ts     ← passos da auditoria do agente viram os nós do grafo
@@ -169,6 +176,8 @@ Os estilos são escritos com classes do **Tailwind** direto no JSX. As cores e o
 | Classes de consumo (Residencial, Comercial, Industrial, Rural, Poder público) | `--chart-1` a `--chart-5` | `bg-chart-1`… |
 | Período anterior nas comparações | `--chart-anterior` | `bg-chart-anterior` |
 | Bandeiras tarifárias | `--bandeira-verde`, `--bandeira-amarela`, `--bandeira-vermelha-p1`, `--bandeira-vermelha-p2` | `bg-bandeira-verde`… |
+| Bom e ruim em texto e etiquetas: melhora, piora, atenção (cada um com o seu fundo claro) | `--positivo`, `--negativo`, `--atencao` e `--positivo-fundo`… | `text-positivo`, `bg-negativo-fundo`… |
+| Bom e ruim em barras de gráfico (ex.: degraus da ponte da receita) | `--grafico-positivo`, `--grafico-negativo` | `bg-grafico-positivo`… |
 | Fundo da área de conteúdo (cartões e cabeçalho ficam brancos sobre ele) | `--canvas` | `bg-canvas` |
 | Coluna do agente de IA, um tom abaixo do canvas (balões e campo de pergunta ficam brancos sobre ela) | `--agente` | `bg-agente` |
 | Menu lateral escuro em petróleo | `--sidebar`, `--sidebar-foreground`, `--sidebar-muted`… | `bg-sidebar`, `text-sidebar-muted`… |
@@ -183,10 +192,14 @@ Regras:
 
 - A cor de cada classe de consumo é sempre a mesma, em qualquer tela. Use `src/config/classes.ts` em vez de escrever a cor direto.
 - As cores das bandeiras aparecem só em contexto de bandeira e sempre junto com o nome. Use `src/config/bandeiras.ts`.
-- Variação (▲/▼) não tem cor: usa seta, sinal e número em cinza-escuro.
+- Variação (▲/▼) fica verde quando melhora e vermelha quando piora, sempre com seta e sinal. Quem decide o que é melhorar é o `sentido` da medida (`lib/comparacao.ts`): receita que sobe é boa (`subir-e-bom`); DEC, FEC, ocorrências e faturas em atraso que sobem são ruins (`subir-e-ruim`). Medida sem lado bom (preço médio, consumo de uma UC) não recebe sentido e fica em cinza-escuro.
 - Nunca use dois eixos Y no mesmo gráfico: empilhe dois gráficos que compartilham o eixo dos meses.
 - Dois períodos no mesmo gráfico: o atual em petróleo (`--primary`) e o anterior em cinza (`--chart-anterior`), sempre com legenda e tooltip com os valores.
-- Status (ex.: fatura atrasada) aparece com ícone e texto, nunca só com cor.
+- Situação (ordem, fatura, chamado) aparece numa `Etiqueta`: fundo colorido, ícone e texto, nunca só a cor. Tons: atenção (esperando alguém agir: ordem aberta, fatura pendente, chamado aberto), andamento (ordem em campo), positivo (resolvido), negativo (atrasada) e neutro (cancelada).
+- Ação que não tem volta (ex.: cancelar uma ordem) pede confirmação e explica o que acontece.
+- Regra para ler a tela ou cuidado com os números vai numa `Nota` (caixa com ícone e título), não em texto cinza solto.
+- Lista de filtro com mais de 10 opções ganha campo de busca (o `FiltroSelect` troca sozinho). A busca ignora acentos.
+- Tabela que detalha ao clicar: a linha inteira é clicável e diz no fim o que o clique faz (ex.: "Ver bairros ›").
 - Categorias da Gold vêm em maiúsculas e sem acento (ex.: `DANO ELETRICO`). Mostre com `textoDoCodigo()` de `src/config/codigos.ts`, que devolve "Dano elétrico". Palavra nova sem acento entra na lista desse arquivo.
 
 ### Imports
