@@ -89,3 +89,69 @@ DELETE FROM ordens_inspecao WHERE false;
 UPDATE fila_inspecao SET score = 0 WHERE false;
 
 RESET ROLE;
+
+\echo '========== DIRETORIA =========='
+SET ROLE perfil_diretoria;
+
+\echo '[ok] receita'
+SELECT count(*) FROM agg_receita_mensal;
+SELECT count(*) FROM agg_receita_preco_volume;
+\echo '[ok] continuidade'
+SELECT count(*) FROM agg_continuidade_alimentador;
+SELECT count(*) FROM agg_continuidade_alimentador_anual;
+\echo '[ok] filtros: municípios, bairros, classes e alimentadores (45000 linhas)'
+SELECT count(municipio), count(bairro), count(classe), count(alimentador) FROM dim_unidade_consumidora;
+\echo '[negado] nome do titular'
+SELECT nome_titular FROM dim_unidade_consumidora LIMIT 1;
+\echo '[negado] CPF'
+SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora LIMIT 1;
+\echo '[negado] fila de inspeção'
+SELECT count(*) FROM fila_inspecao;
+\echo '[negado] leituras'
+SELECT count(*) FROM fact_leituras;
+\echo '[negado] chamados'
+SELECT count(*) FROM fact_atendimentos;
+\echo '[negado] ordens de inspeção'
+SELECT count(*) FROM ordens_inspecao;
+\echo '[negado] escrever na Gold'
+UPDATE agg_receita_mensal SET receita_faturada = 0 WHERE false;
+
+RESET ROLE;
+
+\echo '========== ATENDIMENTO =========='
+SET ROLE perfil_atendimento;
+
+\echo '[ok] Visão 360: cadastro com nome e endereço'
+SELECT id_uc, nome_titular, logradouro, numero, bairro, municipio, tipo_medidor_atual, possui_gd
+  FROM dim_unidade_consumidora WHERE id_uc = 'UC132549';
+\echo '[ok] Visão 360: calendário, leituras, faturas, ocorrências e chamados da UC'
+SELECT count(*) FROM dim_competencia;
+SELECT (SELECT count(*) FROM fact_leituras     WHERE id_uc = 'UC132549') AS leituras,
+       (SELECT count(*) FROM fact_faturamento  WHERE id_uc = 'UC132549') AS faturas,
+       (SELECT count(*) FROM fact_ocorrencias  WHERE id_uc = 'UC132549') AS ocorrencias,
+       (SELECT count(*) FROM fact_atendimentos WHERE id_uc = 'UC132549') AS chamados;
+\echo '[ok] Visão 360 de uma UC fora da fila'
+SELECT id_uc, nome_titular, logradouro FROM dim_unidade_consumidora WHERE id_uc = 'UC100005';
+SELECT count(*) FROM fact_leituras WHERE id_uc = 'UC100005';
+\echo '[negado] CPF'
+SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora LIMIT 1;
+\echo '[negado] CEP'
+SELECT cep FROM dim_unidade_consumidora LIMIT 1;
+\echo '[negado] fila de inspeção'
+SELECT count(*) FROM fila_inspecao;
+\echo '[negado] histórico de inspeções'
+SELECT count(*) FROM fact_inspecoes;
+\echo '[negado] receita'
+SELECT count(*) FROM agg_receita_mensal;
+\echo '[negado] continuidade'
+SELECT count(*) FROM agg_continuidade_alimentador;
+\echo '[negado] ver ordens de inspeção'
+SELECT count(*) FROM ordens_inspecao;
+\echo '[negado] criar ordem (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA');
+ROLLBACK;
+\echo '[negado] escrever na Gold'
+UPDATE fact_atendimentos SET status_chamado = 'X' WHERE false;
+
+RESET ROLE;
