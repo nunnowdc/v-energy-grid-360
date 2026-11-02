@@ -139,16 +139,19 @@ Este módulo responde matematicamente à pergunta central da Diretoria Comercial
 ### 5.3. Causalidade Econômica Comprovada (`N-15`)
 A consolidação em `agg_receita_preco_volume` revelou os seguintes fatos econômicos:
 1. **Aumento de Receita:** De R$ 157,1 mi para R$ 169,7 mi (**+R$ 12,58 mi ou +8,0%**), confirmando o enunciado (`N-09`).
-2. **Decomposição:**
-   - **Efeito-Preço:** **+R$ 23,75 mi**;
-   - **Efeito-Volume:** **−R$ 11,18 mi**.
-3. **Causa Raiz da Queda de Volume:**
-   - **76% da perda de volume (−R$ 8,50 mi) provém exclusivamente das ~3,5 mil UCs com Geração Distribuída** (7,8% da base), cujo consumo medido da rede despencou **~64%** tanto no segmento residencial quanto no comercial.
-   - Nas UCs convencionais (sem GD), a redução do consumo medido foi marginal: residencial −2,6%, comercial −2,4%, industrial −0,9%, rural −5,1% e poder público +0,7%.
+2. **Decomposição Aditiva Exata:**
+   - **Efeito-Preço:** **+R$ 19,34 mi** (ou **+R$ 19,3 mi** no portal);
+   - **Efeito-Volume:** **−R$ 6,77 mi** (ou **−R$ 6,8 mi** no portal);
+   - Fechamento: $(-6,77) + (+19,34) = +12,57 \approx +12,58 \text{ mi}$.
+3. **Causa Raiz da Queda de Volume (−R$ 6,77 mi):**
+   - **Geração Própria (GD):** Queda de **−60,9%** no consumo medido das 3.503 UCs que conectaram painel entre 2024 e 2026, com impacto de **−R$ 8,13 mi**.
+   - **Perda Não Técnica Localizada:** Concentrada em 4 bairros (Iputinga, Jardim Jordão, Prazeres e Macaxeira), com queda de **−15,7%** no consumo sem GD a partir de mai/2025 e 90% de irregularidades confirmadas em campo, respondendo por **−R$ 1,93 mi**.
+   - **Resto da Base:** As demais 38,2 mil UCs convencionais apresentaram crescimento orgânico de volume de **+2,4%** (**+R$ 3,29 mi**).
+
 4. **Papel das Bandeiras Tarifárias e Reajuste:**
-   - O primeiro ano da base (P0) foi marcado por **100% de bandeira verde** (sem sobretaxa tarifária).
-   - O período recente (P1) registrou **8 meses com bandeiras tarifárias de acréscimo** (3 amarelas, 3 vermelhas patamar 1 e 2 vermelhas patamar 2, `N-07`).
-   - O efeito-preço superou o reajuste tarifário homologado de 10,5% e compensou a perda de volume da GD, sustentando o crescimento de 8% na receita final.
+   - O primeiro ano (P0) teve **100% de bandeiras verdes** (sem sobretaxa).
+   - O período recente (P1) acumulou **8 meses com bandeiras tarifárias** (3 amarelas, 3 vermelhas P1 e 2 vermelhas P2), gerando um acréscimo temporário de **+R$ 6,63 mi** na receita.
+   - O reajuste tarifário homologado e outros efeitos de mix responderam por **+R$ 12,71 mi**, totalizando o efeito-preço de +R$ 19,34 mi.
 
 ---
 
