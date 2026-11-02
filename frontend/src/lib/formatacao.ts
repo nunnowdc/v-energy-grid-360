@@ -111,3 +111,20 @@ const moedaCompactaComSinal = new Intl.NumberFormat('pt-BR', {
 export function formatarMoedaCompactaComSinal(valor: number) {
   return moedaCompactaComSinal.format(valor)
 }
+
+const numeroCompacto = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
+
+// Contagens grandes, ex.: tokens: 780664 → "780,7 mil"
+export function formatarNumeroCompacto(valor: number) {
+  return numeroCompacto.format(valor)
+}
+
+// Duração que vem em milissegundos: 19253 → "19,3 s"
+export function formatarSegundos(ms: number) {
+  return `${formatarNumero(ms / 1000)} s`
+}
+
+// Dia curto para eixos de gráfico: "2026-10-27" → "27/10"
+export function formatarDiaMes(data: string) {
+  return formatarData(data).slice(0, 5)
+}

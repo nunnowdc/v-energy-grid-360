@@ -43,6 +43,7 @@
   --color-atencao-fundo: var(--atencao-fundo);
   --color-grafico-positivo: var(--grafico-positivo);
   --color-grafico-negativo: var(--grafico-negativo);
+  --color-grafico-neutro: var(--grafico-neutro);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -120,6 +121,9 @@
      por quem não distingue verde de vermelho (conferido no validador de paleta) */
   --grafico-positivo: #2f9e44;
   --grafico-negativo: #c92a2a;
+  /* Parte de um total sem lado bom ou ruim, ex.: as recusas do agente. Mais escuro que o
+     cinza do período anterior, para ter contraste com o fundo (conferido no validador) */
+  --grafico-neutro: #8a8f99;
   --radius: 0.5rem;
   /* Menu lateral escuro em petróleo, a identidade do portal */
   --sidebar: #0b3b47;
@@ -194,6 +198,8 @@
   --atencao-fundo: #423b3c;
   --grafico-positivo: #50fa7b;
   --grafico-negativo: #ff5555;
+  /* Comment do Dracula */
+  --grafico-neutro: #6272a4;
   --sidebar: #191a21;
   --sidebar-foreground: #f8f8f2;
   --sidebar-muted: #adb5cb;

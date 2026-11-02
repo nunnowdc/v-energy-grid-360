@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bot,
   ClipboardList,
   LayoutDashboard,
   TrendingUp,
@@ -72,6 +73,14 @@ export const itensNavegacao: ItemNavegacao[] = [
     icone: UsersRound,
     grupo: 'Administração',
     permissao: 'gerenciar_usuarios',
+  },
+  {
+    to: '/agente-ia',
+    label: 'Agente de IA',
+    descricao: 'Uso do agente no portal: perguntas, respostas, tempo e tokens gastos',
+    icone: Bot,
+    grupo: 'Administração',
+    permissao: 'ver_auditoria_ia',
   },
 ]
 

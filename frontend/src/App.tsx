@@ -7,6 +7,7 @@ import RotaProtegida from './components/RotaProtegida/RotaProtegida'
 import SessaoObrigatoria from './components/SessaoObrigatoria/SessaoObrigatoria'
 import { TooltipProvider } from './components/ui/tooltip'
 import { queryClient } from './lib/api/query-client'
+import AgenteIaPage from './pages/AgenteIa/AgenteIaPage'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
 import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import LoginPage from './pages/Login/LoginPage'
@@ -47,6 +48,9 @@ function App() {
                 </Route>
                 <Route element={<RotaProtegida permissao="gerenciar_usuarios" />}>
                   <Route path="usuarios" element={<UsuariosPage />} />
+                </Route>
+                <Route element={<RotaProtegida permissao="ver_auditoria_ia" />}>
+                  <Route path="agente-ia" element={<AgenteIaPage />} />
                 </Route>
                 <Route path="*" element={<NotFoundPage />} />
               </Route>

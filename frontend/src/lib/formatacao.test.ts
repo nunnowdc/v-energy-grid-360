@@ -10,9 +10,12 @@ import {
   formatarMoeda,
   formatarMoedaCompacta,
   formatarMoedaCompactaComSinal,
+  formatarDiaMes,
   formatarNumero,
+  formatarNumeroCompacto,
   formatarPercentualComSinal,
   formatarPeriodo,
+  formatarSegundos,
 } from '@/lib/formatacao'
 
 // O Intl separa "R$" do número com um espaço que não quebra linha
@@ -67,4 +70,13 @@ test('período entre duas competências', () => {
 test('diferença em reais sempre com sinal', () => {
   expect(semEspacoFixo(formatarMoedaCompactaComSinal(22_500_000))).toBe('+R$ 22,5 mi')
   expect(semEspacoFixo(formatarMoedaCompactaComSinal(-4_100_000))).toBe('-R$ 4,1 mi')
+})
+
+test('contagem compacta, segundos e dia curto', () => {
+  expect(semEspacoFixo(formatarNumeroCompacto(780_664))).toBe('780,7 mil')
+  expect(semEspacoFixo(formatarNumeroCompacto(1_250_000))).toBe('1,3 mi')
+  expect(formatarNumeroCompacto(950)).toBe('950')
+  expect(formatarSegundos(19_253)).toBe('19,3 s')
+  expect(formatarSegundos(500)).toBe('0,5 s')
+  expect(formatarDiaMes('2026-10-27')).toBe('27/10')
 })
