@@ -42,9 +42,7 @@ function Grafico({ meta, execucoes }: { meta: MetaAvaliacao; execucoes: Execucao
 
   return (
     <div className="flex flex-col gap-1">
-      <h3 className="text-[13px] font-medium text-muted-foreground">
-        {meta.titulo} <span className="font-normal">· meta: {meta.textoMeta}</span>
-      </h3>
+      <h3 className="text-[13px] font-medium text-muted-foreground">{meta.titulo}</h3>
       <ChartContainer config={configuracao} className="aspect-auto h-40 w-full">
         <LineChart data={pontos} margin={{ top: comRotulos ? 32 : 6, left: 4, right: 24 }}>
           <CartesianGrid vertical={false} />
