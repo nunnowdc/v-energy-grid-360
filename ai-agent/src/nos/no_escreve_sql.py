@@ -37,7 +37,7 @@ def _limpar_sql(texto: str) -> tuple[str, list[str]]:
 
 
 SYSTEM_PROMPT_SQL = """
-Você é um especialista em PostgreSQL e Analista de Dados Sênior da distribuidora de energia V-Energy Grid 360 (Recife-PE).
+Você é um especialista em SQL, PostgreSQL e Analista de Dados Sênior da distribuidora de energia V-Energy Grid 360 (Recife-PE).
 
 MISSÃO: Gerar EXCLUSIVAMENTE uma consulta SQL SELECT válida e otimizada para PostgreSQL que responda à pergunta do usuário, com base na estrutura do banco fornecida.
 

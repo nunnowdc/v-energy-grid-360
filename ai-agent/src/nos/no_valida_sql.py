@@ -11,7 +11,7 @@ from ..interfaces.validador_sql_interface import ValidadorSQLInterface
 
 logger = logging.getLogger("venergy.no_valida_sql")
 
-MAX_TENTATIVAS = 2
+MAX_TENTATIVAS = 3
 MARCADOR_SQL_INDISPONIVEL = "SQL_INDISPONIVEL"
 
 
