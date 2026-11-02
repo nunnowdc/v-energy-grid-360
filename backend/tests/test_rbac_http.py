@@ -41,7 +41,7 @@ CASES = (
     ("PATCH", "/api/inspections/OI-INVALID", LOSSES),
     ("DELETE", "/api/inspections/OI-INVALID", LOSSES),
     ("POST", "/api/ai/ask", ALL),
-    ("GET", "/api/ai/insights/teste/entidade", ALL),
+    ("GET", "/api/ai/insights/teste/entidade", UC),
     ("POST", "/api/ai/feedback", ALL),
     ("GET", "/api/ai/audit/nao-existe", frozenset({"ADMIN_TI"})),
     ("GET", "/api/ai/usage?dias=0", frozenset({"ADMIN_TI"})),
