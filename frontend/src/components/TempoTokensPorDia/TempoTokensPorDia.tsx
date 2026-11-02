@@ -38,6 +38,41 @@ const medidas: [Medida, Medida] = [
 
 type Ponto = { dia: string; perguntas: number; valor: number }
 
+// O número de cada ponto numa etiqueta com o fundo do cartão: a linha que sobe ou desce
+// passa por trás dela, sem cortar o texto. Fica acima do ponto
+function Etiqueta({ x, y, texto }: { x: number; y: number; texto: string }) {
+  // Largura aproximada do texto em 12px semibold, mais a folga dos lados
+  const largura = texto.length * 7 + 12
+  const altura = 20
+  const topo = y - altura - 8
+
+  return (
+    <g>
+      <rect
+        x={x - largura / 2}
+        y={topo}
+        width={largura}
+        height={altura}
+        rx={5}
+        fill="var(--card)"
+        stroke="var(--border)"
+      />
+      <text
+        x={x}
+        y={topo + altura / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight={600}
+        fill="var(--foreground)"
+        className="tabular-nums"
+      >
+        {texto}
+      </text>
+    </g>
+  )
+}
+
 function Dica({ ponto, formatar }: { ponto: Ponto; formatar: (valor: number) => string }) {
   return (
     <div className="grid min-w-36 gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
@@ -59,8 +94,8 @@ function Grafico({ chave, titulo, formatarCurto, formatar, dias, mostrarDias }: 
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-[13px] font-medium text-muted-foreground">{titulo}</h3>
-      <ChartContainer config={configuracao} className={cn('aspect-auto w-full', mostrarDias ? 'h-36' : 'h-28')}>
-        <LineChart data={pontos} syncId="agente-por-dia" margin={{ top: comRotulos ? 18 : 6, left: 4, right: 24 }}>
+      <ChartContainer config={configuracao} className={cn('aspect-auto w-full', mostrarDias ? 'h-40' : 'h-32')}>
+        <LineChart data={pontos} syncId="agente-por-dia" margin={{ top: comRotulos ? 32 : 6, left: 4, right: 24 }}>
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="dia"
@@ -68,7 +103,7 @@ function Grafico({ chave, titulo, formatarCurto, formatar, dias, mostrarDias }: 
             tickLine={false}
             axisLine={false}
             tickFormatter={formatarDiaMes}
-            padding={{ left: 16, right: 16 }}
+            padding={{ left: 32, right: 32 }}
             minTickGap={16}
           />
           {/* A largura fixa alinha os dois gráficos */}
@@ -89,10 +124,9 @@ function Grafico({ chave, titulo, formatarCurto, formatar, dias, mostrarDias }: 
             {comRotulos && (
               <LabelList
                 dataKey="valor"
-                position="top"
-                className="fill-foreground"
-                fontSize={11}
-                formatter={(valor) => formatarCurto(Number(valor))}
+                content={({ x, y, value }) => (
+                  <Etiqueta x={Number(x)} y={Number(y)} texto={formatarCurto(Number(value))} />
+                )}
               />
             )}
           </Line>
