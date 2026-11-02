@@ -1,4 +1,5 @@
 import { CartesianGrid, LabelList, Line, LineChart, XAxis, YAxis } from 'recharts'
+import EtiquetaPonto from '@/components/EtiquetaPonto/EtiquetaPonto'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
 import type { DiaUsoAgente } from '@/hooks/use-uso-agente'
 import { formatarData, formatarDiaMes, formatarNumero, formatarNumeroCompacto, formatarSegundos } from '@/lib/formatacao'
@@ -37,41 +38,6 @@ const medidas: [Medida, Medida] = [
 ]
 
 type Ponto = { dia: string; perguntas: number; valor: number }
-
-// O número de cada ponto numa etiqueta com o fundo do cartão: a linha que sobe ou desce
-// passa por trás dela, sem cortar o texto. Fica acima do ponto
-function Etiqueta({ x, y, texto }: { x: number; y: number; texto: string }) {
-  // Largura aproximada do texto em 12px semibold, mais a folga dos lados
-  const largura = texto.length * 7 + 12
-  const altura = 20
-  const topo = y - altura - 8
-
-  return (
-    <g>
-      <rect
-        x={x - largura / 2}
-        y={topo}
-        width={largura}
-        height={altura}
-        rx={5}
-        fill="var(--card)"
-        stroke="var(--border)"
-      />
-      <text
-        x={x}
-        y={topo + altura / 2}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight={600}
-        fill="var(--foreground)"
-        className="tabular-nums"
-      >
-        {texto}
-      </text>
-    </g>
-  )
-}
 
 function Dica({ ponto, formatar }: { ponto: Ponto; formatar: (valor: number) => string }) {
   return (
@@ -125,7 +91,7 @@ function Grafico({ chave, titulo, formatarCurto, formatar, dias, mostrarDias }: 
               <LabelList
                 dataKey="valor"
                 content={({ x, y, value }) => (
-                  <Etiqueta x={Number(x)} y={Number(y)} texto={formatarCurto(Number(value))} />
+                  <EtiquetaPonto x={Number(x)} y={Number(y)} texto={formatarCurto(Number(value))} />
                 )}
               />
             )}

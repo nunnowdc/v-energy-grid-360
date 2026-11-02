@@ -1,6 +1,7 @@
 import {
   Activity,
   Bot,
+  ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
   TrendingUp,
@@ -79,6 +80,14 @@ export const itensNavegacao: ItemNavegacao[] = [
     label: 'Agente de IA',
     descricao: 'Uso do agente no portal: perguntas, respostas, tempo e tokens gastos',
     icone: Bot,
+    grupo: 'Administração',
+    permissao: 'ver_auditoria_ia',
+  },
+  {
+    to: '/avaliacao-agente',
+    label: 'Avaliação do agente',
+    descricao: 'Perguntas de teste com resposta conhecida, para acompanhar a qualidade do agente a cada execução',
+    icone: ClipboardCheck,
     grupo: 'Administração',
     permissao: 'ver_auditoria_ia',
   },

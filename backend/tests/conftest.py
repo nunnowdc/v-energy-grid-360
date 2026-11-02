@@ -37,6 +37,7 @@ def authenticated_business_contracts(request):
         "test_inspection",
         "test_uc_",
         "test_agent_usage_",
+        "test_agent_evaluations_",
     )
     if not (name.startswith(business_modules) or name == "test_uc.py"):
         yield

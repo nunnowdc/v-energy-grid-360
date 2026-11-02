@@ -72,6 +72,13 @@ export function formatarInstante(instante: string) {
   return dataHoraRecife.format(new Date(instante)).replace(',', '')
 }
 
+// Instante curto para eixos de gráfico, no horário de Recife:
+// "2026-11-02T01:10:00Z" → "01/11 22:10"
+export function formatarInstanteCurto(instante: string) {
+  const completo = formatarInstante(instante)
+  return `${completo.slice(0, 5)} ${completo.slice(11)}`
+}
+
 // 203 → "203 kWh"
 export function formatarKwh(valor: number) {
   return `${formatarNumero(valor)} kWh`

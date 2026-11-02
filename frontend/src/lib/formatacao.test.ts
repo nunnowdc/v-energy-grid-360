@@ -6,6 +6,7 @@ import {
   formatarDataHora,
   formatarEnergia,
   formatarInstante,
+  formatarInstanteCurto,
   formatarKwh,
   formatarMoeda,
   formatarMoedaCompacta,
@@ -79,4 +80,8 @@ test('contagem compacta, segundos e dia curto', () => {
   expect(formatarSegundos(19_253)).toBe('19,3 s')
   expect(formatarSegundos(500)).toBe('0,5 s')
   expect(formatarDiaMes('2026-10-27')).toBe('27/10')
+})
+
+test('instante curto no horário de Recife, mesmo virando o dia', () => {
+  expect(formatarInstanteCurto('2026-11-02T01:10:00Z')).toBe('01/11 22:10')
 })

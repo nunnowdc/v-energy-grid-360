@@ -628,6 +628,7 @@ Abra http://localhost:5173. O portal mostra a tela de login: entre com `adminti.
 | Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7.1) |
 | Continuidade | Os KPIs, o DEC e o FEC mês a mês e o ranking dos 122 alimentadores. Com a Gold 1.0.1 e sem filtro, o "Pior DEC (100 UCs ou mais)" é o ALM-SAO-004, com 15,6 h |
 | Usuários | O formulário de nova conta. Crie uma conta de outro perfil, saia e entre com ela: o menu mostra só as telas daquele perfil |
+| Avaliação do agente (menu Administração) | "Nenhuma avaliação gravada ainda", com o comando para rodar. Depois de `python -m scripts.avaliar_golden_set` na pasta `ai-agent` (alguns minutos e tokens do modelo), a tela mostra as métricas do golden set comparadas às metas e os 12 casos |
 | Agente de IA (menu Administração) | As perguntas feitas ao agente nos últimos 30 dias, por dia, com o tempo e os tokens. **Passo a passo**, em uma linha da tabela, abre o caminho daquela resposta. Numa instalação nova, a tela diz que ainda não há perguntas até alguém usar o agente |
 | Agente de IA (botão no topo) | Pergunte "Qual o faturamento de Recife em 2024?": a resposta traz cerca de R$ 68,56 milhões (68.560.067,39), e a tela vai para os Indicadores de Recife em 2024 |
 
