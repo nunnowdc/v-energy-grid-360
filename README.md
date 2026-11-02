@@ -773,7 +773,7 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - **Decomposição preço × volume:** usa a fórmula publicada na Gold: efeito-volume = (kWh P1 − kWh P0) × preço P0, e efeito-preço = (preço P1 − preço P0) × kWh P1. A decomposição de Shapley do diagnóstico fica fora do MVP.
 - **Filtros:** um valor por filtro. A Continuidade filtra por alimentador e causa: o município limita os alimentadores mostrados, e a causa filtra só as ocorrências. DEC e FEC são sempre do alimentador inteiro, nunca de um município ou de uma causa.
 - **Alimentadores pequenos:** na Continuidade, o "Pior DEC" e o gráfico mês a mês destacam o pior alimentador com 100 UCs ou mais. Nos com menos de 100 UCs (14 dos 122), poucas interrupções já inflam o DEC. Eles continuam no ranking, marcados com "Menos de 100 UCs".
-- ⚠️ **Motivo da suspeita:** a Fila de inspeção ainda não filtra por motivo, porque a Gold guarda vários motivos no mesmo texto. Depende de uma lista de motivos da Engenharia de Dados.
+- **Motivo da suspeita:** a Fila de inspeção não filtra por motivo, porque a Gold guarda vários motivos no mesmo texto. 
 - **Dados reais:** todas as telas usam a Gold pelo backend. Os testes automatizados usam dados inventados, nunca da base real (veja `frontend/README.md`).
 
 ## Fluxo de trabalho (Git Flow)
