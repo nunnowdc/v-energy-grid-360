@@ -247,6 +247,7 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 | `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
 | `/usuarios` | Usuários | Administrador (TI) | Criação das contas de acesso, com o perfil de cada pessoa |
+| `/agente-ia` | Agente de IA | Administrador (TI) | Uso do agente no portal: perguntas, respostas, tempo e tokens, com o passo a passo de cada resposta |
 
 As rotas são definidas em `src/App.tsx` com o [React Router](https://reactrouter.com/), e a lista de telas do menu fica em `src/config/navegacao.ts`. Todas as telas ficam atrás de `components/SessaoObrigatoria` (só abrem com alguém logado) e são renderizadas dentro de `components/Layout`, que monta o menu lateral (`AppSidebar`), o cabeçalho (`AppHeader`) e o agente de IA (`PainelAgente`). O `/login` fica fora dos dois, sem menu nem cabeçalho.
 
@@ -405,6 +406,7 @@ Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a 
 - `GET /api/inspections/queue/export`: baixa a fila inteira do recorte em Excel, com endereço e sem o nome do titular.
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.
 - `POST /api/ai/ask`, `GET /api/ai/audit/{id}` e `POST /api/ai/feedback`: o Agente de IA. Além do backend, precisam das chaves do LLM no `backend/.env.local` (veja `backend/.env.example`); sem elas o agente responde "O serviço de IA está temporariamente indisponível". Os testes do painel usam respostas inventadas no próprio teste.
+- `GET /api/ai/usage?dias=7|30|90`: a tela Agente de IA (só do `ADMIN_TI`, permissão `ver_auditoria_ia`). Lê a `tb_auditoria_agente`, que grava cada pergunta feita ao agente; não chama o LLM. A janela termina hoje (data real, em Recife) e a escolha fica no endereço (`/agente-ia?dias=7`). O botão **Passo a passo** de cada linha abre o `GET /api/ai/audit/{id}` num painel lateral. Os testes da tela usam números inventados no próprio teste.
 - `GET /api/ai/insights/{tela}/{id}`: os insights da IA (veja [Insights da IA](#insights-da-ia)). Também precisa das chaves do LLM na primeira vez de cada texto. Os testes da caixa usam respostas inventadas no próprio teste.
 
 ## Testes automatizados

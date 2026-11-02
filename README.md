@@ -628,6 +628,7 @@ Abra http://localhost:5173. O portal mostra a tela de login: entre com `adminti.
 | Fila de inspeção | A lista de UCs suspeitas. Se gerar ordens para testar, zere depois (passo 7.1) |
 | Continuidade | Os KPIs, o DEC e o FEC mês a mês e o ranking dos 122 alimentadores. Com a Gold 1.0.1 e sem filtro, o "Pior DEC (100 UCs ou mais)" é o ALM-SAO-004, com 15,6 h |
 | Usuários | O formulário de nova conta. Crie uma conta de outro perfil, saia e entre com ela: o menu mostra só as telas daquele perfil |
+| Agente de IA (menu Administração) | As perguntas feitas ao agente nos últimos 30 dias, por dia, com o tempo e os tokens. **Passo a passo**, em uma linha da tabela, abre o caminho daquela resposta. Numa instalação nova, a tela diz que ainda não há perguntas até alguém usar o agente |
 | Agente de IA (botão no topo) | Pergunte "Qual o faturamento de Recife em 2024?": a resposta traz cerca de R$ 68,56 milhões (68.560.067,39), e a tela vai para os Indicadores de Recife em 2024 |
 
 ### Dia a dia
@@ -765,7 +766,7 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - **Receita:** sem escolha, compara o primeiro ano da base (jul/2022 a jun/2023) com os últimos 12 meses (jul/2025 a jun/2026), a pergunta do case. Os períodos podem ser trocados no filtro, e a conta é a mesma da Gold, refeita a partir da receita mensal.
 - **Volume:** é o consumo medido nas leituras, porque as faturas não trazem kWh.
 - **Insight da IA:** só na Visão 360, sobre a UC aberta (o case pede em pelo menos uma tela). Na Receita, o bloco "Com e sem geração própria" já explica a variação com números calculados direto da Gold, que acompanham os filtros; um texto da IA ali repetiria esses números com mais demora e mais risco de erro.
-- **"Hoje":** é o último mês da base (jun/2026), nunca a data do computador.
+- **"Hoje":** é o último mês da base (jun/2026), nunca a data do computador. A exceção é a tela **Agente de IA**, que mostra o uso real do agente (a auditoria de cada pergunta, não a Gold): lá, os últimos 7, 30 ou 90 dias terminam na data de hoje, no horário de Recife.
 - **Períodos:** Indicadores, Receita e Continuidade comparam um "Período base" com um "Comparado com", de mesmo tamanho (1 a 24 meses), e os KPIs mostram sempre o comparado. Sem escolha, Indicadores e Continuidade mostram os últimos 12 meses contra os 12 anteriores. Quando os dois períodos cobrem meses diferentes do ano, a tela avisa que parte da variação pode ser da estação.
 - **Gold:** no MVP, é um retrato fixo carregado no PostgreSQL local, sem atualização.
 - **Decomposição preço × volume:** usa a fórmula publicada na Gold: efeito-volume = (kWh P1 − kWh P0) × preço P0, e efeito-preço = (preço P1 − preço P0) × kWh P1. A decomposição de Shapley do diagnóstico fica fora do MVP.
