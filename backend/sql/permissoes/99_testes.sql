@@ -29,6 +29,8 @@ SELECT prioridade, id_uc, score, motivo_suspeita, municipio, bairro, classe
   FROM fila_inspecao ORDER BY prioridade LIMIT 1;
 \echo '[negado] nome na fila'
 SELECT nome_titular FROM fila_inspecao LIMIT 1;
+\echo '[ok] exportação da fila: endereço e coordenadas'
+SELECT logradouro, numero, latitude, longitude FROM fila_inspecao ORDER BY prioridade LIMIT 1;
 \echo '[ok] filtros: municípios de todas as UCs (45000 linhas)'
 SELECT count(municipio) FROM dim_unidade_consumidora;
 \echo '[negado] CPF'
@@ -54,6 +56,17 @@ BEGIN;
 INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA') RETURNING id, id_uc, status;
 UPDATE ordens_inspecao SET status = 'CANCELADA', atualizada_em = now() WHERE id_uc = 'UC132549';
 ROLLBACK;
+\echo '[ok] criar ordem com autoria (criada_por e atualizada_por; desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO ordens_inspecao (id_uc, status, criada_por, atualizada_por) VALUES ('UC132549', 'ABERTA', NULL, NULL) RETURNING id;
+UPDATE ordens_inspecao SET status = 'CANCELADA', atualizada_por = NULL WHERE id_uc = 'UC132549';
+ROLLBACK;
+\echo '[ok] nome de quem criou a ordem (usuarios: id e nome)'
+SELECT id, nome FROM usuarios LIMIT 1;
+\echo '[negado] e-mail dos usuários'
+SELECT email FROM usuarios LIMIT 1;
+\echo '[negado] senha dos usuários'
+SELECT senha_hash FROM usuarios LIMIT 1;
 \echo '[negado pelo trigger] ordem para UC fora da fila (dentro de ROLLBACK)'
 BEGIN;
 INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC100005', 'ABERTA');
@@ -81,8 +94,14 @@ SELECT count(*) FROM fact_inspecoes;
 
 \echo '[ok] criar uma ordem (desfeita no ROLLBACK)'
 BEGIN;
-INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA') RETURNING id, id_uc, status;
+INSERT INTO ordens_inspecao (id_uc, status, criada_por, atualizada_por) VALUES ('UC132549', 'ABERTA', NULL, NULL) RETURNING id, id_uc, status;
 ROLLBACK;
+\echo '[ok] nome de quem criou a ordem (usuarios: id e nome)'
+SELECT id, nome FROM usuarios LIMIT 1;
+\echo '[negado] e-mail dos usuários'
+SELECT email FROM usuarios LIMIT 1;
+\echo '[ok] uso do agente (tb_auditoria_agente, só as colunas da tela; pulado se a tabela não existir)'
+SELECT count(*), max(data_hora) FROM tb_auditoria_agente;
 \echo '[negado] apagar ordem'
 DELETE FROM ordens_inspecao WHERE false;
 \echo '[negado] escrever na Gold'
