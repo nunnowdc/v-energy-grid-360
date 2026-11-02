@@ -37,8 +37,10 @@ class AgentUsageDay(BaseModel):
     respondidas: int
     recusas: int
     erros: int
+    # Média das perguntas do dia; nulo sem perguntas
     tempo_medio_ms: float | None
-    tokens_medio: float | None
+    # Soma dos tokens de todas as perguntas do dia (0 sem perguntas)
+    tokens_total: int
 
 
 class AgentQuestion(BaseModel):

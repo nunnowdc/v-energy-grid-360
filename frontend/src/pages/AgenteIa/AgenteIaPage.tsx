@@ -137,7 +137,7 @@ function AgenteIaPage() {
         </BlocoDados>
         <BlocoDados
           titulo="Tempo e tokens por dia"
-          descricao="Média das perguntas de cada dia"
+          descricao="Só os dias com perguntas: tempo médio das respostas e total de tokens gastos"
           consulta={consulta}
           estaVazio={semPerguntas}
           mensagemVazio={mensagemVazio}

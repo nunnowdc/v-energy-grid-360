@@ -66,7 +66,7 @@ class AuditFake:
                 "recusas": 1,
                 "erros": 0,
                 "tempo_medio_ms": 1000,
-                "tokens_medio": 700,
+                "tokens_total": 1400,
             },
             {
                 "dia": HOJE,
@@ -75,7 +75,7 @@ class AuditFake:
                 "recusas": 0,
                 "erros": 0,
                 "tempo_medio_ms": 1834.0,
-                "tokens_medio": 866.7,
+                "tokens_total": 2600,
             },
         ]
 
@@ -163,7 +163,7 @@ def test_every_day_of_the_window_appears_even_without_questions(client) -> None:
         "recusas": 0,
         "erros": 0,
         "tempo_medio_ms": None,
-        "tokens_medio": None,
+        "tokens_total": 0,
     }
     assert por_dia[-3]["dia"] == "2026-10-30"
     assert por_dia[-3]["perguntas"] == 2
@@ -174,7 +174,7 @@ def test_every_day_of_the_window_appears_even_without_questions(client) -> None:
         "recusas": 0,
         "erros": 0,
         "tempo_medio_ms": 1834.0,
-        "tokens_medio": 866.7,
+        "tokens_total": 2600,
     }
 
 

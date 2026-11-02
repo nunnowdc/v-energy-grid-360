@@ -67,7 +67,7 @@ class AgentUsageRepository:
                 "count(*) FILTER (WHERE selo_confianca = 'recusa_honesta') AS recusas, "
                 "count(*) FILTER (WHERE selo_confianca = 'erro_bloqueado') AS erros, "
                 "avg(tempo_execucao_ms) AS tempo_medio_ms, "
-                f"avg({_TOKENS}) AS tokens_medio "
+                f"sum({_TOKENS}) AS tokens_total "
                 f"FROM tb_auditoria_agente WHERE {_JANELA} "
                 "GROUP BY 1 ORDER BY 1"
             ),

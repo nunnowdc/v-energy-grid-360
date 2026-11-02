@@ -36,7 +36,7 @@ def _empty_day(dia: date) -> dict[str, Any]:
         "recusas": 0,
         "erros": 0,
         "tempo_medio_ms": None,
-        "tokens_medio": None,
+        "tokens_total": 0,
     }
 
 
@@ -58,7 +58,7 @@ def get_agent_usage(repository: AgentUsageRepository, dias: int) -> dict[str, An
             {
                 **row,
                 "tempo_medio_ms": _number_or_none(row["tempo_medio_ms"]),
-                "tokens_medio": _number_or_none(row["tokens_medio"]),
+                "tokens_total": int(row["tokens_total"]),
             }
         )
 

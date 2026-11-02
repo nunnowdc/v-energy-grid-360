@@ -107,7 +107,8 @@ def test_days_follow_recife_time_not_utc(usage_engine: Engine) -> None:
     assert (dia_31["respondidas"], dia_31["recusas"], dia_31["erros"]) == (1, 1, 0)
     assert (dia_1["respondidas"], dia_1["recusas"], dia_1["erros"]) == (2, 0, 1)
     assert float(dia_31["tempo_medio_ms"]) == 2000.0
-    assert float(dia_1["tokens_medio"]) == pytest.approx(150.0)
+    # Soma do dia: 400 + 50 + 0
+    assert dia_1["tokens_total"] == 450
 
 
 def test_latest_questions_come_newest_first_and_respect_the_limit(

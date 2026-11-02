@@ -37,8 +37,10 @@ export type DiaUsoAgente = {
   respondidas: number
   recusas: number
   erros: number
+  // Média das perguntas do dia; nulo sem perguntas
   tempo_medio_ms: number | null
-  tokens_medio: number | null
+  // Soma dos tokens de todas as perguntas do dia (0 sem perguntas)
+  tokens_total: number
 }
 
 export type PerguntaAuditada = {

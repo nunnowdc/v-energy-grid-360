@@ -13,7 +13,7 @@ const dia = (data: string, valores: Partial<DiaUsoAgente> = {}): DiaUsoAgente =>
   recusas: 0,
   erros: 0,
   tempo_medio_ms: null,
-  tokens_medio: null,
+  tokens_total: 0,
   ...valores,
 })
 
@@ -34,8 +34,8 @@ const uso = (valores: Partial<UsoAgente> = {}): UsoAgente => ({
     avaliacoes_inuteis: 1,
   },
   por_dia: [
-    dia('2026-10-31', { perguntas: 1, respondidas: 1, tempo_medio_ms: 4000, tokens_medio: 4852 }),
-    dia('2026-11-01', { perguntas: 2, respondidas: 1, recusas: 1, tempo_medio_ms: 9000, tokens_medio: 7231 }),
+    dia('2026-10-31', { perguntas: 1, respondidas: 1, tempo_medio_ms: 4000, tokens_total: 4852 }),
+    dia('2026-11-01', { perguntas: 2, respondidas: 1, recusas: 1, tempo_medio_ms: 9000, tokens_total: 14462 }),
   ],
   ultimas: [
     {
