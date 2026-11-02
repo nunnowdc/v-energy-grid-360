@@ -101,6 +101,14 @@ SELECT count(*) FROM agg_continuidade_alimentador;
 SELECT count(*) FROM agg_continuidade_alimentador_anual;
 \echo '[ok] filtros: municípios, bairros, classes e alimentadores (45000 linhas)'
 SELECT count(municipio), count(bairro), count(classe), count(alimentador) FROM dim_unidade_consumidora;
+\echo '[ok] filtros: as consultas do GET /api/filters/options (filters.py)'
+SELECT count(DISTINCT (competencia, mes_referencia)) FROM dim_competencia WHERE mes_referencia IS NOT NULL;
+SELECT count(*) FROM (SELECT DISTINCT municipio, bairro FROM dim_unidade_consumidora WHERE municipio IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT classe FROM dim_unidade_consumidora WHERE classe IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT alimentador FROM dim_alimentador WHERE alimentador IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT alimentador, municipio FROM dim_unidade_consumidora
+                       WHERE alimentador IS NOT NULL AND municipio IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT causa FROM fact_ocorrencias WHERE causa IS NOT NULL) f;
 \echo '[negado] nome do titular'
 SELECT nome_titular FROM dim_unidade_consumidora LIMIT 1;
 \echo '[negado] CPF'
@@ -133,6 +141,14 @@ SELECT (SELECT count(*) FROM fact_leituras     WHERE id_uc = 'UC132549') AS leit
 \echo '[ok] Visão 360 de uma UC fora da fila'
 SELECT id_uc, nome_titular, logradouro FROM dim_unidade_consumidora WHERE id_uc = 'UC100005';
 SELECT count(*) FROM fact_leituras WHERE id_uc = 'UC100005';
+\echo '[ok] filtros: as consultas do GET /api/filters/options (filters.py)'
+SELECT count(DISTINCT (competencia, mes_referencia)) FROM dim_competencia WHERE mes_referencia IS NOT NULL;
+SELECT count(*) FROM (SELECT DISTINCT municipio, bairro FROM dim_unidade_consumidora WHERE municipio IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT classe FROM dim_unidade_consumidora WHERE classe IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT alimentador FROM dim_alimentador WHERE alimentador IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT alimentador, municipio FROM dim_unidade_consumidora
+                       WHERE alimentador IS NOT NULL AND municipio IS NOT NULL) f;
+SELECT count(*) FROM (SELECT DISTINCT causa FROM fact_ocorrencias WHERE causa IS NOT NULL) f;
 \echo '[negado] CPF'
 SELECT cpf_cnpj_mascarado FROM dim_unidade_consumidora LIMIT 1;
 \echo '[negado] CEP'
