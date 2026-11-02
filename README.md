@@ -776,6 +776,17 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - **Motivo da suspeita:** a Fila de inspeção não filtra por motivo, porque a Gold guarda vários motivos no mesmo texto. 
 - **Dados reais:** todas as telas usam a Gold pelo backend. Os testes automatizados usam dados inventados, nunca da base real (veja `frontend/README.md`).
 
+### Jobs e agendamento (Engenharia de dados)
+
+Toda a seção de engenharia de dados foi organizada em um job nativo do databricks (como foi especificado no case), a pipeline roda sempre que dados novos chegam ao volume na plataforma, essa abordagem foi tomada pelo time de dados tendo em vista a importância do tratamento e disponibilidade de dados no portal de forma celere sempre que dados novos forem coletados. Seguem algumas evidências de como está configurado e como ocorreram as últimas execuções do job:
+
+- **Arquitetura do Job**
+![configuração atual do job no databricks](data-engineering\job\estrutura_job.png)
+
+
+- **Runs da Pipeline**
+![runs do job no databricks](data-engineering\job\evidencia_runs.png)
+
 ## Fluxo de trabalho (Git Flow)
 
 ### Branches
