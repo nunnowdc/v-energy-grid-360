@@ -8,6 +8,7 @@ import SessaoObrigatoria from './components/SessaoObrigatoria/SessaoObrigatoria'
 import { TooltipProvider } from './components/ui/tooltip'
 import { queryClient } from './lib/api/query-client'
 import AgenteIaPage from './pages/AgenteIa/AgenteIaPage'
+import AvaliacaoAgentePage from './pages/AvaliacaoAgente/AvaliacaoAgentePage'
 import ContinuidadePage from './pages/Continuidade/ContinuidadePage'
 import InspecoesPage from './pages/Inspecoes/InspecoesPage'
 import LoginPage from './pages/Login/LoginPage'
@@ -51,6 +52,7 @@ function App() {
                 </Route>
                 <Route element={<RotaProtegida permissao="ver_auditoria_ia" />}>
                   <Route path="agente-ia" element={<AgenteIaPage />} />
+                  <Route path="avaliacao-agente" element={<AvaliacaoAgentePage />} />
                 </Route>
                 <Route path="*" element={<NotFoundPage />} />
               </Route>

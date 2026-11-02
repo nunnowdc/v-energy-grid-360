@@ -36,5 +36,6 @@ test('cada perfil vê as telas da matriz combinada pelo time', () => {
     'Fila de inspeção',
     'Usuários',
     'Agente de IA',
+    'Avaliação do agente',
   ])
 })
