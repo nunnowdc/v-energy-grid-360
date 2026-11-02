@@ -38,4 +38,5 @@ ROUTE_PERMISSIONS: dict[tuple[str, str], frozenset[str]] = {
     ("POST", "/api/ai/feedback"): ALL_PROFILES,
     ("GET", "/api/ai/audit/{audit_id}"): ADMIN_ONLY,
     ("GET", "/api/ai/usage"): ADMIN_ONLY,
+    ("GET", "/api/ai/evaluations"): ADMIN_ONLY,
 }

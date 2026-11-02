@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
+from app.controllers.agent_evaluations import router as agent_evaluations_router
 from app.controllers.agent_usage import router as agent_usage_router
 from app.controllers.auth import router as auth_router
 from app.controllers.filters import router as filters_router
@@ -126,9 +127,16 @@ app.include_router(
 app.include_router(
     ai_router, prefix="/api", dependencies=protected, responses=protected_responses
 )
-# Fica no backend, fora do ai_router: só lê a auditoria que o agente grava
+# Ficam no backend, fora do ai_router: só leem a auditoria e as avaliações que o
+# ai-agent grava
 app.include_router(
     agent_usage_router,
+    prefix="/api",
+    dependencies=protected,
+    responses=protected_responses,
+)
+app.include_router(
+    agent_evaluations_router,
     prefix="/api",
     dependencies=protected,
     responses=protected_responses,

@@ -52,6 +52,7 @@ def test_openapi_groups_each_existing_operation_once() -> None:
         ("GET", "/api/ai/audit/{audit_id}"): "Agente de IA",
         ("POST", "/api/ai/feedback"): "Agente de IA",
         ("GET", "/api/ai/usage"): "Agente de IA",
+        ("GET", "/api/ai/evaluations"): "Agente de IA",
     }
     operations = {
         (method.upper(), path): operation

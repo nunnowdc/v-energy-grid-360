@@ -45,6 +45,7 @@ CASES = (
     ("POST", "/api/ai/feedback", ALL),
     ("GET", "/api/ai/audit/nao-existe", frozenset({"ADMIN_TI"})),
     ("GET", "/api/ai/usage?dias=0", frozenset({"ADMIN_TI"})),
+    ("GET", "/api/ai/evaluations?x=1", frozenset({"ADMIN_TI"})),
 )
 
 
