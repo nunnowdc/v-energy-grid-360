@@ -1,4 +1,3 @@
-import { Info } from 'lucide-react'
 import AvisoSazonalidade from '@/components/AvisoSazonalidade/AvisoSazonalidade'
 import BlocoDados from '@/components/BlocoDados/BlocoDados'
 import CabecalhoPagina from '@/components/CabecalhoPagina/CabecalhoPagina'
@@ -7,6 +6,7 @@ import CartaoKpiEsqueleto from '@/components/CartaoKpi/CartaoKpiEsqueleto'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
 import GraficosMensais from '@/components/GraficosMensais/GraficosMensais'
+import Nota from '@/components/Nota/Nota'
 import OcorrenciasPorCausa from '@/components/OcorrenciasPorCausa/OcorrenciasPorCausa'
 import RankingAlimentadores from '@/components/RankingAlimentadores/RankingAlimentadores'
 import { rotuloCausa } from '@/config/causas'
@@ -35,11 +35,10 @@ function Kpis({ dados, causa }: { dados: ContinuidadeRede; causa?: string }) {
         com {formatarPeriodo(periodo_anterior.inicio, periodo_anterior.fim)}
       </p>
       <AvisoSazonalidade base={periodo_anterior} comparado={periodo} />
-      <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-        <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-        DEC e FEC são sempre do alimentador inteiro, inclusive das UCs de outros municípios. O município só escolhe
-        quais alimentadores aparecem, e a causa filtra só as ocorrências.
-      </p>
+      <Nota titulo="Como ler DEC e FEC">
+        São sempre do alimentador inteiro, inclusive das UCs de outros municípios. O município só escolhe quais
+        alimentadores aparecem, e a causa filtra só as ocorrências.
+      </Nota>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CartaoKpi
           titulo="Alimentadores no recorte"
@@ -55,6 +54,7 @@ function Kpis({ dados, causa }: { dados: ContinuidadeRede; causa?: string }) {
           titulo="Ocorrências no período"
           valor={formatarNumero(ocorrencias.total)}
           variacao={variacaoPercentual(ocorrencias.total, ocorrencias.total_anterior)}
+          sentido="subir-e-ruim"
           complementoVariacao="vs. período anterior"
           detalhe={causa ? `Só ${rotuloCausa(causa).toLowerCase()}` : 'UCs interrompidas'}
         />
@@ -94,6 +94,9 @@ function ContinuidadePage() {
     // Enquanto um filtro novo carrega, o destaque ainda é o dos números antigos
     outraSerie && !consulta.isPlaceholderData,
   )
+  // Com uma causa só (ou nenhuma), o bloco das causas repetiria o cartão "Principal causa"
+  // numa caixa quase vazia: ele sai e o gráfico ocupa a largura toda
+  const variasCausas = (consulta.data?.ocorrencias.por_causa.length ?? 2) > 1
 
   return (
     <section className="flex flex-col gap-6">
@@ -110,7 +113,7 @@ function ContinuidadePage() {
 
       <div className="grid gap-4 xl:grid-cols-5">
         <BlocoDados
-          className="xl:col-span-3"
+          className={variasCausas ? 'xl:col-span-3' : 'xl:col-span-5'}
           titulo="DEC e FEC por mês"
           descricao="Do alimentador escolhido ou, sem escolha, do pior DEC entre os com 100 UCs ou mais"
           consulta={outraSerie ? consultaSerie : consulta}
@@ -125,8 +128,13 @@ function ContinuidadePage() {
                   atual={dados.serie.atual}
                   anterior={dados.serie.anterior}
                   medidas={[
-                    { chave: 'dec', titulo: 'DEC (horas sem energia por UC)', formatar: horas },
-                    { chave: 'fec', titulo: 'FEC (interrupções por UC)', formatar: formatarNumero },
+                    { chave: 'dec', titulo: 'DEC (horas sem energia por UC)', formatar: horas, sentido: 'subir-e-ruim' },
+                    {
+                      chave: 'fec',
+                      titulo: 'FEC (interrupções por UC)',
+                      formatar: formatarNumero,
+                      sentido: 'subir-e-ruim',
+                    },
                   ]}
                   sincronia="continuidade-por-mes"
                 />
@@ -134,16 +142,18 @@ function ContinuidadePage() {
             )
           }
         </BlocoDados>
-        <BlocoDados
-          className="xl:col-span-2"
-          titulo="Ocorrências por causa"
-          descricao="UCs interrompidas no período, nos alimentadores do recorte"
-          consulta={consulta}
-          estaVazio={(dados) => dados.ocorrencias.total === 0}
-          mensagemVazio="Nenhuma ocorrência para esses filtros."
-        >
-          {(dados) => <OcorrenciasPorCausa porCausa={dados.ocorrencias.por_causa} />}
-        </BlocoDados>
+        {variasCausas && (
+          <BlocoDados
+            className="xl:col-span-2"
+            titulo="Ocorrências por causa"
+            descricao="UCs interrompidas no período, nos alimentadores do recorte"
+            consulta={consulta}
+            estaVazio={(dados) => dados.ocorrencias.total === 0}
+            mensagemVazio="Nenhuma ocorrência para esses filtros."
+          >
+            {(dados) => <OcorrenciasPorCausa porCausa={dados.ocorrencias.por_causa} />}
+          </BlocoDados>
+        )}
       </div>
 
       <BlocoDados
@@ -158,6 +168,7 @@ function ContinuidadePage() {
             ranking={dados.ranking}
             escolhido={filtros.alimentador}
             aoEscolher={(alimentador) => alterarFiltro('alimentador', alimentador)}
+            aoVerTodos={() => alterarFiltro('alimentador')}
           />
         )}
       </BlocoDados>

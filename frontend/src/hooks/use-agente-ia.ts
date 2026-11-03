@@ -15,8 +15,8 @@ export type SeloConfianca =
 
 export type TurnoConversa = { role: 'user' | 'assistant'; content: string }
 
+// Sem quem pergunta: o backend usa a conta do cookie de login (e o perfil dela) na auditoria
 export type PerguntaAgente = {
-  user_id: string
   session_id: string
   message: string
   // Tela de onde veio a pergunta e, quando houver, a UC aberta

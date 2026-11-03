@@ -25,6 +25,9 @@ export type OrdemInspecao = {
   resultado: ResultadoInspecao | null
   // Instante em UTC: "2026-10-28T21:09:39.757316Z"
   criada_em: string
+  // Quem gerou e quem mudou por último. Ordens de antes da autoria vêm sem nome (null)
+  criada_por_nome: string | null
+  atualizada_por_nome: string | null
 }
 
 export type MudancaOrdem =

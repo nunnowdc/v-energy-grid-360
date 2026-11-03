@@ -1,7 +1,7 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import Variacao from '@/components/Variacao/Variacao'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
-import { variacaoPercentual } from '@/lib/comparacao'
+import { variacaoPercentual, type Sentido } from '@/lib/comparacao'
 import { formatarCompetencia, formatarCompetenciaCurta, formatarPeriodo } from '@/lib/formatacao'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,8 @@ export type MedidaMensal<T extends Mes> = {
   // Com a unidade, ex.: "Receita faturada (R$)"
   titulo: string
   formatar: (valor: number) => string
+  // Para que lado a medida melhora (a variação da dica fica verde ou vermelha)
+  sentido?: Sentido
 }
 
 // Um ponto do eixo: o mês do período escolhido e o mês na mesma posição do anterior
@@ -38,7 +40,13 @@ function pontos<T extends Mes>(atual: T[], anterior: T[], chave: MedidaMensal<T>
   }))
 }
 
-function Dica({ ponto, formatar }: { ponto: PontoMes; formatar: (valor: number) => string }) {
+type DicaProps = {
+  ponto: PontoMes
+  formatar: (valor: number) => string
+  sentido?: Sentido
+}
+
+function Dica({ ponto, formatar, sentido }: DicaProps) {
   const linhas = [
     { chave: 'atual' as const, mes: ponto.mes, valor: ponto.atual },
     { chave: 'anterior' as const, mes: ponto.mesAnterior, valor: ponto.anterior },
@@ -62,7 +70,7 @@ function Dica({ ponto, formatar }: { ponto: PontoMes; formatar: (valor: number) 
       )}
       {variacao !== undefined && (
         <div className="border-t pt-1.5">
-          <Variacao percentual={variacao} />
+          <Variacao percentual={variacao} sentido={sentido} />
         </div>
       )}
     </div>
@@ -73,12 +81,13 @@ type GraficoMedidaProps = {
   titulo: string
   dados: PontoMes[]
   formatar: (valor: number) => string
+  sentido?: Sentido
   sincronia: string
   // Só o gráfico de baixo mostra os meses: os dois dividem o mesmo eixo
   mostrarMeses?: boolean
 }
 
-function GraficoMedida({ titulo, dados, formatar, sincronia, mostrarMeses }: GraficoMedidaProps) {
+function GraficoMedida({ titulo, dados, formatar, sentido, sincronia, mostrarMeses }: GraficoMedidaProps) {
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-[13px] font-medium text-muted-foreground">{titulo}</h3>
@@ -97,7 +106,7 @@ function GraficoMedida({ titulo, dados, formatar, sincronia, mostrarMeses }: Gra
           <ChartTooltip
             cursor={{ stroke: 'var(--border)' }}
             content={({ active, payload }) =>
-              active && payload?.length ? <Dica ponto={payload[0].payload as PontoMes} formatar={formatar} /> : null
+              active && payload?.length ? <Dica ponto={payload[0].payload as PontoMes} formatar={formatar} sentido={sentido} /> : null
             }
           />
           <Line dataKey="anterior" stroke="var(--color-anterior)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
@@ -138,6 +147,7 @@ function GraficosMensais<T extends Mes>({ atual, anterior, medidas, sincronia }:
           titulo={medida.titulo}
           dados={pontos(atual, anterior, medida.chave)}
           formatar={medida.formatar}
+          sentido={medida.sentido}
           sincronia={sincronia}
           mostrarMeses={indice === medidas.length - 1}
         />

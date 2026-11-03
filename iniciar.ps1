@@ -31,7 +31,7 @@ Write-Host 'V-Energy Grid 360 · iniciar' -ForegroundColor Cyan
 $faltando = @()
 if (-not (Test-Path -LiteralPath $Py)) { $faltando += 'backend\.venv' }
 if (-not (Test-Path -LiteralPath $EnvBackend)) { $faltando += 'backend\.env.local' }
-if (-not (Test-Path -LiteralPath (Join-Path $Raiz 'frontend\.env.local'))) { $faltando += 'frontend\.env.local' }
+elseif (-not (Ler-Variavel $EnvBackend 'JWT_SECRET_KEY')) { $faltando += 'JWT_SECRET_KEY no backend\.env.local' }
 if (-not (Test-Path -LiteralPath (Join-Path $Raiz 'frontend\node_modules'))) { $faltando += 'frontend\node_modules' }
 if ($faltando.Count -gt 0) {
     Falhar ("Falta preparar o projeto (" + ($faltando -join ', ') + "). Rode antes: powershell -ExecutionPolicy Bypass -File .\setup.ps1")

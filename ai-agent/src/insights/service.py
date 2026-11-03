@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from ..provedores.cliente_llm import ClienteLLM
@@ -32,19 +33,62 @@ class InsightsService:
             return cached
 
         fatos = extrair_metricas(tela, entidade_id, self.executor)
-        texto = narrar_insight(tela, fatos, self.llm)
-        selo = "auditado_llm" if conferir(fatos, texto) else "template_fallback"
+        if not fatos:
+            # Retorna 404/vazio caso não haja fatos (tratado pelo endpoint se necessário)
+            return {
+                "tela": tela,
+                "entidade_id": entidade_id,
+                "insight_texto": "Não há dados disponíveis para esta unidade consumidora.",
+                "metricas_destaque": {},
+                "selo": "template_fallback",
+                "tempo_ms": 0.0,
+                "fontes": [],
+            }
+
+        # Prepara fatos para a narração: converte datas para formato curto (ex.: "jun/2026")
+        fatos_formatados = []
+        for f in fatos:
+            f_copy = f.copy()
+            if isinstance(f_copy.get("competencia"), (datetime, date)):
+                f_copy["competencia"] = f_copy["competencia"].strftime("%b/%Y").lower()
+            fatos_formatados.append(f_copy)
+
+        # Tentativa de geração com retry até 3 vezes se a conferência falhar
+        max_tentativas = 3
+        selo = "template_fallback"
+        texto = ""
+        for tentativa in range(1, max_tentativas + 1):
+            texto = narrar_insight(tela, fatos_formatados, self.llm)
+            if conferir(fatos_formatados, texto):
+                selo = "auditado_llm"
+                break
+            logger.warning("Tentativa %d de geração de insight falhou (conferência). Texto rejeitado: %s", tentativa, texto)
+
+        # Se todas as tentativas falharem, usa texto-modelo fallback sem gravar cache
         if selo == "template_fallback":
-            texto = "Não foi possível validar numericamente o texto gerado; consulte os dados exibidos."
+            primeiro = fatos_formatados[0]
+            resumo = ", ".join(f"{k}: {v}" for k, v in list(primeiro.items())[:3])
+            texto = f"Dados recentes da tela: {resumo}."
+
+        fontes = list({
+            "fact_faturamento" if "faturamento" in str(f).lower() else "fact_leituras"
+            for f in fatos_formatados
+        })
+
         resultado = {
             "tela": tela,
             "entidade_id": entidade_id,
             "insight_texto": texto,
-            "metricas_destaque": fatos[0] if fatos else {},
+            "metricas_destaque": fatos_formatados[0] if fatos_formatados else {},
             "selo": selo,
             "tempo_ms": 0.0,
+            "fontes": fontes,
         }
-        self._gravar_cache(resultado, fatos)
+
+        # Apenas grava no cache se obteve sucesso auditado pela LLM
+        if selo == "auditado_llm":
+            self._gravar_cache(resultado, fatos)
+
         return resultado
 
     def _ler_cache(self, tela: str, entidade_id: str) -> Optional[Dict[str, Any]]:
@@ -68,10 +112,13 @@ class InsightsService:
             if isinstance(fatos, str):
                 fatos = json.loads(fatos)
             return {
-                "tela": row["tela"], "entidade_id": row["entidade_id"],
+                "tela": row["tela"],
+                "entidade_id": row["entidade_id"],
                 "insight_texto": row["texto_insight"],
                 "metricas_destaque": fatos[0] if fatos else {},
-                "selo": row["selo_validacao"], "tempo_ms": 0.0,
+                "selo": row["selo_validacao"],
+                "tempo_ms": 0.0,
+                "fontes": ["fact_faturamento", "fact_leituras"] if fatos else [],
             }
         except Exception as exc:
             logger.warning("Cache de insights indisponível: %s", exc)

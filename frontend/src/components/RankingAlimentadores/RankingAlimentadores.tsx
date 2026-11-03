@@ -1,4 +1,4 @@
-import { ChevronRight, TriangleAlert } from 'lucide-react'
+import { ChevronRight, RotateCcw, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import Variacao from '@/components/Variacao/Variacao'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,14 @@ type RankingAlimentadoresProps = {
   // Alimentador já escolhido no filtro (a linha fica marcada e não é clicável)
   escolhido?: string
   aoEscolher: (alimentador: string) => void
+  // Tira o alimentador do filtro e volta ao ranking completo
+  aoVerTodos: () => void
 }
 
 // Piores alimentadores em DEC: onde a manutenção preventiva rende mais.
-// Clicar no código filtra a tela por ele
-function RankingAlimentadores({ ranking, escolhido, aoEscolher }: RankingAlimentadoresProps) {
+// Clicar no código filtra a tela por ele; com um escolhido, a tabela tem uma linha só
+// e o botão embaixo volta para todos, sem subir até os filtros
+function RankingAlimentadores({ ranking, escolhido, aoEscolher, aoVerTodos }: RankingAlimentadoresProps) {
   const [todos, setTodos] = useState(false)
   const visiveis = todos ? ranking : ranking.slice(0, PRIMEIROS)
 
@@ -77,13 +80,19 @@ function RankingAlimentadores({ ranking, escolhido, aoEscolher }: RankingAliment
                   {formatarNumero(linha.dec_sem_dia_critico)}
                 </TableCell>
                 <TableCell className="text-right">
-                  {variacao === undefined ? '—' : <Variacao percentual={variacao} />}
+                  {variacao === undefined ? '—' : <Variacao percentual={variacao} sentido="subir-e-ruim" />}
                 </TableCell>
               </TableRow>
             )
           })}
         </TableBody>
       </Table>
+      {escolhido && (
+        <Button variant="ghost" size="sm" className="self-start" onClick={aoVerTodos}>
+          <RotateCcw />
+          Ver todos os alimentadores
+        </Button>
+      )}
       {ranking.length > PRIMEIROS && (
         <Button variant="ghost" size="sm" className="self-start" onClick={() => setTodos((atual) => !atual)}>
           {todos ? `Mostrar só os ${PRIMEIROS} piores` : `Mostrar todos os ${ranking.length} alimentadores`}

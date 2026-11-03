@@ -7,6 +7,7 @@ import SeloConfianca from '@/components/SeloConfianca/SeloConfianca'
 import TextoMarkdown from '@/components/TextoMarkdown/TextoMarkdown'
 import { Button } from '@/components/ui/button'
 import type { RespostaAgente } from '@/hooks/use-agente-ia'
+import { useUsuario } from '@/hooks/use-usuario'
 import { formatarNumero } from '@/lib/formatacao'
 
 // Tela que a resposta abriu no dashboard, ex.: "Receita · Recife"
@@ -19,8 +20,9 @@ type MensagemAgenteProps = {
 
 // Resposta do agente na conversa, com o selo de confiança, o tempo, o 👍/👎,
 // a tela que ela abriu no dashboard e o passo a passo, que só abre (e só é
-// buscado) quando a pessoa pede
+// buscado) quando a pessoa pede. O passo a passo é só do ADMIN_TI
 function MensagemAgente({ resposta, tela }: MensagemAgenteProps) {
+  const { pode } = useUsuario()
   const [verPassos, setVerPassos] = useState(false)
   const idPassos = useId()
   const passos = useRef<HTMLDivElement>(null)
@@ -57,17 +59,19 @@ function MensagemAgente({ resposta, tela }: MensagemAgenteProps) {
           <FeedbackResposta auditId={resposta.audit_id} />
         </div>
       </div>
-      <Button
-        variant={verPassos ? 'secondary' : 'outline'}
-        size="xs"
-        className="self-start"
-        aria-expanded={verPassos}
-        aria-controls={idPassos}
-        onClick={() => setVerPassos((atual) => !atual)}
-      >
-        <Waypoints />
-        {verPassos ? 'Esconder o passo a passo' : 'Ver o passo a passo'}
-      </Button>
+      {pode('ver_auditoria_ia') && (
+        <Button
+          variant={verPassos ? 'secondary' : 'outline'}
+          size="xs"
+          className="self-start"
+          aria-expanded={verPassos}
+          aria-controls={idPassos}
+          onClick={() => setVerPassos((atual) => !atual)}
+        >
+          <Waypoints />
+          {verPassos ? 'Esconder o passo a passo' : 'Ver o passo a passo'}
+        </Button>
+      )}
       {verPassos && (
         <div ref={passos} id={idPassos} className="scroll-mt-2 border-t pt-3">
           <PassoAPasso auditId={resposta.audit_id} />

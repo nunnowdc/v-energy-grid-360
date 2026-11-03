@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import EstadoVazio from '@/components/EstadoVazio/EstadoVazio'
 import Paginacao from '@/components/Paginacao/Paginacao'
 import SeloBandeira from '@/components/SeloBandeira/SeloBandeira'
+import StatusChamado from '@/components/StatusChamado/StatusChamado'
 import StatusPagamento from '@/components/StatusPagamento/StatusPagamento'
 import Variacao from '@/components/Variacao/Variacao'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -183,7 +184,7 @@ function TabelaChamados({ itens }: { itens: Uc360['historicos']['chamados']['ite
               )}
             </TableCell>
             <TableCell>{ou(chamado.canal, textoDoCodigo)}</TableCell>
-            <TableCell>{ou(chamado.status_chamado, textoDoCodigo)}</TableCell>
+            <TableCell>{ou(chamado.status_chamado, (status) => <StatusChamado status={status} />)}</TableCell>
             <TableCell className={numeroDireita}>{ou(chamado.qtd_tratativas, formatarNumero)}</TableCell>
           </TableRow>
         ))}

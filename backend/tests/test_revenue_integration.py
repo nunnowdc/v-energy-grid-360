@@ -1,11 +1,12 @@
 """Comparação HTTP da Receita com a agregação Gold local, somente leitura."""
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+
 from app.core.config import get_settings
 from app.core.database import get_connection
 from app.main import app
-from fastapi.testclient import TestClient
-from sqlalchemy import text
 
 
 @pytest.mark.skipif(

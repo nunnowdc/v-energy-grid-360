@@ -22,8 +22,8 @@ MENSAGENS_RECUSA = {
         "O agente opera exclusivamente em modo de leitura e não executa operações de modificação de dados."
     ),
     "sem_dados": (
-        "Não encontrei informações suficientes nas tabelas disponíveis para responder "
-        "a esta pergunta com precisão. Prefiro ser honesto a apresentar dados incorretos."
+        "Não há dados disponíveis para responder a esta pergunta nas tabelas disponíveis. "
+        "Prefiro ser honesto a apresentar dados incorretos."
     ),
     "max_tentativas": (
         "Após múltiplas tentativas, não consegui gerar uma consulta válida para esta pergunta. "

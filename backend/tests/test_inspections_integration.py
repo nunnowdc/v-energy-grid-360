@@ -131,3 +131,36 @@ def test_filtros_combinados_consultam_colunas_da_fila_sem_duplicacao() -> None:
         first.prioridade,
         first.id_uc,
     )
+
+
+@pytest.mark.skipif(
+    not get_settings().database_url, reason="DATABASE_URL não configurada"
+)
+def test_exportacao_traz_a_fila_inteira_do_recorte_com_endereco() -> None:
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    with get_connection() as connection:
+        municipality = connection.execute(
+            text(
+                "SELECT municipio FROM fila_inspecao GROUP BY municipio ORDER BY COUNT(*) DESC LIMIT 1"
+            )
+        ).scalar_one()
+        gold_rows = connection.execute(
+            text(
+                "SELECT id_uc, logradouro, numero FROM fila_inspecao "
+                "WHERE municipio = :municipio ORDER BY prioridade, id_uc"
+            ),
+            {"municipio": municipality},
+        ).all()
+
+    response = TestClient(app).get(
+        "/api/inspections/queue/export", params={"municipio": municipality}
+    )
+    assert response.status_code == 200
+    planilha = load_workbook(BytesIO(response.content))["Fila de inspeção"]
+    linhas = list(planilha.iter_rows(min_row=2, values_only=True))
+    assert [(linha[1], linha[7], linha[8]) for linha in linhas] == [
+        (row.id_uc, row.logradouro, row.numero) for row in gold_rows
+    ]

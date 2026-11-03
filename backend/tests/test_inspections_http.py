@@ -316,6 +316,13 @@ def test_openapi_e_regressao_health():
     operation = paths["/api/inspections/queue"]["get"]
     assert set(operation["responses"]) >= {"200", "422", "503", "500"}
     params = {item["name"]: item for item in operation["parameters"]}
-    assert set(params) == {"municipio", "bairro", "classe", "pagina", "limite"}
+    assert set(params) == {
+        "municipio",
+        "bairro",
+        "classe",
+        "pagina",
+        "limite",
+        "vgrid360_access_token",
+    }
     assert params["limite"]["schema"]["maximum"] == 50
     assert client.get("/api/health").status_code == 200

@@ -25,10 +25,54 @@ type OpcoesApiFetch = Omit<RequestInit, 'body' | 'headers'> & {
   tempoLimiteMs?: number
 }
 
-export async function apiFetch<T>(
+export async function apiFetch<T>(caminho: string, opcoes: OpcoesApiFetch = {}): Promise<T> {
+  const resposta = await requisitar(caminho, opcoes)
+
+  if (resposta.status === 204) {
+    return undefined as T
+  }
+
+  return (await resposta.json()) as T
+}
+
+// Para rotas que devolvem um arquivo (ex.: a fila em Excel): mesmos erros do
+// apiFetch, mas devolve o arquivo e o nome que o backend mandou no Content-Disposition.
+// aoProgredir recebe a porcentagem já baixada (0 a 100), só quando a resposta diz o tamanho
+export async function apiBaixar(
   caminho: string,
-  { corpo, headers, signal, tempoLimiteMs = TEMPO_LIMITE_MS, ...opcoes }: OpcoesApiFetch = {},
-): Promise<T> {
+  nomePadrao: string,
+  { aoProgredir, ...opcoes }: OpcoesApiFetch & { aoProgredir?: (porcentagem: number) => void } = {},
+): Promise<{ arquivo: Blob; nomeArquivo: string }> {
+  const resposta = await requisitar(caminho, opcoes)
+  const nomeArquivo =
+    /filename="([^"]+)"/.exec(resposta.headers.get('Content-Disposition') ?? '')?.[1] ?? nomePadrao
+  const total = Number(resposta.headers.get('Content-Length'))
+
+  if (!aoProgredir || !total || !resposta.body) {
+    return { arquivo: await resposta.blob(), nomeArquivo }
+  }
+
+  const leitor = resposta.body.getReader()
+  const partes: Uint8Array<ArrayBuffer>[] = []
+  let recebidos = 0
+  for (;;) {
+    const { done, value } = await leitor.read()
+    if (done) {
+      break
+    }
+    partes.push(value)
+    recebidos += value.length
+    // Com compressão no caminho, o recebido pode passar do Content-Length
+    aoProgredir(Math.min(100, Math.round((recebidos / total) * 100)))
+  }
+  const tipo = resposta.headers.get('Content-Type') ?? ''
+  return { arquivo: new Blob(partes, { type: tipo }), nomeArquivo }
+}
+
+async function requisitar(
+  caminho: string,
+  { corpo, headers, signal, tempoLimiteMs = TEMPO_LIMITE_MS, ...opcoes }: OpcoesApiFetch,
+): Promise<Response> {
   const sinais = [AbortSignal.timeout(tempoLimiteMs)]
   if (signal) {
     sinais.push(signal)
@@ -63,11 +107,7 @@ export async function apiFetch<T>(
     throw new ErroApi(resposta.status, await lerMensagemErro(resposta))
   }
 
-  if (resposta.status === 204) {
-    return undefined as T
-  }
-
-  return (await resposta.json()) as T
+  return resposta
 }
 
 // Compara pelo nome, e não com instanceof DOMException: o erro de cancelamento

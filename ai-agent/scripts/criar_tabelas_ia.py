@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS tb_auditoria_agente (
     -- malicioso           BOOLEAN      DEFAULT FALSE,
     -- motivo_recusa       TEXT,
     -- ids_chunks_rag      TEXT,
-    -- user_id             VARCHAR(100),
+    -- user_id             UUID REFERENCES usuarios (id)  (migracao_usuario_auditoria_agente,
+    --                     que roda depois da tabela usuarios; antes disso é VARCHAR(100))
     -- perfil              VARCHAR(50)
 );
 

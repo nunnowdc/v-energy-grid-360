@@ -39,6 +39,7 @@ function Kpis({ dados }: { dados: IndicadoresGerais }) {
           titulo="Receita faturada"
           valor={formatarMoedaCompacta(atual.receita_faturada)}
           variacao={variacaoPercentual(atual.receita_faturada, anterior.receita_faturada)}
+          sentido="subir-e-bom"
           complementoVariacao={COMPLEMENTO}
           tendencia={mensal.atual.map((mes) => mes.receita_faturada)}
         />
@@ -46,12 +47,15 @@ function Kpis({ dados }: { dados: IndicadoresGerais }) {
           titulo="Consumo medido"
           valor={formatarEnergia(atual.consumo_kwh)}
           variacao={variacaoPercentual(atual.consumo_kwh, anterior.consumo_kwh)}
+          // Mais energia medida é mais receita para a distribuidora
+          sentido="subir-e-bom"
           complementoVariacao={COMPLEMENTO}
           tendencia={mensal.atual.map((mes) => mes.consumo_kwh)}
         />
         <CartaoKpi
           titulo="Preço médio"
           valor={atual.preco_medio_kwh === null ? '—' : `${formatarMoeda(atual.preco_medio_kwh)}/kWh`}
+          // Preço sem lado bom: subir ajuda a receita e pesa no bolso do cliente
           variacao={
             atual.preco_medio_kwh !== null && anterior.preco_medio_kwh !== null
               ? variacaoPercentual(atual.preco_medio_kwh, anterior.preco_medio_kwh)
@@ -64,6 +68,7 @@ function Kpis({ dados }: { dados: IndicadoresGerais }) {
           titulo="UCs faturadas"
           valor={formatarNumero(atual.ucs_faturadas)}
           variacao={variacaoPercentual(atual.ucs_faturadas, anterior.ucs_faturadas)}
+          sentido="subir-e-bom"
           complementoVariacao={`vs. ${formatarCompetencia(anterior.fim)}`}
           detalhe={`Em ${formatarCompetencia(atual.fim)}`}
         />
@@ -71,6 +76,7 @@ function Kpis({ dados }: { dados: IndicadoresGerais }) {
           titulo="Faturas em atraso"
           valor={formatarNumero(atual.faturas_atrasadas)}
           variacao={variacaoPercentual(atual.faturas_atrasadas, anterior.faturas_atrasadas)}
+          sentido="subir-e-ruim"
           complementoVariacao={COMPLEMENTO}
           detalhe={`${formatarNumero(percentualAtraso)}% das faturas do período`}
         />
@@ -121,8 +127,13 @@ function IndicadoresPage() {
               atual={dados.mensal.atual}
               anterior={dados.mensal.anterior}
               medidas={[
-                { chave: 'receita_faturada', titulo: 'Receita faturada (R$)', formatar: formatarMoedaCompacta },
-                { chave: 'consumo_kwh', titulo: 'Consumo medido (kWh)', formatar: formatarEnergia },
+                {
+                  chave: 'receita_faturada',
+                  titulo: 'Receita faturada (R$)',
+                  formatar: formatarMoedaCompacta,
+                  sentido: 'subir-e-bom',
+                },
+                { chave: 'consumo_kwh', titulo: 'Consumo medido (kWh)', formatar: formatarEnergia, sentido: 'subir-e-bom' },
               ]}
               sincronia="indicadores-por-mes"
             />

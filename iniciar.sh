@@ -46,8 +46,11 @@ esac
 
 FALTANDO=''
 [ -e "$PY" ] || FALTANDO="$FALTANDO backend/.venv"
-[ -e "$ENV_BACKEND" ] || FALTANDO="$FALTANDO backend/.env.local"
-[ -e "$RAIZ/frontend/.env.local" ] || FALTANDO="$FALTANDO frontend/.env.local"
+if [ ! -e "$ENV_BACKEND" ]; then
+    FALTANDO="$FALTANDO backend/.env.local"
+elif [ -z "$(ler_variavel "$ENV_BACKEND" 'JWT_SECRET_KEY')" ]; then
+    FALTANDO="$FALTANDO JWT_SECRET_KEY no backend/.env.local"
+fi
 [ -d "$RAIZ/frontend/node_modules" ] || FALTANDO="$FALTANDO frontend/node_modules"
 if [ -n "$FALTANDO" ]; then
     falhar "Falta preparar o projeto (${FALTANDO# }). Rode antes: bash setup.sh"

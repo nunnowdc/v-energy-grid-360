@@ -14,8 +14,7 @@ def narrar_insight(
 ) -> str:
     prompt = (
         f"Tela: {tela}\nFATOS_JSON:\n{json.dumps(fatos, ensure_ascii=False, default=str)}\n"
-        "Escreva uma frase executiva em português. Preserve exatamente todos os números "
-        "presentes nos fatos e não invente nenhum."
+        "Escreva uma frase executiva em português. Preserve exatamente todos os números presentes nos fatos e não invente nenhum. Se houver campos de variação percentual, use o sinal do valor para dizer se foi alta ou queda, e escreva o percentual sem sinal (ex.: 'queda de 4%')."
     )
     resposta = llm.invoke(
         prompt=prompt,

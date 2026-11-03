@@ -1,15 +1,18 @@
 import {
   Activity,
+  Bot,
+  ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
   TrendingUp,
   UserRound,
+  UsersRound,
   type LucideIcon,
 } from 'lucide-react'
 import type { Permissao } from '@/config/perfis'
 
 // Grupos do menu lateral, na ordem em que aparecem
-export const gruposNavegacao = ['Negócio', 'Operação'] as const
+export const gruposNavegacao = ['Negócio', 'Operação', 'Administração'] as const
 
 export type GrupoNavegacao = (typeof gruposNavegacao)[number]
 
@@ -63,6 +66,30 @@ export const itensNavegacao: ItemNavegacao[] = [
     icone: ClipboardList,
     grupo: 'Operação',
     permissao: 'ver_fila_inspecao',
+  },
+  {
+    to: '/usuarios',
+    label: 'Usuários',
+    descricao: 'Criação das contas de acesso ao portal, com o perfil de cada pessoa',
+    icone: UsersRound,
+    grupo: 'Administração',
+    permissao: 'gerenciar_usuarios',
+  },
+  {
+    to: '/agente-ia',
+    label: 'Agente de IA',
+    descricao: 'Uso do agente no portal: perguntas, respostas, tempo e tokens gastos',
+    icone: Bot,
+    grupo: 'Administração',
+    permissao: 'ver_auditoria_ia',
+  },
+  {
+    to: '/avaliacao-agente',
+    label: 'Avaliação do agente',
+    descricao: 'Perguntas de teste com resposta conhecida, para acompanhar a qualidade do agente a cada execução',
+    icone: ClipboardCheck,
+    grupo: 'Administração',
+    permissao: 'ver_auditoria_ia',
   },
 ]
 

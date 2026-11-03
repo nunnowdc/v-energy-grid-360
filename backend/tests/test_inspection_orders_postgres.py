@@ -18,6 +18,8 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 from app.core.config import get_settings
 from app.repositories.inspection_orders import ORDENS_INSPECAO
 
+ADMIN_DE_TESTE = "550e8400-e29b-41d4-a716-446655440000"
+
 
 @pytest.fixture(scope="module")
 def orders_engine() -> Iterator[Engine]:
@@ -45,11 +47,27 @@ def orders_engine() -> Iterator[Engine]:
             connect_args={"connect_timeout": 5, "options": "-c statement_timeout=5000"},
         )
         try:
-            ddl = (
-                Path(__file__).resolve().parents[1] / "sql" / "ordens_inspecao.sql"
-            ).read_text(encoding="utf-8")
+            # Na ordem do setup: as ordens, as contas e a autoria, que liga as duas
+            pasta_sql = Path(__file__).resolve().parents[1] / "sql"
             with engine.connect() as connection:
-                connection.exec_driver_sql(ddl)
+                for arquivo in (
+                    "ordens_inspecao.sql",
+                    "usuarios.sql",
+                    "ordens_inspecao_autoria.sql",
+                ):
+                    connection.exec_driver_sql(
+                        (pasta_sql / arquivo).read_text(encoding="utf-8")
+                    )
+            # A mesma conta sintética que o conftest põe na sessão dos testes
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "INSERT INTO usuarios (id, nome, email, senha_hash, perfil, "
+                        "criado_em) VALUES (:id, 'Administrador de teste', "
+                        "'admin@example.invalid', 'sem-senha', 'ADMIN_TI', now())"
+                    ),
+                    {"id": ADMIN_DE_TESTE},
+                )
             yield engine
         finally:
             engine.dispose()
@@ -197,3 +215,20 @@ def test_script_fails_on_existing_structure_without_erasing_it(
         assert connection.execute(
             text("SELECT to_regclass('public.ordens_inspecao') IS NOT NULL")
         ).scalar_one()
+
+
+def test_author_must_be_an_existing_account(orders_engine: Engine) -> None:
+    desconhecida = uuid4()
+    for author in ("criada_por", "atualizada_por"):
+        with pytest.raises(IntegrityError), orders_engine.begin() as connection:
+            connection.execute(
+                insert(ORDENS_INSPECAO).values(
+                    id_uc="UC900099", status="CANCELADA", **{author: desconhecida}
+                )
+            )
+    with orders_engine.begin() as connection:
+        connection.execute(
+            insert(ORDENS_INSPECAO).values(
+                id_uc="UC900099", status="CANCELADA", criada_por=ADMIN_DE_TESTE
+            )
+        )

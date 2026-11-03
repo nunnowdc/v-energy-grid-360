@@ -582,6 +582,7 @@ def test_visao_360_http_openapi_e_prefixo(
         "pagina_chamados",
         "pagina_leituras",
         "limite",
+        "vgrid360_access_token",
     }
     assert set(openapi["components"]["schemas"]["UC360Response"]["required"]) == {
         "uc",

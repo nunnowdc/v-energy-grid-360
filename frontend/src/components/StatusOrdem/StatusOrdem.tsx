@@ -1,23 +1,23 @@
 import { CircleCheck, CircleDashed, CircleX, Truck } from 'lucide-react'
+import Etiqueta, { type TomEtiqueta } from '@/components/Etiqueta/Etiqueta'
 import type { StatusOrdem as Status } from '@/hooks/use-ordens-inspecao'
-import { cn } from '@/lib/utils'
 
-const aparencia: Record<Status, { texto: string; Icone: typeof Truck; classe: string }> = {
-  ABERTA: { texto: 'Aberta', Icone: CircleDashed, classe: 'text-foreground' },
-  EM_CAMPO: { texto: 'Em campo', Icone: Truck, classe: 'font-medium text-primary' },
-  CONCLUIDA: { texto: 'Concluída', Icone: CircleCheck, classe: 'text-muted-foreground' },
-  CANCELADA: { texto: 'Cancelada', Icone: CircleX, classe: 'text-muted-foreground line-through' },
+const aparencia: Record<Status, { texto: string; Icone: typeof Truck; tom: TomEtiqueta }> = {
+  // Aberta espera alguém enviar a equipe; em campo já está andando
+  ABERTA: { texto: 'Aberta', Icone: CircleDashed, tom: 'atencao' },
+  EM_CAMPO: { texto: 'Em campo', Icone: Truck, tom: 'andamento' },
+  CONCLUIDA: { texto: 'Concluída', Icone: CircleCheck, tom: 'positivo' },
+  CANCELADA: { texto: 'Cancelada', Icone: CircleX, tom: 'neutro' },
 }
 
-// Situação da ordem sempre com ícone e texto, nunca só cor (decisão de design)
+// Situação da ordem numa etiqueta com cor, ícone e texto
 function StatusOrdem({ status }: { status: Status }) {
-  const { texto, Icone, classe } = aparencia[status]
+  const { texto, Icone, tom } = aparencia[status]
 
   return (
-    <span className={cn('inline-flex items-center gap-1 whitespace-nowrap', classe)}>
-      <Icone aria-hidden="true" className="size-3.5" />
+    <Etiqueta tom={tom} Icone={Icone}>
       {texto}
-    </span>
+    </Etiqueta>
   )
 }
 

@@ -56,7 +56,7 @@ type PainelAgenteProps = {
 function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
-  const { usuario, pode } = useUsuario()
+  const { pode } = useUsuario()
   const { data: opcoes } = useOpcoesFiltros()
   const perguntar = usePerguntarAgente()
   const [sessao, setSessao] = useState(() => crypto.randomUUID())
@@ -103,8 +103,6 @@ function PainelAgente({ aberto, aoFechar }: PainelAgenteProps) {
   function perguntarAoAgente(troca: Troca, anteriores: Troca[]) {
     perguntar.mutate(
       {
-        // Enquanto o login não existe, o usuário é o de teste do perfil
-        user_id: `teste-${usuario.perfil.toLowerCase()}`,
         session_id: sessao,
         message: troca.pergunta,
         context: contextoDaTela(pathname),

@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react'
+import Nota from '@/components/Nota/Nota'
 import { mesmosMesesDoAno } from '@/lib/periodos'
 
 type Intervalo = { inicio: string; fim: string }
@@ -16,11 +16,9 @@ function AvisoSazonalidade({ base, comparado }: AvisoSazonalidadeProps) {
     return null
   }
   return (
-    <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-      <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      Os períodos cobrem meses diferentes do ano: parte da variação pode ser da estação (consumo e chuvas mudam ao
-      longo do ano), não uma mudança real.
-    </p>
+    <Nota tom="atencao" titulo="Meses diferentes do ano">
+      Parte da variação pode ser da estação (consumo e chuvas mudam ao longo do ano), não uma mudança real.
+    </Nota>
   )
 }
 

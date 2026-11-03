@@ -8,10 +8,11 @@ import DetalheReceita, { type PassoTrilha } from '@/components/DetalheReceita/De
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
 import PonteReceita from '@/components/PonteReceita/PonteReceita'
+import ValorEfeito from '@/components/ValorEfeito/ValorEfeito'
 import Variacao from '@/components/Variacao/Variacao'
 import { useFiltros } from '@/hooks/use-filtros'
 import { temDados, useReceita, type DecomposicaoCompleta, type VariacaoReceita } from '@/hooks/use-receita'
-import { variacaoPercentual } from '@/lib/comparacao'
+import { tomDaVariacao, variacaoPercentual } from '@/lib/comparacao'
 import {
   formatarMoeda,
   formatarMoedaCompacta,
@@ -45,16 +46,19 @@ function Kpis({ dados, total }: { dados: VariacaoReceita; total: DecomposicaoCom
           titulo="Receita no período comparado"
           valor={formatarMoedaCompacta(total.receita_p1)}
           variacao={variacaoPercentual(total.receita_p1, total.receita_p0)}
+          sentido="subir-e-bom"
           complementoVariacao="vs. período base"
         />
         <CartaoKpi
           titulo="Efeito preço"
           valor={formatarMoedaCompactaComSinal(total.efeito_preco)}
+          tomValor={tomDaVariacao(total.efeito_preco, 'subir-e-bom')}
           detalhe={`Preço médio ${precoPorKwh(total.preco_p0)} → ${precoPorKwh(total.preco_p1)}`}
         />
         <CartaoKpi
           titulo="Efeito volume"
           valor={formatarMoedaCompactaComSinal(total.efeito_volume)}
+          tomValor={tomDaVariacao(total.efeito_volume, 'subir-e-bom')}
           detalhe={
             variacaoConsumo === undefined
               ? undefined
@@ -78,11 +82,6 @@ function KpisEsqueleto() {
 
 type Grupo = VariacaoReceita['por_gd'][number]
 
-// Valor em reais que não quebra linha no meio ("-R$ 8,1 mi")
-const valor = (reais: number) => (
-  <span className="tabular-nums whitespace-nowrap">{formatarMoedaCompactaComSinal(reais)}</span>
-)
-
 // Frase sobre quem puxou o efeito volume, quando os dois grupos têm dados
 function fraseDoVolume(total: DecomposicaoCompleta, comGd?: Grupo, semGd?: Grupo) {
   if (!comGd || !semGd || !temDados(comGd) || !temDados(semGd) || total.efeito_volume === 0) {
@@ -92,8 +91,8 @@ function fraseDoVolume(total: DecomposicaoCompleta, comGd?: Grupo, semGd?: Grupo
   if (total.efeito_volume < 0 && comGd.efeito_volume < 0 && semGd.efeito_volume >= 0) {
     return (
       <>
-        A queda de volume vem das UCs com geração própria ({valor(comGd.efeito_volume)}). Nas demais, o volume
-        cresceu ({valor(semGd.efeito_volume)}).
+        A queda de volume vem das UCs com geração própria (<ValorEfeito reais={comGd.efeito_volume} />). Nas
+        demais, o volume cresceu (<ValorEfeito reais={semGd.efeito_volume} />).
       </>
     )
   }
@@ -128,15 +127,15 @@ function Grupo({ grupo }: { grupo: Grupo }) {
       <dd className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">Consumo medido</span>
-          {variacaoConsumo === undefined ? '—' : <Variacao percentual={variacaoConsumo} />}
+          {variacaoConsumo === undefined ? '—' : <Variacao percentual={variacaoConsumo} sentido="subir-e-bom" />}
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">Efeito volume</span>
-          <span className="text-[13px]">{valor(grupo.efeito_volume)}</span>
+          <span className="text-[13px]"><ValorEfeito reais={grupo.efeito_volume} /></span>
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">Efeito preço</span>
-          <span className="text-[13px]">{valor(grupo.efeito_preco)}</span>
+          <span className="text-[13px]"><ValorEfeito reais={grupo.efeito_preco} /></span>
         </div>
       </dd>
     </div>

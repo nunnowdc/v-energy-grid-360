@@ -64,6 +64,9 @@ class InspectionOrder(BaseModel):
     status: Literal["ABERTA", "EM_CAMPO", "CONCLUIDA", "CANCELADA"]
     resultado: Literal["IRREGULARIDADE_CONFIRMADA", "SEM_IRREGULARIDADE"] | None
     criada_em: AwareDatetime
+    # Quem gerou e quem mudou por último; null nas ordens de antes da autoria
+    criada_por_nome: str | None
+    atualizada_por_nome: str | None
 
 
 class CreateOrdersResponse(BaseModel):

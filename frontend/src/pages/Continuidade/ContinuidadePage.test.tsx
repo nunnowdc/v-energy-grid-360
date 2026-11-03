@@ -98,7 +98,7 @@ test('sem filtro, pede os últimos 12 meses e avisa que DEC e FEC são do alimen
   expect(await screen.findByText('Piores alimentadores')).toBeInTheDocument()
   await screen.findAllByRole('button', { name: /^ALM-/ })
   expect(enderecos()[0]).toBe(`/api/network/continuity?${PERIODO_PADRAO}`)
-  expect(screen.getByText(/DEC e FEC são sempre do alimentador inteiro/)).toBeInTheDocument()
+  expect(screen.getByRole('note')).toHaveTextContent(/Como ler DEC e FEC\. São sempre do alimentador inteiro/)
   // O ranking tem todos, inclusive os pequenos
   expect(screen.getAllByRole('button', { name: /^ALM-/ })).toHaveLength(4)
   expect(screen.getAllByText('Menos de 100 UCs')).toHaveLength(2)
@@ -155,4 +155,32 @@ test('a causa filtra só as ocorrências', async () => {
   )
   expect(screen.queryByText('Climática')).not.toBeInTheDocument()
   expect(screen.getAllByRole('button', { name: /^ALM-/ })).toHaveLength(4)
+})
+
+test('com várias causas, o bloco das causas aparece ao lado do gráfico', async () => {
+  abrir()
+
+  expect(await screen.findByText('Ocorrências por causa')).toBeInTheDocument()
+  // No cartão "Principal causa" e na barra
+  expect(screen.getAllByText('Climática')).toHaveLength(2)
+})
+
+test('com uma causa só, o bloco das causas sai: o cartão "Principal causa" já diz tudo', async () => {
+  abrir('/continuidade?causa=VEGETACAO')
+
+  expect(await screen.findByText('Só vegetação')).toBeInTheDocument()
+  expect(screen.getByText('Principal causa')).toBeInTheDocument()
+  expect(screen.queryByText('Ocorrências por causa')).not.toBeInTheDocument()
+})
+
+test('com um alimentador escolhido, o ranking oferece voltar a todos sem subir até os filtros', async () => {
+  abrir('/continuidade?alimentador=ALM-REC-001')
+
+  expect(await alimentadorDoGrafico('ALM-REC-001')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^ALM-/ })).not.toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Ver todos os alimentadores' }))
+
+  await waitFor(() => expect(screen.getAllByRole('button', { name: /^ALM-/ })).toHaveLength(4))
+  expect(screen.queryByRole('button', { name: 'Ver todos os alimentadores' })).not.toBeInTheDocument()
 })

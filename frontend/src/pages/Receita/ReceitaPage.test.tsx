@@ -85,7 +85,7 @@ test('sem escolha, compara o primeiro ano com os últimos 12 meses e mostra os K
   expect(await screen.findByText('Consumo medido -4,0%')).toBeInTheDocument()
   expect(enderecosChamados(fetch)).toEqual(['/api/metrics/revenue-variance?inicio_p0=2022-07&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06'])
   // Mesmos meses do ano dos dois lados: sem aviso de sazonalidade
-  expect(screen.queryByText(/meses diferentes do ano/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Meses diferentes do ano/)).not.toBeInTheDocument()
   // Na barra de filtros e na frase acima dos cards
   expect(screen.getAllByText('jul/2022 – jun/2023')).toHaveLength(2)
   expect(screen.getAllByText('jul/2025 – jun/2026')).toHaveLength(2)
@@ -122,7 +122,7 @@ test('períodos com meses diferentes do ano mostram o aviso de sazonalidade', as
     periodo_p1: { inicio: '2025-07', fim: '2025-09' },
   })
   abrir('/receita?base_de=2023-01&base_ate=2023-03&comparado_de=2025-07')
-  expect(await screen.findByText(/meses diferentes do ano/)).toBeInTheDocument()
+  expect(await screen.findByText(/Meses diferentes do ano/)).toBeInTheDocument()
 })
 
 test('a tabela começa pela maior perda de volume e clicar numa linha detalha', async () => {
@@ -134,6 +134,41 @@ test('a tabela começa pela maior perda de volume e clicar numa linha detalha', 
 
   fireEvent.click(linhas[0])
   await waitFor(() => expect(enderecosChamados(fetch)).toContain('/api/metrics/revenue-variance?inicio_p0=2022-07&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06&municipio=Recife'))
+})
+
+test('cada linha diz o que o clique faz, e as variações têm cor de boa ou ruim', async () => {
+  responderCom(receita)
+  abrir('/receita')
+
+  await screen.findAllByRole('button', { name: /^(Olinda|Recife)$/ })
+  expect(screen.getAllByText('Ver bairros')).toHaveLength(2)
+  // Efeito volume de Recife tira receita (vermelho); o efeito preço soma (verde)
+  expect(screen.getByText('-R$ 2,5 mi')).toHaveClass('text-negativo')
+  expect(screen.getAllByText('+R$ 14 mi')[0]).toHaveClass('text-positivo')
+})
+
+test('descer pela tabela preenche o filtro do topo, que libera o bairro', async () => {
+  responderCom(receita)
+  abrir('/receita')
+
+  expect(screen.getByRole('combobox', { name: 'Bairro: Escolha um município' })).toBeDisabled()
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Recife' }))[0])
+
+  expect(await screen.findByRole('combobox', { name: 'Município: Recife' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Bairro: Todos' })).toBeEnabled()
+})
+
+test('o "Voltar a todos os municípios", junto da tabela, tira só município e bairro', async () => {
+  const fetch = responderCom(receita)
+  abrir('/receita?municipio=Recife&bairro=Pina&classe=RURAL')
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Voltar a todos os municípios' }))
+  await waitFor(() =>
+    expect(enderecosChamados(fetch)).toContain(
+      '/api/metrics/revenue-variance?inicio_p0=2022-07&fim_p0=2023-06&inicio_p1=2025-07&fim_p1=2026-06&classe=RURAL',
+    ),
+  )
+  expect(screen.queryByRole('button', { name: 'Voltar a todos os municípios' })).not.toBeInTheDocument()
 })
 
 test('a trilha volta um nível', async () => {

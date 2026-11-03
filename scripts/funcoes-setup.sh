@@ -72,10 +72,11 @@ existe_comando() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Valor de uma variável de um arquivo .env, ou vazio se não houver
+# Valor de uma variável de um arquivo .env, ou vazio se não houver. Se ela aparecer
+# mais de uma vez, vale a última, como no python-dotenv do backend
 ler_variavel() {
     [ -f "$1" ] || return 0
-    grep -E "^[[:space:]]*$2[[:space:]]*=" "$1" | head -n 1 | tr -d '\r' |
+    grep -E "^[[:space:]]*$2[[:space:]]*=" "$1" | tail -n 1 | tr -d '\r' |
         sed -e 's/^[^=]*=//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
             -e 's/^["'"'"']*//' -e 's/["'"'"']*$//'
 }
@@ -90,6 +91,14 @@ ler_conexao() {
     [[ $url =~ $padrao ]] || return 1
     SENHA_LIDA=$("$PYTHON_BASE" -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.argv[1]))' "${BASH_REMATCH[2]}")
     [ -n "$SENHA_LIDA" ] && [ "$SENHA_LIDA" != 'SUA_SENHA' ]
+}
+
+# Pede uma senha sem mostrar o que é digitado e escreve a senha na saída
+ler_senha() {
+    local senha
+    read -r -s -p "$1" senha
+    echo '' >&2
+    printf '%s' "$senha"
 }
 
 docker_ligado() {

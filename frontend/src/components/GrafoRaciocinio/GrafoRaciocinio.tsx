@@ -14,8 +14,8 @@ const aparencia: Record<SituacaoPasso, { texto: string; Icone: typeof CircleChec
   atencao: {
     texto: 'Atenção',
     Icone: TriangleAlert,
-    no: 'border-amber-500 bg-card text-amber-700',
-    rotulo: 'text-amber-700',
+    no: 'border-atencao bg-card text-atencao',
+    rotulo: 'text-atencao',
   },
   interrompido: {
     texto: 'Interrompido',

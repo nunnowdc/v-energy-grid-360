@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..contratos.resposta_agente import TelaDashboard
@@ -20,10 +20,28 @@ logger = logging.getLogger("venergy.api_ai")
 router = APIRouter(prefix="/ai", tags=["Agente de IA"])
 
 
+# --- Usuário da sessão ---
+
+def usuario_logado(request: Request) -> Dict[str, Any]:
+    """
+    Conta autenticada da requisição. O backend confere o cookie e o perfil e guarda
+    a conta em request.state antes de chamar estas rotas. É a única fonte do
+    user_id e do perfil gravados na auditoria: o cliente não escolhe quem é.
+    """
+    usuario = getattr(request.state, "usuario", None)
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    return usuario
+
+
+UsuarioLogado = Annotated[Dict[str, Any], Depends(usuario_logado)]
+
+
 # --- Schemas de Request e Response ---
 
 class RequisicaoChat(BaseModel):
-    user_id: str = Field(description="Identificador do usuário autenticado no portal.")
+    # Sem user_id: quem pergunta vem da sessão (usuario_logado). Um user_id
+    # enviado no corpo por um cliente antigo é ignorado
     session_id: str = Field(description="Identificador único da sessão de conversa.")
     message: str = Field(description="Texto da pergunta em linguagem natural.")
     context: Optional[Dict[str, Any]] = Field(
@@ -55,7 +73,7 @@ class RequisicaoFeedback(BaseModel):
 # --- Endpoints ---
 
 @router.post("/ask", response_model=RespostaChat, summary="Pergunta em linguagem natural ao agente")
-def ask(req: RequisicaoChat) -> RespostaChat:
+def ask(req: RequisicaoChat, usuario: UsuarioLogado) -> RespostaChat:
     """
     Recebe uma pergunta do portal React, executa o agente LangGraph e retorna
     a resposta, o SQL gerado e o audit_id para inspeção de trilha.
@@ -65,7 +83,8 @@ def ask(req: RequisicaoChat) -> RespostaChat:
             pergunta=req.message,
             historico=req.history,
             sessao_id=req.session_id,
-            user_id=req.user_id,
+            user_id=str(usuario["id"]),
+            perfil=str(usuario["perfil"]),
             contexto_tela=req.context,
         )
     except Exception as e:
@@ -126,10 +145,11 @@ def get_audit(audit_id: str) -> Dict[str, Any]:
 
 
 @router.post("/feedback", summary="Registro de feedback do usuário sobre uma resposta")
-def post_feedback(req: RequisicaoFeedback) -> Dict[str, str]:
+def post_feedback(req: RequisicaoFeedback, usuario: UsuarioLogado) -> Dict[str, str]:
     """
     Recebe 👍 (1) ou 👎 (-1) do usuário e registra na tabela de auditoria
     para alimentar as métricas de avaliação automatizada (REQ-AI-08).
+    Cada pessoa só avalia as próprias respostas: a de outra conta é 404.
     """
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
@@ -140,11 +160,17 @@ def post_feedback(req: RequisicaoFeedback) -> Dict[str, str]:
         with psycopg2.connect(db_url) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE tb_auditoria_agente SET feedback_usuario = %s WHERE id = %s;",
-                    (req.feedback, req.audit_id),
+                    "UPDATE tb_auditoria_agente SET feedback_usuario = %s "
+                    "WHERE id = %s AND user_id = %s;",
+                    (req.feedback, req.audit_id, str(usuario["id"])),
                 )
+                encontrada = cur.rowcount > 0
             conn.commit()
+        if not encontrada:
+            raise HTTPException(status_code=404, detail="Resposta não encontrada.")
         return {"status": "ok", "mensagem": "Feedback registrado com sucesso."}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Erro ao registrar feedback %s: %s", req.audit_id, e)
         raise HTTPException(status_code=500, detail="Erro ao salvar o feedback.")

@@ -204,8 +204,8 @@ def test_operational_failure_rolls_back_inserted_order(
 ) -> None:
     original = InspectionOrdersRepository.insert_orders
 
-    def fail_after_first(self: InspectionOrdersRepository, ids_uc: list[str]):
-        original(self, ids_uc[:1])
+    def fail_after_first(self: InspectionOrdersRepository, ids_uc: list[str], **kwargs):
+        original(self, ids_uc[:1], **kwargs)
         raise RuntimeError("falha operacional sintética")
 
     monkeypatch.setattr(InspectionOrdersRepository, "insert_orders", fail_after_first)

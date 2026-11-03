@@ -3,11 +3,12 @@
 from contextlib import contextmanager, nullcontext
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError, ProgrammingError, TimeoutError
+
 from app.controllers import filters as filters_controller
 from app.controllers.filters import get_filter_repository
 from app.main import app
-from fastapi.testclient import TestClient
-from sqlalchemy.exc import OperationalError, ProgrammingError, TimeoutError
 
 
 class GoldOptionsFake:
@@ -71,7 +72,9 @@ def test_catalogo_openapi_e_rotas_existentes() -> None:
     openapi = client.get("/api/openapi.json").json()
     route = openapi["paths"]["/api/filters/options"]["get"]
 
-    assert route.get("parameters", []) == []
+    assert {parameter["name"] for parameter in route["parameters"]} == {
+        "vgrid360_access_token"
+    }
     assert route["responses"]["200"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/FilterOptionsResponse"
     }

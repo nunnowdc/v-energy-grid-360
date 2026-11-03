@@ -90,10 +90,10 @@ CREATE TABLE IF NOT EXISTS tb_insights_tela (
 O módulo de IA integra-se ao FastAPI através do roteador `ai_router` montado em `/ai`:
 
 ### 3.1 Conversação (`POST /ai/ask`)
+- **Quem pergunta:** vem da sessão de login, não do corpo. O backend confere o cookie e o perfil e guarda a conta em `request.state.usuario`; o `ai_router` grava o `id` e o `perfil` dela na auditoria (`user_id` é UUID com chave estrangeira para `usuarios`). Um `user_id` enviado no corpo é ignorado.
 - **Request Body:**
   ```json
   {
-    "user_id": "henrique.duarte@venergy.com.br",
     "session_id": "c7a8b9f0-1234-5678-9abc-def012345678",
     "message": "Qual o faturamento de Olinda em 2024?",
     "context": {

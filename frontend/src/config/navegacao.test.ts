@@ -27,5 +27,15 @@ test('cada perfil vê as telas da matriz combinada pelo time', () => {
   expect(telasDoPerfil('ATENDIMENTO')).toEqual(['Visão 360'])
   expect(telasDoPerfil('PERDAS')).toEqual(['Visão 360', 'Fila de inspeção'])
   expect(telasDoPerfil('OPERACAO')).toEqual(['Continuidade'])
-  expect(telasDoPerfil('ADMIN_TI')).toHaveLength(5)
+  // Todas as telas, mais a criação de contas e o uso do agente
+  expect(telasDoPerfil('ADMIN_TI')).toEqual([
+    'Indicadores',
+    'Receita',
+    'Continuidade',
+    'Visão 360',
+    'Fila de inspeção',
+    'Usuários',
+    'Agente de IA',
+    'Avaliação do agente',
+  ])
 })

@@ -4,11 +4,12 @@ from pathlib import Path
 
 from sqlalchemy import insert
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.sql.sqltypes import BigInteger, DateTime, Text
+from sqlalchemy.sql.sqltypes import BigInteger, DateTime, Text, Uuid
 
 from app.repositories.inspection_orders import ORDENS_INSPECAO
 
 SQL_PATH = Path(__file__).resolve().parents[1] / "sql" / "ordens_inspecao.sql"
+AUTORIA_PATH = SQL_PATH.with_name("ordens_inspecao_autoria.sql")
 
 
 def test_operational_sql_defines_order_integrity_without_touching_gold() -> None:
@@ -47,12 +48,18 @@ def test_core_mapping_targets_operational_table_without_database_access() -> Non
         "criada_em",
         "atualizada_em",
         "concluida_em",
+        "criada_por",
+        "atualizada_por",
     ]
     assert isinstance(ORDENS_INSPECAO.c.id.type, BigInteger)
     assert isinstance(ORDENS_INSPECAO.c.id_uc.type, Text)
     assert ORDENS_INSPECAO.c.id.primary_key
     assert ORDENS_INSPECAO.c.resultado.nullable
     assert ORDENS_INSPECAO.c.concluida_em.nullable
+    # Ordens de antes da autoria não têm autor
+    for author in ("criada_por", "atualizada_por"):
+        assert isinstance(ORDENS_INSPECAO.c[author].type, Uuid)
+        assert ORDENS_INSPECAO.c[author].nullable
     assert all(
         isinstance(ORDENS_INSPECAO.c[name].type, DateTime)
         and ORDENS_INSPECAO.c[name].type.timezone
@@ -63,3 +70,16 @@ def test_core_mapping_targets_operational_table_without_database_access() -> Non
     compiled = statement.compile(dialect=postgresql.dialect())
     assert "ordens_inspecao" in str(compiled)
     assert "UC123456" not in str(compiled)
+
+
+def test_authorship_sql_links_orders_to_accounts_and_can_run_again() -> None:
+    sql = AUTORIA_PATH.read_text(encoding="utf-8")
+
+    assert "\nBEGIN;\n" in sql
+    assert sql.rstrip().endswith("COMMIT;")
+    assert "ALTER TABLE ordens_inspecao" in sql
+    for author in ("criada_por", "atualizada_por"):
+        assert f"ADD COLUMN IF NOT EXISTS {author} UUID REFERENCES usuarios (id)" in sql
+    # O histórico não perde o autor: sem ON DELETE, e nada é apagado
+    for prohibited in ("DROP ", "TRUNCATE ", "DELETE ", "ON DELETE"):
+        assert prohibited not in sql.upper()

@@ -72,6 +72,13 @@ export function formatarInstante(instante: string) {
   return dataHoraRecife.format(new Date(instante)).replace(',', '')
 }
 
+// Instante curto para eixos de gráfico, no horário de Recife:
+// "2026-11-02T01:10:00Z" → "01/11 22:10"
+export function formatarInstanteCurto(instante: string) {
+  const completo = formatarInstante(instante)
+  return `${completo.slice(0, 5)} ${completo.slice(11)}`
+}
+
 // 203 → "203 kWh"
 export function formatarKwh(valor: number) {
   return `${formatarNumero(valor)} kWh`
@@ -110,4 +117,21 @@ const moedaCompactaComSinal = new Intl.NumberFormat('pt-BR', {
 // Diferença em reais, sempre com sinal: 22500000 → "+R$ 22,5 mi"
 export function formatarMoedaCompactaComSinal(valor: number) {
   return moedaCompactaComSinal.format(valor)
+}
+
+const numeroCompacto = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
+
+// Contagens grandes, ex.: tokens: 780664 → "780,7 mil"
+export function formatarNumeroCompacto(valor: number) {
+  return numeroCompacto.format(valor)
+}
+
+// Duração que vem em milissegundos: 19253 → "19,3 s"
+export function formatarSegundos(ms: number) {
+  return `${formatarNumero(ms / 1000)} s`
+}
+
+// Dia curto para eixos de gráfico: "2026-10-27" → "27/10"
+export function formatarDiaMes(data: string) {
+  return formatarData(data).slice(0, 5)
 }

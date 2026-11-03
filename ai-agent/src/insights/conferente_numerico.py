@@ -23,14 +23,21 @@ _NUMERO_EM_TEXTO_DE_FATO = re.compile(r"\d+(?:\.\d+)?")
 
 _ESCALAS = {
     "mil": 1_000,
-    "milhao": 1_000_000, "milhão": 1_000_000, "milhoes": 1_000_000, "milhões": 1_000_000,
-    "bilhao": 1_000_000_000, "bilhão": 1_000_000_000,
-    "bilhoes": 1_000_000_000, "bilhões": 1_000_000_000,
+    "milhao": 1_000_000,
+    "milhão": 1_000_000,
+    "milhoes": 1_000_000,
+    "milhões": 1_000_000,
+    "bilhao": 1_000_000_000,
+    "bilhão": 1_000_000_000,
+    "bilhoes": 1_000_000_000,
+    "bilhões": 1_000_000_000,
 }
 
 
 def _numeros_dos_fatos(fatos: list[Dict[str, Any]]) -> list[float]:
-    """Todos os números permitidos: valores numéricos, partes de datas e dígitos de textos."""
+    """Todos os números permitidos: valores numéricos, partes de datas e dígitos de textos.
+
+    Além dos valores originais, aceita também o valor absoluto de números (ex.: -3.9 aceita 3.9)."""
     permitidos: list[float] = []
     for fato in fatos:
         for valor in fato.values():
@@ -40,11 +47,14 @@ def _numeros_dos_fatos(fatos: list[Dict[str, Any]]) -> list[float]:
                 numero = float(valor)
                 if math.isfinite(numero):
                     permitidos.append(numero)
+                    if numero != 0:
+                        permitidos.append(abs(numero))
             elif isinstance(valor, (date, datetime)):
                 permitidos.extend([float(valor.year), float(valor.month), float(valor.day)])
             else:
                 permitidos.extend(float(t) for t in _NUMERO_EM_TEXTO_DE_FATO.findall(str(valor)))
     return permitidos
+
 
 
 def _leituras_possiveis(inteiro: str, decimais: str | None) -> list[tuple[float, int]]:
@@ -72,9 +82,15 @@ def _bate(
     valor: float, casas: int, multiplicador: int, permitido: float, tolerancia: float
 ) -> bool:
     """O valor do texto é um arredondamento correto do valor permitido?"""
-    meia_unidade = 0.5 * (10 ** -casas) * multiplicador
+    # Tolerância de arredondamento baseada apenas nas casas decimais do valor original
+    # (não é ampliada pelo multiplicador de escala). Isso impede que valores como
+    # "16,7 milhões" sejam aceitos quando o número real diverge mais que 0,5 unidade
+    # na casa decimal original.
+    meia_unidade = 0.5 * (10 ** -casas)
     folga_float = 1e-9 * max(1.0, abs(permitido))
     return abs(valor * multiplicador - permitido) <= meia_unidade + tolerancia + folga_float
+
+
 
 
 def conferir(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -> bool:
@@ -95,3 +111,27 @@ def conferir(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -
         if not aceito:
             return False
     return True
+
+
+def numeros_nao_encontrados(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -> list[str]:
+    """Retorna os números (texto original) que NÃO possuem correspondência nos fatos.
+
+    Reutiliza a mesma lógica de `conferir`, mas ao invés de abortar na primeira falha
+    coleta todas as ocorrências que não batem e devolve a lista de strings encontradas
+    (ex.: ['38,3 mil', '45.000']).
+    """
+    permitidos = _numeros_dos_fatos(fatos)
+    nao_encontrados: list[str] = []
+    for achado in _NUMERO_NO_TEXTO.finditer(texto):
+        inteiro, decimais, escala = achado.groups()
+        multiplicador = _ESCALAS.get(escala.lower(), 1) if escala else 1
+        leituras = _leituras_possiveis(inteiro, decimais)
+        aceito = any(
+            _bate(valor, casas, multiplicador, permitido, tolerancia)
+            for valor, casas in leituras
+            for permitido in permitidos
+        )
+        if not aceito:
+            original = achado.group(0).strip()
+            nao_encontrados.append(original)
+    return nao_encontrados

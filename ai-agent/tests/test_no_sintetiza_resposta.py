@@ -78,7 +78,7 @@ def test_gerar_resposta_mock_varias_linhas():
     ]
     pergunta = "Faturamento 2024?"
     resp = _gerar_resposta_mock(dados, pergunta)
-    assert "(primeira de 2 linhas retornadas)" in resp
+    assert "(2 linhas)" in resp
 
 
 def test_gerar_resposta_mock_sem_dados():

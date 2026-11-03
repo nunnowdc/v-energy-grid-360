@@ -4,6 +4,14 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Annotated
 
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from sqlalchemy.exc import (
+    InterfaceError,
+    OperationalError,
+    SQLAlchemyError,
+    TimeoutError,
+)
+
 from app.core.database import get_connection
 from app.exceptions.uc import (
     GoldUnavailableError,
@@ -14,13 +22,6 @@ from app.exceptions.uc import (
 from app.repositories.uc import UCRepository
 from app.schemas.uc import UC360Response
 from app.services.uc import get_visao_360
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
-from sqlalchemy.exc import (
-    InterfaceError,
-    OperationalError,
-    SQLAlchemyError,
-    TimeoutError,
-)
 
 router = APIRouter()
 

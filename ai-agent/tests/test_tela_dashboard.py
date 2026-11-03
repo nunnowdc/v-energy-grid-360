@@ -46,7 +46,7 @@ def test_variacao_de_receita_abre_receita_com_bairro_e_classe():
     )
     tela = tela_do_dashboard(sql, [{"sum": 1.0}])
     assert tela.tela == "receita"
-    assert _filtros(tela) == {"municipio": "Olinda", "bairro": "Centro", "classe": "COMERCIAL"}
+    assert _filtros(tela) == {"municipio": "olinda", "bairro": "centro", "classe": "comercial"}
 
 
 def test_maior_dec_pega_o_alimentador_da_linha_unica():
@@ -56,7 +56,7 @@ def test_maior_dec_pega_o_alimentador_da_linha_unica():
     )
     tela = tela_do_dashboard(sql, [{"alimentador": "ALM-REC-008", "municipio_principal": "Recife", "dec": 9.1}])
     assert tela.tela == "continuidade"
-    assert _filtros(tela) == {"alimentador": "ALM-REC-008", "municipio": "Recife", **ANO_2025}
+    assert _filtros(tela) == {"alimentador": "alm-rec-008", "municipio": "recife", **ANO_2025}
 
 
 def test_ranking_com_varias_linhas_nao_escolhe_um_valor():
@@ -82,14 +82,14 @@ def test_uc_filtrada_abre_a_visao_360():
     sql = "SELECT competencia, receita_faturada FROM fact_faturamento WHERE id_uc = 'UC100000'"
     tela = tela_do_dashboard(sql, [{"competencia": "2025-01-01"}, {"competencia": "2025-02-01"}])
     assert tela.tela == "visao_360"
-    assert _filtros(tela) == {"id_uc": "UC100000"}
+    assert _filtros(tela) == {"id_uc": "uc100000"}
 
 
 def test_uc_mais_suspeita_abre_a_visao_360_dela():
     sql = "SELECT id_uc, score FROM fila_inspecao ORDER BY prioridade LIMIT 1"
     tela = tela_do_dashboard(sql, [{"id_uc": "UC100001", "score": 90}])
     assert tela.tela == "visao_360"
-    assert _filtros(tela) == {"id_uc": "UC100001"}
+    assert _filtros(tela) == {"id_uc": "uc100001"}
 
 
 def test_lista_de_suspeitas_abre_a_fila():
@@ -123,7 +123,7 @@ def test_mesmo_valor_com_grafia_diferente_conta_como_um():
         "SELECT COUNT(*) FROM dim_unidade_consumidora "
         "WHERE municipio = 'Jaboatão dos Guararapes' AND unaccent(lower(municipio)) = 'jaboatao dos guararapes'"
     )
-    assert _filtros(tela_do_dashboard(sql, [])) == {"municipio": "Jaboatão dos Guararapes"}
+    assert _filtros(tela_do_dashboard(sql, [])) == {"municipio": "jaboatão dos guararapes"}
 
 
 def test_filtro_dentro_de_subconsulta_tambem_vale():
@@ -267,7 +267,7 @@ def test_varias_linhas_sem_tempo_no_where_ficam_sem_periodo():
 
 def test_visao_360_nao_leva_periodo():
     sql = "SELECT receita_faturada FROM fact_faturamento WHERE id_uc = 'UC100000' AND ano = 2024"
-    assert _filtros(tela_do_dashboard(sql, [{"receita_faturada": 1.0}])) == {"id_uc": "UC100000"}
+    assert _filtros(tela_do_dashboard(sql, [{"receita_faturada": 1.0}])) == {"id_uc": "uc100000"}
 
 
 @pytest.mark.parametrize(

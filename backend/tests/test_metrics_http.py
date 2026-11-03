@@ -798,6 +798,7 @@ def test_openapi_documenta_erros_e_contrato_de_indicadores() -> None:
         "classe",
         "inicio_anterior",
         "fim_anterior",
+        "vgrid360_access_token",
     }
     assert all(not item["required"] for item in operation["parameters"])
     assert {"200", "422", "503", "500"} <= set(operation["responses"])

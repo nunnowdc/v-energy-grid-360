@@ -31,7 +31,7 @@ function ReceitaPorClasse({ classes }: ReceitaPorClasseProps) {
                 style={{ width: maior > 0 ? `${(linha.receita_faturada / maior) * 100}%` : 0, background: cor }}
               />
             </div>
-            {variacao !== undefined && <Variacao percentual={variacao} complemento="vs. período anterior" />}
+            {variacao !== undefined && <Variacao percentual={variacao} sentido="subir-e-bom" complemento="vs. período anterior" />}
           </li>
         )
       })}

@@ -7,6 +7,7 @@ import ConsumoDozeMeses from '@/components/ConsumoDozeMeses/ConsumoDozeMeses'
 import EstadoErro from '@/components/EstadoErro/EstadoErro'
 import FaturasEmAberto from '@/components/FaturasEmAberto/FaturasEmAberto'
 import HistoricosUc from '@/components/HistoricosUc/HistoricosUc'
+import InsightIa from '@/components/InsightIa/InsightIa'
 import ResumoUc from '@/components/ResumoUc/ResumoUc'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -81,6 +82,7 @@ function DadosUc({ idUc }: { idUc: string }) {
   return (
     <div className="flex flex-col gap-4">
       <ResumoUc dados={dados} />
+      <InsightIa tela="visao_360_uc" entidadeId={idUc} descricao="Sobre esta unidade consumidora" />
       <div className="grid gap-4 lg:grid-cols-3">
         <ConsumoDozeMeses meses={dados.consumo_12m} className="lg:col-span-2" />
         <FaturasEmAberto dados={dados} />

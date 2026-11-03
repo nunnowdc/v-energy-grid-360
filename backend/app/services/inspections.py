@@ -1,6 +1,7 @@
 """Composição da fila Gold sem recalcular os valores analíticos."""
 
 from datetime import UTC, datetime
+from uuid import UUID
 
 from app.repositories.inspection_orders import (
     ActiveOrderRaceError,
@@ -42,6 +43,8 @@ def change_inspection_order(
     order_id: int,
     status: str,
     resultado: str | None = None,
+    *,
+    user_id: UUID,
 ) -> dict[str, object]:
     allowed = {
         ("ABERTA", "EM_CAMPO"),
@@ -55,7 +58,9 @@ def change_inspection_order(
             raise OrderNotFoundError
         if (current["status"], status) not in allowed:
             raise InvalidOrderTransitionError
-        if not orders.update_if_status(order_id, current["status"], status, resultado):
+        if not orders.update_if_status(
+            order_id, current["status"], status, resultado, user_id=user_id
+        ):
             if orders.get_order(order_id) is None:
                 raise OrderNotFoundError
             raise InvalidOrderTransitionError
@@ -75,6 +80,8 @@ def change_inspection_order(
             "status": row["status"],
             "resultado": row["resultado"],
             "criada_em": timestamp.astimezone(UTC),
+            "criada_por_nome": row["criada_por_nome"],
+            "atualizada_por_nome": row["atualizada_por_nome"],
         }
 
 
@@ -124,6 +131,8 @@ def list_inspection_orders(
                 "status": row["status"],
                 "resultado": row["resultado"],
                 "criada_em": timestamp.astimezone(UTC),
+                "criada_por_nome": row["criada_por_nome"],
+                "atualizada_por_nome": row["atualizada_por_nome"],
             }
         )
     return {"itens": items}
@@ -133,6 +142,8 @@ def create_inspection_orders(
     gold: InspectionsRepository,
     orders: InspectionOrdersRepository,
     ids_uc: list[str],
+    *,
+    user_id: UUID,
 ) -> dict[str, object]:
     if len(ids_uc) != len(set(ids_uc)):
         raise InvalidOrderBatchError("IDs de UC repetidos no lote")
@@ -167,7 +178,7 @@ def create_inspection_orders(
                     [uc for uc in ids_uc if uc in active_ids]
                 )
 
-            created_rows = orders.insert_orders(ids_uc)
+            created_rows = orders.insert_orders(ids_uc, user_id=user_id)
             if len(created_rows) != len(ids_uc):
                 raise RuntimeError("Inserção incompleta de ordens")
             created = {row["id_uc"]: row for row in created_rows}
@@ -188,6 +199,8 @@ def create_inspection_orders(
                         "status": row["status"],
                         "resultado": row["resultado"],
                         "criada_em": timestamp.astimezone(UTC),
+                        "criada_por_nome": row["criada_por_nome"],
+                        "atualizada_por_nome": row["atualizada_por_nome"],
                     }
                 )
     except ActiveOrderRaceError as exc:
@@ -240,6 +253,36 @@ def get_inspection_queue(
         "pagina": pagina,
         "limite": limite,
         "total": total,
+        "itens": [
+            {**row, "ordem_aberta": active_by_uc.get(row["id_uc"])} for row in rows
+        ],
+    }
+
+
+ORDER_STATUS_LABELS = {"ABERTA": "Aberta", "EM_CAMPO": "Em campo"}
+
+
+def get_inspection_queue_export(
+    repository: InspectionsRepository,
+    municipio: str | None,
+    bairro: str | None,
+    classe: str | None,
+) -> dict[str, object]:
+    municipio, bairro, classe = _validate_filters(repository, municipio, bairro, classe)
+
+    data_referencia = repository.get_snapshot_date()
+    if data_referencia is None:
+        raise QueueSnapshotUnavailableError
+
+    rows = repository.get_export_items(municipio, bairro, classe)
+    active_orders = repository.orders.get_active_orders([row["id_uc"] for row in rows])
+    active_by_uc = {
+        row["id_uc"]: f"OI-{row['id']:05d} ({ORDER_STATUS_LABELS[row['status']]})"
+        for row in active_orders
+    }
+    return {
+        "data_referencia": data_referencia,
+        "filtros": {"municipio": municipio, "bairro": bairro, "classe": classe},
         "itens": [
             {**row, "ordem_aberta": active_by_uc.get(row["id_uc"])} for row in rows
         ],
