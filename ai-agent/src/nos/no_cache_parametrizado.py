@@ -167,22 +167,22 @@ _TEMPLATES_REGISTROS = [
             "ORDER BY total_kwh_recuperado DESC"
         ),
     },
-    {
-        "esqueleto": "ucs_geracao_distribuida",
-        "intencao": {"geracao", "distribuida", "gd"},
-        "slots": {
-            "limite": (r"limite\s+(\d+)", int),
+        {
+            "esqueleto": "ucs_geracao_distribuida",
+            "intencao": {"geracao", "distribuida", "gd"},
+            "slots": {
+                "limite": (r"limite\s+(\d+)", int),
+            },
+            "sql": (
+                "SELECT u.id_uc, u.municipio, u.bairro, u.classe, "
+                "u.potencia_gd_kwp, u.modalidade_gd, g.energia_injetada_kwh_media_mensal, "
+                "g.energia_estimada, g.energia_reestimada_kwh, u.alimentador, u.tipo_medidor_atual "
+                "FROM dim_unidade_consumidora u "
+                "JOIN dim_geracao_distribuida g ON u.id_uc = g.id_uc "
+                "WHERE u.possui_gd = TRUE "
+                "ORDER BY u.potencia_gd_kwp DESC LIMIT :limite"
+            ),
         },
-        "sql": (
-            "SELECT u.id_uc, u.nome_titular, u.municipio, u.bairro, u.classe, "
-            "u.potencia_gd_kwp, u.modalidade_gd, g.energia_injetada_kwh_media_mensal, "
-            "g.energia_estimada, g.energia_reestimada_kwh, u.alimentador, u.tipo_medidor_atual "
-            "FROM dim_unidade_consumidora u "
-            "JOIN dim_geracao_distribuida g ON u.id_uc = g.id_uc "
-            "WHERE u.possui_gd = TRUE "
-            "ORDER BY u.potencia_gd_kwp DESC LIMIT :limite"
-        ),
-    },
     {
         "esqueleto": "modernizacao_medicao_smart",
         "intencao": {"modernizacao", "medicao", "smart"},
@@ -213,19 +213,9 @@ _TEMPLATES_REGISTROS = [
             "WHERE l.competencia = :competencia AND ABS(l.variacao_ano_anterior_pct) > :limiar_pct "
             "ORDER BY ABS(l.variacao_ano_anterior_pct) DESC LIMIT :limite"
         ),
-    },
-    {
-        "esqueleto": "ordens_inspecao_abertas",
-        "intencao": {"ordens", "inspecao", "abertas"},
-        "slots": {},
-        "sql": (
-            "SELECT id, id_uc, status, resultado, criada_em, atualizada_em "
-            "FROM ordens_inspecao "
-            "WHERE status = ANY(ARRAY['ABERTA', 'EM_CAMPO']) "
-            "ORDER BY criada_em ASC"
-        ),
-    },
-    {
+            },
+
+            {
         "esqueleto": "desempenho_call_center",
         "intencao": {"desempenho", "call", "center"},
         "slots": {
@@ -379,3 +369,32 @@ def no_cache_parametrizado(
         "hit_cache": False,
         "passos_executados": ["Nó 6 — Cache: miss (esqueleto não encontrado no cache)."],
     }
+
+
+_TEMPLATES_BACKLOG_NAO_ATIVOS = [
+    {
+        "esqueleto": "ordens_inspecao_abertas",
+        "intencao": {"ordens", "inspecao", "abertas"},
+        "slots": {},
+        "sql": (
+            "SELECT id, id_uc, status, resultado, criada_em, atualizada_em "
+            "FROM ordens_inspecao "
+            "WHERE status = ANY(ARRAY['ABERTA', 'EM_CAMPO']) "
+            "ORDER BY criada_em ASC"
+        ),
+    },
+    {
+        "esqueleto": "auditoria_agente_stats",
+        "intencao": {"auditoria", "agente", "stats"},
+        "slots": {},
+        "sql": (
+            "SELECT rota_escolhida, selo_confianca, hit_cache, COUNT(id) AS total_consultas, "
+            "AVG(tempo_execucao_ms) AS tempo_medio_ms, "
+            "SUM(CASE WHEN erro_mensagem IS NOT NULL THEN 1 ELSE 0 END) AS total_erros "
+            "FROM tb_auditoria_agente "
+            "WHERE data_hora >= NOW() - INTERVAL '30 days' "
+            "GROUP BY rota_escolhida, selo_confianca, hit_cache "
+            "ORDER BY total_consultas DESC"
+        ),
+    },
+]
