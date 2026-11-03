@@ -61,7 +61,7 @@ describe('menu e rotas por perfil', () => {
   test('Diretoria vê só as telas dela no menu', async () => {
     await abrir('/', 'DIRETORIA')
     expect(titulo()).toBe('Indicadores')
-    expect(telasNoMenu()).toEqual(['Indicadores', 'Receita', 'Continuidade'])
+    expect(telasNoMenu()).toEqual(['Indicadores', 'Receita', 'Continuidade', 'Visão 360'])
   })
 
   test('o menu agrupa as telas e esconde grupo sem tela permitida', async () => {

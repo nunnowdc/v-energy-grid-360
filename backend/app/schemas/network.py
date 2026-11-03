@@ -20,6 +20,7 @@ class FeederContinuity(BaseModel):
     dec: FiniteFloat
     fec: FiniteFloat
     dec_sem_dia_critico: FiniteFloat
+    dec_evitavel: FiniteFloat
     dec_anterior: FiniteFloat
 
 

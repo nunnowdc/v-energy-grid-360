@@ -23,7 +23,7 @@ SECRET = "segredo-sintetico-para-testes-com-mais-de-32-caracteres"
 PROFILES = ("DIRETORIA", "ATENDIMENTO", "PERDAS", "OPERACAO", "ADMIN_TI")
 ALL = frozenset(PROFILES)
 DIRECTORS = frozenset({"DIRETORIA", "ADMIN_TI"})
-UC = frozenset({"ATENDIMENTO", "PERDAS", "ADMIN_TI"})
+UC = frozenset({"DIRETORIA", "ATENDIMENTO", "PERDAS", "ADMIN_TI"})
 LOSSES = frozenset({"PERDAS", "ADMIN_TI"})
 NETWORK = frozenset({"DIRETORIA", "OPERACAO", "ADMIN_TI"})
 

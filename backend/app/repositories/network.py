@@ -51,6 +51,26 @@ class NetworkRepository:
         )
         return [dict(row._mapping) for row in rows]
 
+    def get_preventable_hours(
+        self, inicio: date, fim: date, feeders: list[str], causas: tuple[str, ...]
+    ) -> list[dict[str, object]]:
+        if not feeders:
+            return []
+        statement = text(
+            "SELECT alimentador, SUM(duracao_h) AS horas_x_uc "
+            "FROM fact_ocorrencias "
+            "WHERE competencia BETWEEN :inicio AND :fim "
+            "AND alimentador IN :feeders AND causa IN :causas "
+            "GROUP BY alimentador ORDER BY alimentador"
+        ).bindparams(
+            bindparam("feeders", expanding=True), bindparam("causas", expanding=True)
+        )
+        rows = self.connection.execute(
+            statement,
+            {"inicio": inicio, "fim": fim, "feeders": feeders, "causas": list(causas)},
+        )
+        return [dict(row._mapping) for row in rows]
+
     def get_occurrence_counts(
         self, inicio: date, fim: date, feeders: list[str], causa: str | None = None
     ) -> list[dict[str, object]]:

@@ -61,6 +61,18 @@ class NetworkGoldFake:
                 )
         return [row for row in rows if inicio <= row["competencia"] <= fim]
 
+    def get_preventable_hours(
+        self, inicio: date, fim: date, feeders: list[str], causas: tuple[str, ...]
+    ) -> list[dict[str, object]]:
+        self.preventable_calls = getattr(self, "preventable_calls", [])
+        self.preventable_calls.append((inicio, fim, list(feeders), causas))
+        hours = {"ALM-A": 30.0, "ALM-B": 120.0}
+        return [
+            {"alimentador": feeder, "horas_x_uc": hours[feeder]}
+            for feeder in feeders
+            if inicio >= date(2025, 7, 1)
+        ]
+
     def get_occurrence_counts(
         self, inicio: date, fim: date, feeders: list[str], causa: str | None = None
     ) -> list[dict[str, object]]:
@@ -130,6 +142,8 @@ def test_resposta_padrao_tem_cinco_grupos_e_valores_gold() -> None:
     assert body["ranking"][0]["dec"] == pytest.approx(2)
     assert body["ranking"][0]["fec"] == pytest.approx(4)
     assert body["ranking"][0]["dec_sem_dia_critico"] == pytest.approx(1.6)
+    assert body["ranking"][0]["dec_evitavel"] == pytest.approx(0.6)
+    assert body["ranking"][1]["dec_evitavel"] == pytest.approx(0.3)
     assert body["ranking"][0]["dec_anterior"] == pytest.approx(1)
     assert body["serie"]["alimentador"] == "ALM-B"
     assert len(body["serie"]["atual"]) == len(body["serie"]["anterior"]) == 12
@@ -827,6 +841,7 @@ def test_contrato_aninhado_e_rota_unica() -> None:
         "dec",
         "fec",
         "dec_sem_dia_critico",
+        "dec_evitavel",
         "dec_anterior",
     }
     assert set(body["serie"]) == {"alimentador", "atual", "anterior"}
@@ -1203,3 +1218,51 @@ def test_parametro_desconhecido_retorna_422_sem_abrir_conexao() -> None:
 
     assert response.status_code == 422
     assert called == []
+
+
+def test_dec_evitavel_usa_causas_preventivas_do_periodo_comparado() -> None:
+    gold = NetworkGoldFake()
+    body = _response(gold, {"causa": "CLIMATICA"}).json()
+
+    # A causa filtrada não muda o DEC evitável, que é do alimentador inteiro
+    assert body["ranking"][0]["dec_evitavel"] == pytest.approx(0.6)
+    assert gold.preventable_calls == [
+        (
+            date(2025, 7, 1),
+            date(2026, 6, 1),
+            ["ALM-A", "ALM-B"],
+            ("FALHA DE EQUIPAMENTO", "SOBRECARGA", "VEGETACAO"),
+        )
+    ]
+
+
+def test_alimentador_sem_causa_evitavel_tem_dec_evitavel_zero() -> None:
+    class NoPreventable(NetworkGoldFake):
+        def get_preventable_hours(self, inicio, fim, feeders, causas):
+            return []
+
+    body = _response(NoPreventable()).json()
+
+    assert [row["dec_evitavel"] for row in body["ranking"]] == [0, 0]
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [{"alimentador": "ALM-X", "horas_x_uc": 1.0}],
+        [{"alimentador": "ALM-A", "horas_x_uc": None}],
+        [{"alimentador": "ALM-A", "horas_x_uc": -1.0}],
+        [
+            {"alimentador": "ALM-A", "horas_x_uc": 1.0},
+            {"alimentador": "ALM-A", "horas_x_uc": 2.0},
+        ],
+    ],
+)
+def test_horas_evitaveis_invalidas_retornam_503(rows) -> None:
+    class InvalidPreventable(NetworkGoldFake):
+        def get_preventable_hours(self, inicio, fim, feeders, causas):
+            return rows
+
+    response = _response(InvalidPreventable())
+
+    assert response.status_code == 503
