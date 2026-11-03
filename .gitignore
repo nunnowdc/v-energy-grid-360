@@ -39,3 +39,6 @@ analisys/graficos/graficos_resultados*.ipynb
 analisys/contexto_perguntas_case.md
 
 # Ir incrementando conforme necessário
+
+db.dump
+*.dump
