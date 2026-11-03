@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 
 from app.entities.user import Usuario
+from app.repositories.transactions import transaction_scope
 
 
 def _is_duplicate_email(exc: IntegrityError) -> bool:
@@ -45,7 +46,7 @@ class UsersRepository:
 
     def transaction(self):
         """Mantém leitura bloqueante e atualização na mesma transação."""
-        return self.connection.begin()
+        return transaction_scope(self.connection)
 
     def get_by_id_for_update(self, user_id: UUID) -> dict | None:
         row = (
@@ -87,7 +88,7 @@ class UsersRepository:
             .returning(Usuario.id, Usuario.nome)
         )
         try:
-            with self.connection.begin():
+            with transaction_scope(self.connection):
                 row = self.connection.execute(statement).mappings().one()
         except IntegrityError as exc:
             if _is_duplicate_email(exc):
