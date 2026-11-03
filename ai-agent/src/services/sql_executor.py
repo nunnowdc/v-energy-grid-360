@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
+from .conexao_banco import aplicar_perfil, url_do_banco, usa_roles
+
 logger = logging.getLogger("venergy.sql_executor")
 
 DEFAULT_ROW_LIMIT = 50
@@ -53,14 +55,19 @@ class SQLExecutor:
         elif sqlite_path is not None:
             self.db_url = None
         else:
-            self.db_url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+            self.db_url = os.getenv("TEST_DATABASE_URL") or url_do_banco()
         self.sqlite_path = sqlite_path or os.getenv("SQLITE_PATH")
         self.schema = schema or os.getenv("TEST_POSTGRES_SCHEMA")
         self.is_postgres = bool(self.db_url and self.db_url.startswith("postgres"))
         if self.schema and not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", self.schema):
             raise ValueError("schema deve conter apenas letras, números e underscore, começando por letra ou underscore.")
 
-    def executar(self, sql: str, limite_linhas: int = DEFAULT_ROW_LIMIT) -> ResultadoExecucaoSQL:
+    def executar(
+        self,
+        sql: str,
+        limite_linhas: int = DEFAULT_ROW_LIMIT,
+        perfil: Optional[str] = None,
+    ) -> ResultadoExecucaoSQL:
         inicio = time.time()
         sql_limpa = sql.strip().rstrip(";")
 
@@ -70,19 +77,21 @@ class SQLExecutor:
 
         # 1. Se houver DATABASE_URL (PostgreSQL)
         if self.is_postgres:
-            return self._executar_postgres(sql_limpa, inicio)
+            return self._executar_postgres(sql_limpa, inicio, perfil)
 
         # 2. Se houver caminho SQLite ou fallback para teste
         return self._executar_sqlite(sql_limpa, inicio)
 
-    def _executar_postgres(self, sql: str, inicio: float) -> ResultadoExecucaoSQL:
+    def _executar_postgres(
+        self, sql: str, inicio: float, perfil: Optional[str] = None
+    ) -> ResultadoExecucaoSQL:
         try:
             import psycopg2
             from psycopg2.extras import RealDictCursor
         except ImportError:
             try:
                 import psycopg
-                return self._executar_psycopg3(sql, inicio)
+                return self._executar_psycopg3(sql, inicio, perfil)
             except ImportError:
                 return ResultadoExecucaoSQL(
                     sucesso=False,
@@ -99,8 +108,10 @@ class SQLExecutor:
                 connect_timeout=int(QUERY_TIMEOUT_SECONDS),
                 options=options,
             )
-            conn.set_session(readonly=True, autocommit=True)
+            # Com roles ligadas: transação READ ONLY (SET LOCAL ROLE exige transação)
+            conn.set_session(readonly=True, autocommit=not usa_roles())
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                aplicar_perfil(cur, perfil)
                 if self.schema:
                     cur.execute(f'SET search_path TO "{self.schema}", public')
                 cur.execute(sql)
@@ -121,20 +132,38 @@ class SQLExecutor:
             )
         finally:
             if conn:
+                if usa_roles():
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
                 conn.close()
 
-    def _executar_psycopg3(self, sql: str, inicio: float) -> ResultadoExecucaoSQL:
+    def _executar_psycopg3(
+        self, sql: str, inicio: float, perfil: Optional[str] = None
+    ) -> ResultadoExecucaoSQL:
         import psycopg
         from psycopg.rows import dict_row
 
         conn = None
         try:
-            conn = psycopg.connect(self.db_url, timeout=QUERY_TIMEOUT_SECONDS, autocommit=True)
+            roles = usa_roles()
+            conn = psycopg.connect(
+                self.db_url, timeout=QUERY_TIMEOUT_SECONDS, autocommit=not roles
+            )
+            if roles:
+                conn.read_only = True  # transação READ ONLY
             with conn.cursor() as cur:
-                cur.execute(
-                    f"SET statement_timeout = {int(QUERY_TIMEOUT_SECONDS * 1000)}"
-                )
-                cur.execute("SET default_transaction_read_only = on")
+                if roles:
+                    aplicar_perfil(cur, perfil)
+                    cur.execute(
+                        f"SET LOCAL statement_timeout = {int(QUERY_TIMEOUT_SECONDS * 1000)}"
+                    )
+                else:
+                    cur.execute(
+                        f"SET statement_timeout = {int(QUERY_TIMEOUT_SECONDS * 1000)}"
+                    )
+                    cur.execute("SET default_transaction_read_only = on")
                 if self.schema:
                     cur.execute(f'SET search_path TO "{self.schema}", public')
             with conn.cursor(row_factory=dict_row) as cur:
@@ -156,6 +185,11 @@ class SQLExecutor:
             )
         finally:
             if conn:
+                if usa_roles():
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
                 conn.close()
 
     def _executar_sqlite(self, sql: str, inicio: float) -> ResultadoExecucaoSQL:

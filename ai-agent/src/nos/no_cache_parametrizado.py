@@ -8,6 +8,7 @@ import unicodedata
 from typing import Any, Dict, Optional
 
 from ..contratos.estado_agente import EstadoAgente
+from ..services.conexao_banco import aplicar_perfil, url_do_banco
 
 logger = logging.getLogger("venergy.no_cache_parametrizado")
 
@@ -85,11 +86,14 @@ def _extrair_slots(pergunta: str) -> Optional[Dict[str, Any]]:
     return {"municipio": municipios_encontrados[0], "ano": int(anos[0])}
 
 
-def _template_do_banco(db_url: str, esqueleto: str) -> Optional[str]:
+def _template_do_banco(
+    db_url: str, esqueleto: str, perfil: Optional[str] = None
+) -> Optional[str]:
     try:
         import psycopg2
         with psycopg2.connect(db_url, connect_timeout=3) as conn:
             with conn.cursor() as cur:
+                aplicar_perfil(cur, perfil)
                 cur.execute(
                     "SELECT sql_template FROM tb_cache_perguntas_certificadas "
                     "WHERE esqueleto = %s AND ativo = TRUE LIMIT 1;",
@@ -118,7 +122,9 @@ def no_cache_parametrizado(
         }
 
     esqueleto = "faturamento_por_municipio_ano"
-    template = _template_do_banco(db_url or os.getenv("DATABASE_URL", ""), esqueleto)
+    template = _template_do_banco(
+        db_url or url_do_banco() or "", esqueleto, state.get("perfil")
+    )
     template = template or _TEMPLATES_PADRAO[esqueleto]
     sql = template.replace(":municipio", f"'{slots['municipio']}'").replace(
         ":ano", str(slots["ano"])

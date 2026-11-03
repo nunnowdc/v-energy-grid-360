@@ -10,6 +10,7 @@ import uuid
 from typing import Any, Dict, Optional
 
 from ..contratos.estado_agente import EstadoAgente
+from ..services.conexao_banco import aplicar_perfil
 
 logger = logging.getLogger("venergy.no_finaliza_auditoria")
 
@@ -148,6 +149,8 @@ def _gravar_auditoria(registro: dict, db_url: Optional[str]) -> None:
         import psycopg2
         with psycopg2.connect(db_url, connect_timeout=5) as conn:
             with conn.cursor() as cur:
+                # SET LOCAL ROLE antes de ler o information_schema e gravar
+                aplicar_perfil(cur, registro.get("perfil"))
                 colunas = _obter_colunas_psycopg2(conn)
                 cur.execute(_montar_insert_auditoria(registro, colunas), registro)
             conn.commit()
@@ -163,6 +166,8 @@ def _tentar_psycopg3(registro: dict, db_url: str) -> None:
     try:
         import psycopg
         with psycopg.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                aplicar_perfil(cur, registro.get("perfil"))
             colunas = _obter_colunas_psycopg3(conn)
             conn.execute(_montar_insert_auditoria(registro, colunas), registro)
             conn.commit()

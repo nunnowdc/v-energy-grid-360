@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from ..contratos.resposta_agente import TelaDashboard
 from ..grafo.executor_agente import executar_agente
 from ..insights.service import InsightsService
+from ..services.conexao_banco import aplicar_perfil, url_do_banco
 
 logger = logging.getLogger("venergy.api_ai")
 
@@ -103,13 +104,13 @@ def ask(req: RequisicaoChat, usuario: UsuarioLogado) -> RespostaChat:
 
 
 @router.get("/insights/{tela}/{entidade_id}", summary="Insight proativo pré-calculado para a tela")
-def get_insight(tela: str, entidade_id: str) -> Dict[str, Any]:
+def get_insight(tela: str, entidade_id: str, usuario: UsuarioLogado) -> Dict[str, Any]:
     """
     Retorna o insight pré-calculado e validado numericamente para uma tela específica do portal.
     Resposta em < 30ms via cache na tabela tb_insights_tela.
     """
     try:
-        return InsightsService().obter(tela, entidade_id)
+        return InsightsService().obter(tela, entidade_id, perfil=str(usuario["perfil"]))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
@@ -118,12 +119,15 @@ def get_insight(tela: str, entidade_id: str) -> Dict[str, Any]:
 
 
 @router.get("/audit/{audit_id}", summary="Trilha de auditoria detalhada de uma resposta")
-def get_audit(audit_id: str) -> Dict[str, Any]:
+def get_audit(audit_id: str, usuario: UsuarioLogado) -> Dict[str, Any]:
     """
     Retorna os detalhes completos de auditoria de uma execução para a gaveta de
     inspeção 'Como a IA chegou nisso?' no portal React.
     """
-    db_url = os.getenv("DATABASE_URL")
+    try:
+        db_url = url_do_banco()
+    except RuntimeError:
+        db_url = None
     if not db_url:
         raise HTTPException(status_code=503, detail="Banco de auditoria não configurado.")
 
@@ -132,6 +136,7 @@ def get_audit(audit_id: str) -> Dict[str, Any]:
         from psycopg2.extras import RealDictCursor
         with psycopg2.connect(db_url) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                aplicar_perfil(cur, str(usuario["perfil"]))
                 cur.execute("SELECT * FROM tb_auditoria_agente WHERE id = %s;", (audit_id,))
                 row = cur.fetchone()
                 if not row:
@@ -151,7 +156,11 @@ def post_feedback(req: RequisicaoFeedback, usuario: UsuarioLogado) -> Dict[str, 
     para alimentar as métricas de avaliação automatizada (REQ-AI-08).
     Cada pessoa só avalia as próprias respostas: a de outra conta é 404.
     """
-    db_url = os.getenv("DATABASE_URL")
+    try:
+        db_url = url_do_banco()
+    except RuntimeError as e:
+        logger.error("Banco de feedback não configurado: %s", e)
+        raise HTTPException(status_code=503, detail="Banco de feedback não configurado.")
     if not db_url:
         return {"status": "mock", "mensagem": "Feedback registrado localmente (modo dev)."}
 
@@ -159,6 +168,7 @@ def post_feedback(req: RequisicaoFeedback, usuario: UsuarioLogado) -> Dict[str, 
         import psycopg2
         with psycopg2.connect(db_url) as conn:
             with conn.cursor() as cur:
+                aplicar_perfil(cur, str(usuario["perfil"]))
                 cur.execute(
                     "UPDATE tb_auditoria_agente SET feedback_usuario = %s "
                     "WHERE id = %s AND user_id = %s;",

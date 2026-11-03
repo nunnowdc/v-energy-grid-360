@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import ValidationError
 
 from ..contratos.modelos_rag import ChunkConhecimento, ResultadoBuscaRAG
+from ..services.conexao_banco import aplicar_perfil, url_do_banco
 
 logger = logging.getLogger("venergy.buscador_vetorial")
 
@@ -60,8 +61,10 @@ class BuscadorVetorial:
         modelo_embedding: str = "paraphrase-multilingual-MiniLM-L12-v2",
         top_k: int = TOP_K,
         limiar: Optional[float] = None,
+        perfil: Optional[str] = None,
     ):
-        self.db_url = db_url or os.getenv("DATABASE_URL")
+        self.db_url = db_url or url_do_banco()
+        self.perfil = perfil
         self.modelo_embedding = modelo_embedding
         self.top_k = top_k
         self.limiar = _obter_limiar_padrao() if limiar is None else limiar
@@ -124,6 +127,7 @@ class BuscadorVetorial:
 
             with psycopg2.connect(self.db_url) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    aplicar_perfil(cur, self.perfil)
                     # Desativa o scan de índice para forçar busca exata por knn (ideal para base pequena).
                     # Deve ser removido se a tabela crescer significativamente ou ao adotar índices HNSW / IVFFLAT calibrados.
                     cur.execute("SET enable_indexscan = off;")
