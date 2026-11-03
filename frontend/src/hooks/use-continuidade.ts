@@ -20,6 +20,9 @@ export type AlimentadorContinuidade = {
   dec: number
   fec: number
   dec_sem_dia_critico: number
+  // Parte do DEC que vem de causas que a manutenção preventiva reduz
+  // (vegetação, falha de equipamento e sobrecarga), no período comparado
+  dec_evitavel: number
   dec_anterior: number
 }
 

@@ -105,7 +105,7 @@ test('mostra as telas de cada perfil, ao lado e embaixo do perfil escolhido', ()
   abrir()
 
   const resumo = screen.getByText('O que cada perfil vê').closest('[data-slot="card"]') as HTMLElement
-  expect(within(resumo).getByText('Diretoria').nextSibling).toHaveTextContent('Indicadores, Receita e Continuidade')
+  expect(within(resumo).getByText('Diretoria').nextSibling).toHaveTextContent('Indicadores, Receita, Continuidade e Visão 360')
   expect(within(resumo).getByText('Administrador (TI)').nextSibling).toHaveTextContent(/Fila de inspeção, Usuários, Agente de IA e Avaliação do agente$/)
 
   escolherPerfil('Perdas')

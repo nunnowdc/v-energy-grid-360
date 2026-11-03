@@ -23,7 +23,7 @@ test('buscarItemAtual encontra a tela pelo endereço', () => {
 })
 
 test('cada perfil vê as telas da matriz combinada pelo time', () => {
-  expect(telasDoPerfil('DIRETORIA')).toEqual(['Indicadores', 'Receita', 'Continuidade'])
+  expect(telasDoPerfil('DIRETORIA')).toEqual(['Indicadores', 'Receita', 'Continuidade', 'Visão 360'])
   expect(telasDoPerfil('ATENDIMENTO')).toEqual(['Visão 360'])
   expect(telasDoPerfil('PERDAS')).toEqual(['Visão 360', 'Fila de inspeção'])
   expect(telasDoPerfil('OPERACAO')).toEqual(['Continuidade'])

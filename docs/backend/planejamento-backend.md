@@ -179,7 +179,7 @@ Na matriz, **✓** = permitido para usuário autenticado, **—** = negado e **p
 | `GET /api/filters/options` | Implementado | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `GET /api/metrics/general` | Implementado | ✓ | — | — | — | ✓ |
 | `GET /api/metrics/revenue-variance` | Implementado | ✓ | — | — | — | ✓ |
-| `GET /api/uc/{uc_id}/360` | Implementado | — | ✓ | ✓ | — | ✓ |
+| `GET /api/uc/{uc_id}/360` | Implementado | ✓ | ✓ | ✓ | — | ✓ |
 | `GET /api/network/continuity` | Implementado | ✓ | — | — | ✓ | ✓ |
 | `GET /api/inspections/queue` | Implementado | — | — | ✓ | — | ✓ |
 | `GET /api/inspections/orders` | Implementado | — | — | ✓ | — | ✓ |
@@ -187,7 +187,7 @@ Na matriz, **✓** = permitido para usuário autenticado, **—** = negado e **p
 | `PATCH /api/inspections/{id}` | Implementado | — | — | ✓ | — | ✓ |
 | `DELETE /api/inspections/{id}` | Implementado | — | — | ✓ | — | ✓ |
 | `POST /api/ai/ask` | Implementado | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `GET /api/ai/insights/{tela}/{entidade_id}` | Implementado | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `GET /api/ai/insights/{tela}/{entidade_id}` | Implementado | ✓ | ✓ | ✓ | — | ✓ |
 | `POST /api/ai/feedback` | Implementado | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `GET /api/ai/audit/{audit_id}` | Implementado | — | — | — | — | ✓ |
 
@@ -199,7 +199,7 @@ Os cinco endpoints operacionais de Fila de Inspeção são exclusivos de `PERDAS
 | --- | :---: | :---: | :---: | :---: | :---: |
 | Indicadores | ✓ | — | — | — | ✓ |
 | Receita | ✓ | — | — | — | ✓ |
-| Visão 360 | — | ✓ | ✓ | — | ✓ |
+| Visão 360 | ✓ | ✓ | ✓ | — | ✓ |
 | Fila de Inspeção | — | — | ✓ | — | ✓ |
 | Continuidade | ✓ | — | — | ✓ | ✓ |
 
