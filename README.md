@@ -781,11 +781,11 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 Toda a seção de engenharia de dados foi organizada em um job nativo do databricks (como foi especificado no case), a pipeline roda sempre que dados novos chegam ao volume na plataforma, essa abordagem foi tomada pelo time de dados tendo em vista a importância do tratamento e disponibilidade de dados no portal de forma celere sempre que dados novos forem coletados. Seguem algumas evidências de como está configurado e como ocorreram as últimas execuções do job:
 
 - **Arquitetura do Job**
-![configuração atual do job no databricks](data-engineering\job\estrutura_job.png)
+![configuração atual do job no databricks](data-engineering/job/estrutura_job.png)
 
 
 - **Runs da Pipeline**
-![runs do job no databricks](data-engineering\job\evidencia_runs.png)
+![runs do job no databricks](data-engineering/job/evidencia_runs.png)
 
 ## Fluxo de trabalho (Git Flow)
 
