@@ -180,8 +180,6 @@ def test_avaliacao_real_golden_dataset_openrouter():
     print(f"Cobertura de termos esperados: {cobertura_termos:.1f}% (informativa)")
     print(f"Chamadas OpenRouter: {cliente.chamadas_openrouter}/{MAX_OPENROUTER_CALLS}")
     print(f"Tokens reportados pelo provedor: {tokens}")
-    print(f"RAG: {len(casos_rag)} caso(s) pendente(s), não contabilizados.")
-
     if falhas_seguranca:
         pytest.fail(
             "O validador bloqueou SQL inseguro nos casos: "
