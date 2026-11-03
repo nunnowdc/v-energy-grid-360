@@ -11,12 +11,42 @@ from ..contratos.estado_agente import EstadoAgente
 
 logger = logging.getLogger("venergy.no_cache_parametrizado")
 
-MUNICIPIOS = {
-    "recife", "olinda", "jaboatão", "jaboatao", "paulista", "camaragibe",
-    "caruaru", "cabo de santo agostinho", "cabo", "moreno", "igarassu",
-    "itamaracá", "itamaraca", "araçoiaba", "aracoiaba", "são lourenço",
-    "sao lourenco", "paudalho", "abreu e lima",
+# Como a pergunta costuma escrever (sem acento) -> nome exato no banco. O filtro do template
+# compara o nome inteiro: "jaboatão" sozinho não acha "Jaboatão dos Guararapes".
+_MUNICIPIOS_DO_BANCO = {
+    "abreu e lima": "Abreu e Lima",
+    "aracoiaba": "Araçoiaba",
+    "cabo de santo agostinho": "Cabo de Santo Agostinho",
+    "cabo": "Cabo de Santo Agostinho",
+    "camaragibe": "Camaragibe",
+    "igarassu": "Igarassu",
+    "ilha de itamaraca": "Ilha de Itamaracá",
+    "itamaraca": "Ilha de Itamaracá",
+    "ipojuca": "Ipojuca",
+    "itapissuma": "Itapissuma",
+    "jaboatao dos guararapes": "Jaboatão dos Guararapes",
+    "jaboatao": "Jaboatão dos Guararapes",
+    "moreno": "Moreno",
+    "olinda": "Olinda",
+    "paulista": "Paulista",
+    "recife": "Recife",
+    "sao lourenco da mata": "São Lourenço da Mata",
+    "sao lourenco": "São Lourenço da Mata",
 }
+# Formas aceitas na pergunta, com e sem acento; as mais longas primeiro, para o regex
+# preferir "cabo de santo agostinho" a "cabo"
+MUNICIPIOS = sorted(
+    set(_MUNICIPIOS_DO_BANCO)
+    | {nome.lower() for nome in _MUNICIPIOS_DO_BANCO.values()}
+    | {"jaboatão", "itamaracá", "são lourenço"},
+    key=len,
+    reverse=True,
+)
+
+
+def _municipio_do_banco(trecho: str) -> str:
+    return _MUNICIPIOS_DO_BANCO[_sem_acentos(trecho.lower())]
+
 # Este template NÃO filtra por classe: qualquer menção a classe cai no miss (ver _extrair_slots).
 CLASSES = {"residencial", "comercial", "industrial", "rural"}
 # A camada Gold cobre jul/2022 a jun/2026.
@@ -32,16 +62,18 @@ _TEMPLATES_REGISTROS = [
     {
         "esqueleto": "faturamento_classe_municipio_ano",
         "intencao": {"faturamento", "classe", "municipio"},
+        "palavras": {"faturamento", "faturou", "faturado", "faturada", "receita", "receitas", "classe"},
         "slots": {
             "classe": (r"\b({})\b".format("|".join(CLASSES)), str),
-            "municipio": (r"(?<!\w)({})(?!\w)".format("|".join(MUNICIPIOS)), str),
+            "municipio": (r"(?<!\w)({})(?!\w)".format("|".join(MUNICIPIOS)), _municipio_do_banco),
             "ano": (r"(?<!\d)(\d{4})(?!\d)", int),
         },
         "sql": (
             "SELECT u.classe, SUM(f.receita_faturada) AS total_receita "
             "FROM fact_faturamento f "
             "JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc "
-            "WHERE u.classe = :classe AND u.municipio = :municipio AND f.ano = :ano "
+            "WHERE unaccent(lower(u.classe)) = unaccent(lower(:classe)) "
+            "AND unaccent(lower(u.municipio)) = unaccent(lower(:municipio)) AND f.ano = :ano "
             "GROUP BY u.classe"
         ),
     },
@@ -50,8 +82,9 @@ _TEMPLATES_REGISTROS = [
     {
         "esqueleto": "faturamento_por_municipio_ano",
         "intencao": {"faturamento", "receita", "receitas"},
+        "palavras": {"faturamento", "faturou", "faturado", "faturada", "receita", "receitas"},
         "slots": {
-            "municipio": (r"(?<!\w)({})(?!\w)".format("|".join(MUNICIPIOS)), str),
+            "municipio": (r"(?<!\w)({})(?!\w)".format("|".join(MUNICIPIOS)), _municipio_do_banco),
             "ano": (r"(?<!\d)(\d{4})(?!\d)", int),
         },
         "sql": (
@@ -126,7 +159,7 @@ _TEMPLATES_REGISTROS = [
         "intencao": {"receita", "mensal", "segmento"},
         "slots": {
             "competencia": (r"(?<!\d)(\d{4})(?!\d)", int),
-            "municipio": (r"(?<!\w)({})(?!\w)".format("|".join(MUNICIPIOS)), str),
+            "municipio": (r"(?<!\w)({})(?!\w)".format("|".join(MUNICIPIOS)), _municipio_do_banco),
         },
         "sql": (
             "SELECT competencia, municipio, classe, possui_gd, bandeira_tarifaria, "
@@ -287,6 +320,7 @@ def _encontrar_template(pergunta: str) -> Optional[Dict[str, Any]]:
         if not (palavras & rec.get("intencao", set())):
             continue
         extracted = {}
+        trechos = []
         ok = True
         for placeholder, (padrao, converter) in rec.get("slots", {}).items():
             m = re.search(padrao, texto)
@@ -299,8 +333,20 @@ def _encontrar_template(pergunta: str) -> Optional[Dict[str, Any]]:
                 ok = False
                 break
             extracted[placeholder] = valor
-        if ok:
-            return {"registro": rec, "slots": extracted}
+            trechos.append(m.group(0))
+        if not ok:
+            continue
+        # Sobrou palavra que o template não conhece ("recebida", "média", "cliente", "bairro",
+        # "comparada"...): a pergunta é outra, e o Text-to-SQL resolve. Dois anos = comparação.
+        permitidas = (
+            _PALAVRAS_NEUTRAS
+            | rec.get("intencao", set())
+            | rec.get("palavras", set())
+            | set(re.findall(r"[a-z0-9]+", _sem_acentos(" ".join(trechos))))
+        )
+        if palavras - permitidas or len(re.findall(_ANO_ISOLADO, texto)) > 1:
+            continue
+        return {"registro": rec, "slots": extracted}
     return None
 
 

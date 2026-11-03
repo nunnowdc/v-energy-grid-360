@@ -37,6 +37,8 @@ def _limpar_sql(texto: str) -> tuple[str, list[str]]:
 
 
 # ATENÇÃO: As datas da regra R3 ('jul/2025-jun/2026' e 'jul/2024-jun/2025') são fixas e exigem revisão quando a base for atualizada.
+# ATENÇÃO: A lista do item 5 da seção 4 (valores que existem no banco) também é fixa: ao recarregar a base,
+# confira com SELECT DISTINCT nas colunas listadas.
 SYSTEM_PROMPT_SQL = """
 Você é um especialista em SQL, PostgreSQL e Analista de Dados Sênior da distribuidora de energia V-Energy Grid 360 (Recife-PE).
 
@@ -58,6 +60,7 @@ C1 Razões (colunas *_pct, preco_*, dec, fec, ticket médio, inadimplência) nun
 C2 Variação percentual: 100.0 * (SUM(atual) - SUM(anterior)) / NULLIF(SUM(anterior), 0). Ex: volume = 100.0 * (SUM(kwh_p1)-SUM(kwh_p0))/NULLIF(SUM(kwh_p0),0).
 C3 Médias: Ponderada = SUM(num)/NULLIF(SUM(den),0). Mensal = total/NULLIF(COUNT(DISTINCT competencia),0). AVG() só em colunas por linha de fact_*.
 C4 Estoque/Fluxo: total_ucs e faturas são contagens mensais. Para total no período use uma competência ou COUNT(DISTINCT id_uc) em dim_/fact_.
+C4-B "Por cliente", "por UC" ou "por unidade" = dividir por COUNT(DISTINCT id_uc) em fact_faturamento. "Ticket médio" ou "por fatura" = dividir por faturas. Nunca troque um pelo outro.
 C5 Contagens: Em agg_*, use SUM em colunas de contagem (faturas, interrupcoes). Em fact_*, use COUNT(DISTINCT id) para entidades.
 C6 Grão e Fan-out: No JOIN entre grãos diferentes, agregue antes (CTE) ou use COUNT(DISTINCT). Mescle linhas possui_gd antes de calcular razões.
 C7 Divisão: Use 100.0 * ou ::numeric no numerador para evitar truncamento e NULLIF(divisor,0) para tratar nulos (não use 0).
@@ -448,6 +451,14 @@ CREATE TABLE public.fila_inspecao (
 3. Para múltiplos valores:
    WHERE unaccent(lower(coluna)) IN (unaccent(lower('valor1')), unaccent(lower('valor2')))
 4. EXCEÇÃO À REGRA DE TEXTO: NÃO USE unaccent() em colunas numéricas, datas, ou colunas de ID gerados (id_uc, id_medidor, protocolo). Nestes, use igualdade direta (=).
+5. VALORES QUE EXISTEM NO BANCO: filtre por um destes valores, sempre com unaccent(lower(...)) como na regra 2 (um valor fora da lista devolve zero linhas):
+   - dim_unidade_consumidora.status: 'ATIVA' (todas as UCs da base estão ativas)
+   - classe: 'RESIDENCIAL', 'COMERCIAL', 'INDUSTRIAL', 'RURAL', 'PODER_PUBLICO'
+   - fact_faturamento.status_pagamento: 'PAGA', 'PENDENTE', 'ATRASADA'
+   - bandeira_tarifaria: 'VERDE', 'AMARELA', 'VERMELHA_P1', 'VERMELHA_P2'
+   - fact_ocorrencias.causa: 'CLIMATICA', 'FALHA DE EQUIPAMENTO', 'SOBRECARGA', 'TERCEIROS', 'VEGETACAO', 'NAO IDENTIFICADA', 'NAO INFORMADA'
+   - possui_gd: boolean (true/false), nunca texto
+   - agg_receita_preco_volume.periodo_p0 / periodo_p1: '2022-07 a 2023-06' / '2025-07 a 2026-06' (uma comparação só: não filtre por essas colunas, apenas selecione)
 
 ================================================================================
 5. REGRAS ABSOLUTAS DE SAÍDA E SINTAXE:
@@ -470,7 +481,7 @@ Mais regras:
 R1 Grão geográfico: Ao agrupar, rankear ou filtrar por bairro, agrupe também por município (GROUP BY municipio, bairro) e inclua municipio no SELECT. Aplique em todas as tabelas com ambas colunas.
 R2 Perda/queda: Para "perdeu", "caiu", "queda", etc., calcule variação (atual - anterior) e filtre variação NEGATIVA (< 0). Para "ganhou", "cresceu", etc., filtre POSITIVA (> 0). Use valor absoluto salvo se pedirem %.
 R3 "Último ano": Sem data explícita, use jul/2025-jun/2026 (atual) vs jul/2024-jun/2025 (anterior). Registre em -- Premissa e inclua 'jul/2025-jun/2026' AS periodo_atual e 'jul/2024-jun/2025' AS periodo_anterior no SELECT.
-R4 Comparação fixa: agg_receita_preco_volume só serve para P0 (jul/2022-jun/2023) vs P1 (jul/2025-jun/2026). Selecione SEMPRE periodo_p0 e periodo_p1. Para outras janelas, use agg_receita_mensal.
+R4 Comparação fixa: agg_receita_preco_volume só serve para P0 (jul/2022-jun/2023) vs P1 (jul/2025-jun/2026); a tabela inteira já é essa comparação. Selecione SEMPRE periodo_p0 e periodo_p1, mas NUNCA filtre por elas (o texto gravado é '2022-07 a 2023-06'). Para outras janelas, use agg_receita_mensal.
 
 ================================================================================
 4-C. RESTRIÇÕES DO VALIDADOR (SQL reprovado gasta tentativa):

@@ -118,5 +118,71 @@
     "colunas_obrigatorias": [],
     "termos_obrigatorios_resposta": ["escopo"],
     "deve_recusar": true
+  },
+  {
+    "id": "TC-013",
+    "pergunta": "Qual bairro mais perdeu volume residencial entre jul/2022-jun/2023 e jul/2025-jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT municipio, bairro, SUM(kwh_p1) - SUM(kwh_p0) AS variacao_kwh FROM agg_receita_preco_volume WHERE classe = 'RESIDENCIAL' GROUP BY municipio, bairro ORDER BY variacao_kwh LIMIT 1",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["kwh_p0", "kwh_p1", "bairro"],
+    "termos_obrigatorios_resposta": ["Iputinga"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-014",
+    "pergunta": "Qual bairro mais perdeu volume residencial no último ano?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT municipio, bairro, SUM(consumo_kwh) FILTER (WHERE competencia >= DATE '2025-07-01') - SUM(consumo_kwh) FILTER (WHERE competencia < DATE '2025-07-01') AS variacao_kwh FROM agg_receita_mensal WHERE classe = 'RESIDENCIAL' AND competencia >= DATE '2024-07-01' AND competencia < DATE '2026-07-01' GROUP BY municipio, bairro ORDER BY variacao_kwh LIMIT 1",
+    "tabelas_obrigatorias": ["agg_receita_mensal"],
+    "colunas_obrigatorias": ["consumo_kwh", "competencia", "bairro"],
+    "termos_obrigatorios_resposta": ["Iputinga"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-015",
+    "pergunta": "Qual a inadimplência de Recife em 2025?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT ROUND((100.0 * (SUM(receita_faturada) - SUM(receita_recebida)) / NULLIF(SUM(receita_faturada), 0))::numeric, 2) AS inadimplencia_pct FROM agg_receita_mensal WHERE municipio = 'Recife' AND ano = 2025",
+    "tabelas_obrigatorias": ["agg_receita_mensal"],
+    "colunas_obrigatorias": ["receita_faturada", "receita_recebida"],
+    "termos_obrigatorios_resposta": ["inadimplência"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-016",
+    "pergunta": "Qual o preço médio do kWh residencial em 2025?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT ROUND((SUM(receita_faturada) / NULLIF(SUM(consumo_kwh), 0))::numeric, 4) AS preco_medio_kwh FROM agg_receita_mensal WHERE classe = 'RESIDENCIAL' AND ano = 2025",
+    "tabelas_obrigatorias": ["agg_receita_mensal"],
+    "colunas_obrigatorias": ["receita_faturada", "consumo_kwh"],
+    "termos_obrigatorios_resposta": ["kWh"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-017",
+    "pergunta": "Quantas UCs foram faturadas em 2025?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT COUNT(DISTINCT id_uc) AS ucs_faturadas FROM fact_faturamento WHERE ano = 2025",
+    "tabelas_obrigatorias": ["fact_faturamento"],
+    "colunas_obrigatorias": ["id_uc"],
+    "termos_obrigatorios_resposta": ["UC"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-018",
+    "pergunta": "Quanto variou a receita das UCs com geração própria entre jul/2022-jun/2023 e jul/2025-jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT SUM(receita_p1) - SUM(receita_p0) AS variacao_receita FROM agg_receita_preco_volume WHERE possui_gd = true",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["receita_p0", "receita_p1", "possui_gd"],
+    "termos_obrigatorios_resposta": ["receita"],
+    "deve_recusar": false,
+    "somente_banco_real": true
   }
 ]

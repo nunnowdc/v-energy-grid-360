@@ -47,9 +47,9 @@ class ClienteLLM:
             try:
                 self.timeout = float(env_timeout)
             except ValueError:
-                self.timeout = 30.0
+                self.timeout = 90.0
         else:
-            self.timeout = 30.0
+            self.timeout = 90.0
         
         # Chaves de API e URLs base
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()

@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS tb_avaliacoes_agente_casos (
     tempo_ms      DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (avaliacao_id, caso_id)
 );
+-- Coluna nova: bancos criados antes dela recebem aqui, sem perder as execuções
+ALTER TABLE tb_avaliacoes_agente ADD COLUMN IF NOT EXISTS taxa_resultado_certo DOUBLE PRECISION;
 """
 
 _COLUNAS_EXECUCAO = (
@@ -47,6 +49,7 @@ _COLUNAS_EXECUCAO = (
     "taxa_execucao",
     "taxa_component_match",
     "taxa_abstencao",
+    "taxa_resultado_certo",
     "tokens_medio",
     "duracao_ms",
 )

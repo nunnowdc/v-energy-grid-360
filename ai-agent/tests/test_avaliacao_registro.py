@@ -143,6 +143,8 @@ def test_resumo_calcula_as_quatro_metricas_por_tipo_de_caso():
         "taxa_component_match": 50.0,
         # 1 das 2 recusas
         "taxa_abstencao": 50.0,
+        # Nenhum caso com resultado esperado conferido
+        "taxa_resultado_certo": None,
         "tokens_medio": 6000 / 7,
     }
 

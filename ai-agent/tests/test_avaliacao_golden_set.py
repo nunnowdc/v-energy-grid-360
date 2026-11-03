@@ -138,7 +138,9 @@ def test_avaliacao_completa_golden_dataset(sql_executor_teste: SQLExecutor, post
     Executa a avaliação automatizada ponta a ponta sobre todos os 12 casos do Golden Dataset
     e valida os thresholds de qualidade estabelecidos no requisito REQ-AI-08.
     """
-    casos = carregar_golden_dataset()
+    # Os casos com agg_* só rodam no banco de verdade (scripts/avaliar_golden_set.py):
+    # o banco sintético deste teste não tem as tabelas agregadas
+    casos = [caso for caso in carregar_golden_dataset() if not caso.get("somente_banco_real")]
     assert len(casos) >= 10, "Golden dataset deve conter no mínimo 10 casos canônicos."
 
     llm_avaliador = LLMGoldenDataset(casos=casos)
