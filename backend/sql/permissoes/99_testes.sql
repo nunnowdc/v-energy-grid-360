@@ -1,6 +1,8 @@
 -- Testes das permissões: simula cada perfil com SET ROLE e tenta o permitido e o proibido.
 -- Rodar SEM parar no primeiro erro (sem ON_ERROR_STOP): os "permission denied" são esperados.
--- Só no banco local de desenvolvimento: os testes de ordens escrevem (desfeito no ROLLBACK).
+-- Só no banco local de desenvolvimento: os testes de ordens, contas e do agente escrevem
+-- (desfeito no ROLLBACK). Os do agente precisam das tabelas tb_* (criar_tabelas_ia.py) e do
+-- 08_contas_portal.sql já aplicado.
 --   psql -h localhost -p 5433 -U postgres -d v_energy -f backend/sql/permissoes/99_testes.sql
 -- UC132549 está na fila de inspeção; UC100005 não está.
 
@@ -17,6 +19,30 @@ SELECT nome_titular FROM dim_unidade_consumidora LIMIT 1;
 SELECT count(*) FROM fila_inspecao;
 \echo '[negado] leituras'
 SELECT count(*) FROM fact_leituras;
+
+\echo '[ok] chat: registrar a pergunta (tb_auditoria_agente; desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, user_id, perfil)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', NULL, 'OPERACAO');
+ROLLBACK;
+\echo '[negado] chat: gravar o feedback junto com a pergunta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, feedback_usuario)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', 1);
+ROLLBACK;
+\echo '[ok] chat: feedback na própria resposta (UPDATE de feedback_usuario filtrando id e user_id)'
+UPDATE tb_auditoria_agente SET feedback_usuario = 1
+ WHERE id = '00000000-0000-0000-0000-000000000000' AND user_id = '00000000-0000-0000-0000-000000000000';
+\echo '[negado] chat: ler as perguntas da auditoria'
+SELECT pergunta_original FROM tb_auditoria_agente LIMIT 1;
+\echo '[ok] chat: cache de perguntas certificadas'
+SELECT sql_template FROM tb_cache_perguntas_certificadas WHERE esqueleto = 'teste' AND ativo = TRUE LIMIT 1;
+\echo '[negado] chat: alterar o cache de perguntas certificadas'
+UPDATE tb_cache_perguntas_certificadas SET ativo = FALSE WHERE false;
+\echo '[ok] chat: base do RAG'
+SELECT count(*) FROM tb_conhecimento_vetorial;
+\echo '[negado] insights da Visão 360 (perfil sem a tela)'
+SELECT count(*) FROM tb_insights_tela;
 
 RESET ROLE;
 
@@ -76,6 +102,44 @@ UPDATE ordens_inspecao SET id_uc = 'UC100005' WHERE false;
 \echo '[negado] apagar ordem'
 DELETE FROM ordens_inspecao WHERE false;
 
+\echo '[ok] chat: registrar a pergunta (tb_auditoria_agente; desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, user_id, perfil)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', NULL, 'PERDAS');
+ROLLBACK;
+\echo '[negado] chat: gravar o feedback junto com a pergunta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, feedback_usuario)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', 1);
+ROLLBACK;
+\echo '[ok] chat: feedback na própria resposta (UPDATE de feedback_usuario filtrando id e user_id)'
+UPDATE tb_auditoria_agente SET feedback_usuario = 1
+ WHERE id = '00000000-0000-0000-0000-000000000000' AND user_id = '00000000-0000-0000-0000-000000000000';
+\echo '[negado] chat: ler as perguntas da auditoria'
+SELECT pergunta_original FROM tb_auditoria_agente LIMIT 1;
+\echo '[ok] chat: cache de perguntas certificadas'
+SELECT sql_template FROM tb_cache_perguntas_certificadas WHERE esqueleto = 'teste' AND ativo = TRUE LIMIT 1;
+\echo '[negado] chat: alterar o cache de perguntas certificadas'
+UPDATE tb_cache_perguntas_certificadas SET ativo = FALSE WHERE false;
+\echo '[ok] chat: base do RAG'
+SELECT count(*) FROM tb_conhecimento_vetorial;
+\echo '[ok] insights da Visão 360: ler e gravar o cache (desfeito no ROLLBACK)'
+SELECT texto_insight FROM tb_insights_tela WHERE tela = 'visao_360' AND entidade_id = 'UC132549';
+BEGIN;
+INSERT INTO tb_insights_tela (tela, entidade_id, fatos_calculados_json, texto_insight, selo_validacao)
+VALUES ('teste_permissoes', 'UC132549', '[]', 'teste', 'teste')
+ON CONFLICT (tela, entidade_id) DO UPDATE SET
+    fatos_calculados_json = EXCLUDED.fatos_calculados_json, texto_insight = EXCLUDED.texto_insight,
+    selo_validacao = EXCLUDED.selo_validacao, gerado_em = CURRENT_TIMESTAMP;
+ROLLBACK;
+\echo '[negado] insights: apagar do cache'
+DELETE FROM tb_insights_tela WHERE false;
+\echo '[negado] criar conta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO usuarios (id, nome, email, senha_hash, perfil, criado_em)
+VALUES (gen_random_uuid(), 'Teste permissões', 'teste.permissoes@exemplo.local', 'x', 'OPERACAO', now());
+ROLLBACK;
+
 RESET ROLE;
 
 \echo '========== ADMIN_TI =========='
@@ -100,12 +164,68 @@ ROLLBACK;
 SELECT id, nome FROM usuarios LIMIT 1;
 \echo '[negado] e-mail dos usuários'
 SELECT email FROM usuarios LIMIT 1;
-\echo '[ok] uso do agente (tb_auditoria_agente, só as colunas da tela; pulado se a tabela não existir)'
+\echo '[ok] uso do agente (tb_auditoria_agente)'
 SELECT count(*), max(data_hora) FROM tb_auditoria_agente;
 \echo '[negado] apagar ordem'
 DELETE FROM ordens_inspecao WHERE false;
 \echo '[negado] escrever na Gold'
 UPDATE fila_inspecao SET score = 0 WHERE false;
+
+\echo '[ok] chat: registrar a pergunta (tb_auditoria_agente; desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, user_id, perfil)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', NULL, 'ADMIN_TI');
+ROLLBACK;
+\echo '[negado] chat: gravar o feedback junto com a pergunta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, feedback_usuario)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', 1);
+ROLLBACK;
+\echo '[ok] chat: feedback na própria resposta (UPDATE de feedback_usuario filtrando id e user_id)'
+UPDATE tb_auditoria_agente SET feedback_usuario = 1
+ WHERE id = '00000000-0000-0000-0000-000000000000' AND user_id = '00000000-0000-0000-0000-000000000000';
+\echo '[ok] chat: cache de perguntas certificadas'
+SELECT sql_template FROM tb_cache_perguntas_certificadas WHERE esqueleto = 'teste' AND ativo = TRUE LIMIT 1;
+\echo '[negado] chat: alterar o cache de perguntas certificadas'
+UPDATE tb_cache_perguntas_certificadas SET ativo = FALSE WHERE false;
+\echo '[ok] chat: base do RAG'
+SELECT count(*) FROM tb_conhecimento_vetorial;
+\echo '[ok] insights da Visão 360: ler e gravar o cache (desfeito no ROLLBACK)'
+SELECT texto_insight FROM tb_insights_tela WHERE tela = 'visao_360' AND entidade_id = 'UC132549';
+BEGIN;
+INSERT INTO tb_insights_tela (tela, entidade_id, fatos_calculados_json, texto_insight, selo_validacao)
+VALUES ('teste_permissoes', 'UC132549', '[]', 'teste', 'teste')
+ON CONFLICT (tela, entidade_id) DO UPDATE SET
+    fatos_calculados_json = EXCLUDED.fatos_calculados_json, texto_insight = EXCLUDED.texto_insight,
+    selo_validacao = EXCLUDED.selo_validacao, gerado_em = CURRENT_TIMESTAMP;
+ROLLBACK;
+\echo '[negado] insights: apagar do cache'
+DELETE FROM tb_insights_tela WHERE false;
+\echo '[ok] trilha de auditoria completa (GET /api/ai/audit/{audit_id}, SELECT *)'
+SELECT * FROM tb_auditoria_agente LIMIT 1;
+\echo '[negado] senha dos usuários'
+SELECT senha_hash FROM usuarios LIMIT 1;
+\echo '[ok] criar conta: INSERT sem RETURNING (desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO usuarios (id, nome, email, senha_hash, perfil, criado_em)
+VALUES (gen_random_uuid(), 'Teste permissões', 'teste.permissoes@exemplo.local', 'x', 'OPERACAO', now());
+ROLLBACK;
+\echo '[ok] criar conta devolvendo só id e nome (desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO usuarios (id, nome, email, senha_hash, perfil, criado_em)
+VALUES (gen_random_uuid(), 'Teste permissões', 'teste.permissoes@exemplo.local', 'x', 'OPERACAO', now())
+RETURNING id, nome;
+ROLLBACK;
+\echo '[negado] criar conta com RETURNING de todas as colunas, como o UsersRepository.create faz hoje (pendente no backend; dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO usuarios (id, nome, email, senha_hash, perfil, criado_em)
+VALUES (gen_random_uuid(), 'Teste permissões', 'teste.permissoes@exemplo.local', 'x', 'OPERACAO', now())
+RETURNING *;
+ROLLBACK;
+\echo '[negado] mudar o perfil de uma conta'
+UPDATE usuarios SET perfil = 'ADMIN_TI' WHERE false;
+\echo '[negado] apagar conta'
+DELETE FROM usuarios WHERE false;
 
 RESET ROLE;
 
@@ -142,6 +262,30 @@ SELECT count(*) FROM fact_atendimentos;
 SELECT count(*) FROM ordens_inspecao;
 \echo '[negado] escrever na Gold'
 UPDATE agg_receita_mensal SET receita_faturada = 0 WHERE false;
+
+\echo '[ok] chat: registrar a pergunta (tb_auditoria_agente; desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, user_id, perfil)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', NULL, 'DIRETORIA');
+ROLLBACK;
+\echo '[negado] chat: gravar o feedback junto com a pergunta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, feedback_usuario)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', 1);
+ROLLBACK;
+\echo '[ok] chat: feedback na própria resposta (UPDATE de feedback_usuario filtrando id e user_id)'
+UPDATE tb_auditoria_agente SET feedback_usuario = 1
+ WHERE id = '00000000-0000-0000-0000-000000000000' AND user_id = '00000000-0000-0000-0000-000000000000';
+\echo '[negado] chat: ler as perguntas da auditoria'
+SELECT pergunta_original FROM tb_auditoria_agente LIMIT 1;
+\echo '[ok] chat: cache de perguntas certificadas'
+SELECT sql_template FROM tb_cache_perguntas_certificadas WHERE esqueleto = 'teste' AND ativo = TRUE LIMIT 1;
+\echo '[negado] chat: alterar o cache de perguntas certificadas'
+UPDATE tb_cache_perguntas_certificadas SET ativo = FALSE WHERE false;
+\echo '[ok] chat: base do RAG'
+SELECT count(*) FROM tb_conhecimento_vetorial;
+\echo '[negado] insights da Visão 360 (perfil sem a tela)'
+SELECT count(*) FROM tb_insights_tela;
 
 RESET ROLE;
 
@@ -188,5 +332,87 @@ INSERT INTO ordens_inspecao (id_uc, status) VALUES ('UC132549', 'ABERTA');
 ROLLBACK;
 \echo '[negado] escrever na Gold'
 UPDATE fact_atendimentos SET status_chamado = 'X' WHERE false;
+
+\echo '[ok] chat: registrar a pergunta (tb_auditoria_agente; desfeito no ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, user_id, perfil)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', NULL, 'ATENDIMENTO');
+ROLLBACK;
+\echo '[negado] chat: gravar o feedback junto com a pergunta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO tb_auditoria_agente (sessao_id, pergunta_original, rota_escolhida, selo_confianca, feedback_usuario)
+VALUES ('teste-permissoes', 'teste', 'teste', 'teste', 1);
+ROLLBACK;
+\echo '[ok] chat: feedback na própria resposta (UPDATE de feedback_usuario filtrando id e user_id)'
+UPDATE tb_auditoria_agente SET feedback_usuario = 1
+ WHERE id = '00000000-0000-0000-0000-000000000000' AND user_id = '00000000-0000-0000-0000-000000000000';
+\echo '[negado] chat: ler as perguntas da auditoria'
+SELECT pergunta_original FROM tb_auditoria_agente LIMIT 1;
+\echo '[ok] chat: cache de perguntas certificadas'
+SELECT sql_template FROM tb_cache_perguntas_certificadas WHERE esqueleto = 'teste' AND ativo = TRUE LIMIT 1;
+\echo '[negado] chat: alterar o cache de perguntas certificadas'
+UPDATE tb_cache_perguntas_certificadas SET ativo = FALSE WHERE false;
+\echo '[ok] chat: base do RAG'
+SELECT count(*) FROM tb_conhecimento_vetorial;
+\echo '[ok] insights da Visão 360: ler e gravar o cache (desfeito no ROLLBACK)'
+SELECT texto_insight FROM tb_insights_tela WHERE tela = 'visao_360' AND entidade_id = 'UC132549';
+BEGIN;
+INSERT INTO tb_insights_tela (tela, entidade_id, fatos_calculados_json, texto_insight, selo_validacao)
+VALUES ('teste_permissoes', 'UC132549', '[]', 'teste', 'teste')
+ON CONFLICT (tela, entidade_id) DO UPDATE SET
+    fatos_calculados_json = EXCLUDED.fatos_calculados_json, texto_insight = EXCLUDED.texto_insight,
+    selo_validacao = EXCLUDED.selo_validacao, gerado_em = CURRENT_TIMESTAMP;
+ROLLBACK;
+\echo '[negado] insights: apagar do cache'
+DELETE FROM tb_insights_tela WHERE false;
+
+RESET ROLE;
+
+\echo '========== CONTAS DO PORTAL (08_contas_portal.sql) =========='
+
+\echo '[ok] portal_app assume os 5 perfis (SET) sem herdar as permissões (esperado: t t t t t f f)'
+SELECT pg_has_role('portal_app', 'perfil_operacao', 'SET')    AS operacao,
+       pg_has_role('portal_app', 'perfil_perdas', 'SET')      AS perdas,
+       pg_has_role('portal_app', 'perfil_admin_ti', 'SET')    AS admin_ti,
+       pg_has_role('portal_app', 'perfil_diretoria', 'SET')   AS diretoria,
+       pg_has_role('portal_app', 'perfil_atendimento', 'SET') AS atendimento,
+       pg_has_role('portal_app', 'perfil_admin_ti', 'USAGE')  AS herda_admin_ti,
+       has_table_privilege('portal_app', 'dim_competencia', 'SELECT') AS le_gold;
+\echo '[ok] portal_auth não é membro de nenhum perfil (esperado: f)'
+SELECT pg_has_role('portal_auth', 'perfil_operacao', 'MEMBER')
+    OR pg_has_role('portal_auth', 'perfil_perdas', 'MEMBER')
+    OR pg_has_role('portal_auth', 'perfil_admin_ti', 'MEMBER')
+    OR pg_has_role('portal_auth', 'perfil_diretoria', 'MEMBER')
+    OR pg_has_role('portal_auth', 'perfil_atendimento', 'MEMBER') AS membro_de_perfil;
+
+SET ROLE portal_app;
+
+\echo '[negado] portal_app sem SET ROLE de perfil: Gold'
+SELECT count(*) FROM dim_competencia;
+\echo '[negado] portal_app sem SET ROLE de perfil: usuarios'
+SELECT id FROM usuarios LIMIT 1;
+
+RESET ROLE;
+
+SET ROLE portal_auth;
+
+\echo '[ok] login e validação do cookie: a linha inteira de usuarios'
+SELECT id, nome, email, senha_hash, perfil, criado_em FROM usuarios WHERE email = 'teste.permissoes@exemplo.local';
+\echo '[ok] troca da própria senha: FOR UPDATE e UPDATE de senha_hash (desfeito no ROLLBACK)'
+BEGIN;
+SELECT id FROM usuarios WHERE id = '00000000-0000-0000-0000-000000000000' FOR UPDATE;
+UPDATE usuarios SET senha_hash = 'x' WHERE id = '00000000-0000-0000-0000-000000000000';
+ROLLBACK;
+\echo '[negado] criar conta (dentro de ROLLBACK)'
+BEGIN;
+INSERT INTO usuarios (id, nome, email, senha_hash, perfil, criado_em)
+VALUES (gen_random_uuid(), 'Teste permissões', 'teste.permissoes@exemplo.local', 'x', 'OPERACAO', now());
+ROLLBACK;
+\echo '[negado] mudar o perfil de uma conta'
+UPDATE usuarios SET perfil = 'ADMIN_TI' WHERE false;
+\echo '[negado] Gold'
+SELECT count(*) FROM fila_inspecao;
+\echo '[negado] auditoria do agente'
+SELECT count(*) FROM tb_auditoria_agente;
 
 RESET ROLE;
