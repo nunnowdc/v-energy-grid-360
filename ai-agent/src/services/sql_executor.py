@@ -36,6 +36,12 @@ class ResultadoExecucaoSQL(BaseModel):
     total_linhas: int = 0
     tempo_execucao_ms: float = 0.0
     erro: Optional[str] = None
+    sem_permissao: bool = False  # SQLSTATE 42501 (InsufficientPrivilege)
+
+
+def _sem_permissao(exc: Exception) -> bool:
+    """True para permission denied (42501) em psycopg2 (pgcode) e psycopg3 (sqlstate)."""
+    return "42501" in (getattr(exc, "pgcode", None), getattr(exc, "sqlstate", None))
 
 
 class SQLExecutor:
@@ -128,6 +134,7 @@ class SQLExecutor:
             return ResultadoExecucaoSQL(
                 sucesso=False,
                 erro=str(e),
+                sem_permissao=_sem_permissao(e),
                 tempo_execucao_ms=(time.time() - inicio) * 1000,
             )
         finally:
@@ -181,6 +188,7 @@ class SQLExecutor:
                 return ResultadoExecucaoSQL(
                 sucesso=False,
                 erro=str(e),
+                sem_permissao=_sem_permissao(e),
                 tempo_execucao_ms=(time.time() - inicio) * 1000,
             )
         finally:
