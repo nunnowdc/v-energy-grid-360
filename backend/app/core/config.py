@@ -24,6 +24,43 @@ class Settings:
     cors_origins: tuple[str, ...]
     database_url: str | None = field(default=None, repr=False)
     jwt_secret_key: str | None = field(default=None, repr=False)
+    use_db_roles: bool = False
+    portal_app_database_url: str | None = field(default=None, repr=False)
+    portal_auth_database_url: str | None = field(default=None, repr=False)
+
+
+_TRUE_VALUES = frozenset({"true", "1", "yes", "on"})
+_FALSE_VALUES = frozenset({"false", "0", "no", "off"})
+
+
+def _parse_bool(name: str, raw: str) -> bool:
+    normalized = raw.strip().lower()
+    if normalized in _TRUE_VALUES:
+        return True
+    if normalized in _FALSE_VALUES or not normalized:
+        return False
+    raise ValueError(f"{name} deve ser true ou false")
+
+
+def _validate_database_url(name: str, raw: str) -> str | None:
+    """Valida a URL PostgreSQL e normaliza o driver para psycopg."""
+    if not raw:
+        return None
+    try:
+        parsed = make_url(raw)
+    except (ArgumentError, ValueError):
+        raise ValueError(f"{name} inválida") from None
+    if (
+        parsed.drivername not in {"postgresql", "postgresql+psycopg"}
+        or not parsed.database
+    ):
+        raise ValueError(
+            f"{name} deve usar postgresql ou postgresql+psycopg e indicar o banco"
+        )
+    # O SQLAlchemy precisa do driver no esquema; o agente de IA usa a forma sem ele
+    return parsed.set(drivername="postgresql+psycopg").render_as_string(
+        hide_password=False
+    )
 
 
 def get_settings() -> Settings:
@@ -65,27 +102,24 @@ def get_settings() -> Settings:
         ):
             raise ValueError(f"Origem CORS local inválida: {origin}")
 
-    database_url = value("DATABASE_URL", "") or None
-    if database_url:
-        try:
-            parsed_database_url = make_url(database_url)
-        except (ArgumentError, ValueError):
-            raise ValueError("DATABASE_URL inválida") from None
-        if (
-            parsed_database_url.drivername
-            not in {
-                "postgresql",
-                "postgresql+psycopg",
-            }
-            or not parsed_database_url.database
-        ):
-            raise ValueError(
-                "DATABASE_URL deve usar postgresql ou postgresql+psycopg e indicar o banco"
-            )
-        # O SQLAlchemy precisa do driver no esquema; o agente de IA usa a forma sem ele
-        database_url = parsed_database_url.set(
-            drivername="postgresql+psycopg"
-        ).render_as_string(hide_password=False)
+    database_url = _validate_database_url("DATABASE_URL", value("DATABASE_URL", ""))
+    use_db_roles = _parse_bool("USE_DB_ROLES", value("USE_DB_ROLES", ""))
+    portal_app_database_url = _validate_database_url(
+        "PORTAL_APP_DATABASE_URL", value("PORTAL_APP_DATABASE_URL", "")
+    )
+    portal_auth_database_url = _validate_database_url(
+        "PORTAL_AUTH_DATABASE_URL", value("PORTAL_AUTH_DATABASE_URL", "")
+    )
 
     jwt_secret_key = value("JWT_SECRET_KEY", "") or None
-    return Settings(environment, host, port, origins, database_url, jwt_secret_key)
+    return Settings(
+        environment,
+        host,
+        port,
+        origins,
+        database_url,
+        jwt_secret_key,
+        use_db_roles,
+        portal_app_database_url,
+        portal_auth_database_url,
+    )

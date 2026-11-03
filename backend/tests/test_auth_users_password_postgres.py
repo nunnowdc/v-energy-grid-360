@@ -13,7 +13,10 @@ from test_users_postgres import _apply_ddl
 from app.entities.user import Usuario
 from app.main import app
 from app.repositories.users import UsersRepository
-from app.security.dependencies import get_user_repository
+from app.security.dependencies import (
+    get_admin_user_repository,
+    get_user_repository,
+)
 from app.security.passwords import hash_password, verify_password
 from app.security.tokens import COOKIE_NAME, issue_token
 
@@ -46,6 +49,7 @@ def database_client(users_engine, monkeypatch):
             yield UsersRepository(connection)
 
     app.dependency_overrides[get_user_repository] = lambda: repository_context()
+    app.dependency_overrides[get_admin_user_repository] = lambda: repository_context()
     try:
         client = TestClient(app)
         client.cookies.set(COOKIE_NAME, issue_token(ADMIN_ID))

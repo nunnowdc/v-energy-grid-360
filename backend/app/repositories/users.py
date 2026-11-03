@@ -6,8 +6,15 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection
+from sqlalchemy.exc import IntegrityError
 
 from app.entities.user import Usuario
+
+
+def _is_duplicate_email(exc: IntegrityError) -> bool:
+    diag = getattr(exc.orig, "diag", None)
+    constraint = getattr(diag, "constraint_name", None)
+    return constraint == "usuarios_email_key" or "usuarios_email_key" in str(exc.orig)
 
 
 class UsersRepository:
@@ -77,12 +84,17 @@ class UsersRepository:
                 perfil=perfil,
                 criado_em=criado_em,
             )
-            .on_conflict_do_nothing(index_elements=[Usuario.email])
-            .returning(Usuario.__table__)
+            .returning(Usuario.id, Usuario.nome)
         )
-        with self.connection.begin():
-            row = self.connection.execute(statement).mappings().one_or_none()
-        return dict(row) if row is not None else None
+        try:
+            with self.connection.begin():
+                row = self.connection.execute(statement).mappings().one()
+        except IntegrityError as exc:
+            if _is_duplicate_email(exc):
+                return None
+            raise
+        # Só id e nome voltam do banco; senha_hash nunca é devolvida
+        return {"id": row["id"], "nome": row["nome"], "email": email, "perfil": perfil}
 
     def insert_if_absent(
         self,

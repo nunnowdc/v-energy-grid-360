@@ -10,7 +10,10 @@ from fastapi.testclient import TestClient
 
 from app.core import config
 from app.main import app
-from app.security.dependencies import get_user_repository
+from app.security.dependencies import (
+    get_admin_user_repository,
+    get_user_repository,
+)
 from app.security.tokens import COOKIE_NAME, issue_token
 
 SECRET = "segredo-sintetico-para-testes-com-mais-de-32-caracteres"
@@ -39,6 +42,7 @@ def session_client(monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", SECRET)
     users = FakeUsers()
     app.dependency_overrides[get_user_repository] = lambda: nullcontext(users)
+    app.dependency_overrides[get_admin_user_repository] = lambda: nullcontext(users)
     try:
         yield TestClient(app), users
     finally:

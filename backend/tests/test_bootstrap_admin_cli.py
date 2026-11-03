@@ -22,7 +22,7 @@ def test_main_reads_password_from_local_file_without_using_current_directory(
     def fake_connection():
         yield object()
 
-    monkeypatch.setattr(bootstrap_admin_ti, "get_connection", fake_connection)
+    monkeypatch.setattr(bootstrap_admin_ti, "get_owner_connection", fake_connection)
     monkeypatch.setattr(
         bootstrap_admin_ti,
         "bootstrap_admin",
@@ -62,7 +62,7 @@ def test_connection_failure_does_not_print_secret_or_sql(monkeypatch, capsys) ->
             "SELECT senha_hash FROM usuarios", None, RuntimeError(marker)
         )
 
-    monkeypatch.setattr(bootstrap_admin_ti, "get_connection", unavailable)
+    monkeypatch.setattr(bootstrap_admin_ti, "get_owner_connection", unavailable)
 
     assert bootstrap_admin_ti.main() == 1
     output = capsys.readouterr()
