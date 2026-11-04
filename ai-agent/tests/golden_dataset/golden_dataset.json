@@ -272,5 +272,38 @@
     "termos_obrigatorios_resposta": ["Olinda"],
     "deve_recusar": false,
     "somente_banco_real": true
+  },
+  {
+    "id": "TC-027",
+    "pergunta": "Quantas unidades com painel solar em Olinda tiveram queda de consumo acima de 30% entre jul/2022-jun/2023 e jul/2025-jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "WITH c AS (SELECT l.id_uc, SUM(l.consumo_kwh) FILTER (WHERE l.competencia >= DATE '2022-07-01' AND l.competencia < DATE '2023-07-01') AS p0, SUM(l.consumo_kwh) FILTER (WHERE l.competencia >= DATE '2025-07-01' AND l.competencia < DATE '2026-07-01') AS p1 FROM fact_leituras l JOIN dim_unidade_consumidora u ON u.id_uc = l.id_uc WHERE u.possui_gd = true AND u.municipio = 'Olinda' GROUP BY l.id_uc) SELECT COUNT(*) AS ucs_com_queda FROM c WHERE p1 < 0.7 * p0",
+    "tabelas_obrigatorias": ["fact_leituras", "dim_unidade_consumidora"],
+    "colunas_obrigatorias": ["consumo_kwh", "possui_gd", "municipio"],
+    "termos_obrigatorios_resposta": ["Olinda"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-028",
+    "pergunta": "Comparando os últimos 12 meses com o primeiro ano da base, o volume faturado caiu quase 4% e a receita subiu só 8%. Por quê?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT possui_gd, SUM(efeito_volume) AS efeito_volume FROM agg_receita_preco_volume GROUP BY possui_gd",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["possui_gd", "efeito_volume"],
+    "termos_obrigatorios_resposta": ["receita"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-029",
+    "pergunta": "Qual alimentador teve o maior DEC em 2025?",
+    "rota_esperada": "sql",
+    "sql_esperado": "(SELECT alimentador, dec FROM agg_continuidade_alimentador_anual WHERE ano = 2025 ORDER BY dec DESC LIMIT 1) UNION ALL (SELECT alimentador, dec FROM agg_continuidade_alimentador_anual WHERE ano = 2025 AND total_ucs >= 100 ORDER BY dec DESC LIMIT 1)",
+    "tabelas_obrigatorias": ["agg_continuidade_alimentador_anual"],
+    "colunas_obrigatorias": ["alimentador", "dec", "total_ucs"],
+    "termos_obrigatorios_resposta": ["DEC"],
+    "deve_recusar": false,
+    "somente_banco_real": true
   }
 ]

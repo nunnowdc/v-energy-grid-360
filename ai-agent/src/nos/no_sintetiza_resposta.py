@@ -32,6 +32,9 @@ REGRAS ABSOLUTAS:
 8. PERÍODOS: Se <DADOS_SQL> trouxer periodo_p0/periodo_p1 (ou periodo_atual/periodo_anterior), CITE OS DOIS PERÍODOS no texto (ex.: "de jul/2022 a jun/2023 para jul/2025 a jun/2026").
 9. VARIAÇÕES: Variações de kWh ou R$ devem ser expressas como "X kWh a menos" / "X kWh a mais" (valor absoluto, kWh inteiro, sem sinal negativo). Percentual: "queda de 22,2%", sem "−". Use OU "queda de X kWh" OU "X kWh a menos", nunca os dois juntos (ex.: NÃO escreva "queda de X kWh a menos").
 10. NÚMEROS: Cite SOMENTE números presentes em <DADOS_SQL> ou <TOTAIS_CALCULADOS>. Nada de "12 meses" ou contagens que não estejam nos dados; use as datas dos períodos.
+11. ALIMENTADOR PEQUENO: Se uma linha tiver alimentador_pequeno = true, diga que esse alimentador tem poucas UCs (menos de 100) e, se houver nos dados, cite também o de maior valor entre os que não são pequenos.
+12. GERAÇÃO PRÓPRIA: Se os dados vierem separados por possui_gd, diga quanto da variação veio das UCs com geração própria e quanto das demais.
+13. DOCUMENTOS: Não cite a numeração de seções, itens ou regras dos documentos do <CONTEXTO_RAG> (ex.: "regra 6.3"); use só o nome do documento no rodapé.
 """.strip()
 
 SYSTEM_PROMPT_SINTESE_RAG = """
@@ -120,8 +123,9 @@ def _formatar_valor(chave: str, valor: Any) -> str:
             elif val_f > 0:
                 return f"{_numero_br(abs(val_f), 0)} kWh a mais"
         return fmt
-    # percentuais
-    if "pct" in c or "percentual" in c:
+    # percentuais: "pct" como palavra do nome (variacao_volume_pct), e não dentro de
+    # outra (total_ucs_queda_acima_30pct é uma contagem, não um percentual)
+    if {"pct", "percentual"} & set(c.split("_")):
         fmt = f"{_numero_br(abs(val_f), 1)}%"
         if is_var:
             if val_f < 0:

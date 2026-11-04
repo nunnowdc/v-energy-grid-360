@@ -7,6 +7,12 @@ from src.nos.no_sintetiza_resposta import _formatar_valor
 from src.insights.conferente_numerico import conferir
 
 
+def test_contagem_com_pct_no_meio_do_nome_nao_vira_percentual():
+    assert _formatar_valor("total_ucs_queda_acima_30pct", 293) == "293"
+    assert _formatar_valor("variacao_volume_pct", -60.88) == "queda de 60,9%"
+    assert _formatar_valor("percentual_atraso", 8.3) == "8,3%"
+
+
 def test_formatar_valor_variacao_kwh():
     """Testa se colunas de variação de kwh aplicam 'a menos'/'a mais' sem tocar em consumo_atual_kwh."""
     # Variação negativa
