@@ -16,6 +16,7 @@ const execucao = (valores: Partial<ExecucaoAvaliacao> = {}): ExecucaoAvaliacao =
   taxa_abstencao: 100,
   tokens_medio: 7480.6,
   duracao_ms: 186_000,
+  taxa_resultado_certo: 87.5,
   ...valores,
 })
 
@@ -78,6 +79,8 @@ test('mostra a última execução com cada métrica comparada à meta', async ()
 
   expect(within(cartao('Casos aprovados')).getByText('9 de 12')).toBeInTheDocument()
   expect(within(cartao('Casos aprovados')).getByText('75% do golden set')).toBeInTheDocument()
+  expect(within(cartao('Resultado certo')).getByText('87,5%')).toBeInTheDocument()
+  expect(within(cartao('Resultado certo')).getByText('Meta: 85% ou mais · atingida')).toBeInTheDocument()
   expect(within(cartao('Execução das consultas')).getByText('100%')).toBeInTheDocument()
   expect(within(cartao('Execução das consultas')).getByText('Meta: 90% ou mais · atingida')).toBeInTheDocument()
   expect(within(cartao('Tabelas certas')).getByText('50%')).toBeInTheDocument()
@@ -95,6 +98,15 @@ test('a métrica sem casos daquele tipo fica sem valor, sem dizer que errou a me
   await screen.findByText('7 de 12')
   expect(within(cartao('Recusas corretas')).getByText('—')).toBeInTheDocument()
   expect(within(cartao('Recusas corretas')).getByText('Sem casos desse tipo nesta execução')).toBeInTheDocument()
+})
+
+test('execução anterior à conferência de resultado não conta como meta perdida', async () => {
+  backend(200, { ...avaliacoes, execucoes: [execucao({ taxa_resultado_certo: null })] })
+  abrir()
+
+  await screen.findByText('7 de 12')
+  expect(within(cartao('Resultado certo')).getByText('—')).toBeInTheDocument()
+  expect(within(cartao('Resultado certo')).getByText('Nenhum resultado conferido nesta execução')).toBeInTheDocument()
 })
 
 test('lista os casos da última execução com o resultado e o motivo', async () => {

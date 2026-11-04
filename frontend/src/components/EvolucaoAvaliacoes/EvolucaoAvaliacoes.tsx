@@ -22,7 +22,7 @@ function Dica({ ponto, meta }: { ponto: Ponto; meta: MetaAvaliacao }) {
     <div className="grid min-w-40 gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
       <span className="font-medium text-foreground">{formatarInstante(ponto.executada_em)}</span>
       <span className="tabular-nums text-foreground">
-        {ponto.valor === null ? 'Sem casos desse tipo' : formatarValor(meta, ponto.valor)}
+        {ponto.valor === null ? meta.semValor : formatarValor(meta, ponto.valor)}
       </span>
       <span className="text-muted-foreground">Meta: {meta.textoMeta}</span>
       {ponto.modelo && <span className="text-muted-foreground">{ponto.modelo}</span>}
@@ -97,7 +97,7 @@ function Grafico({ meta, execucoes }: { meta: MetaAvaliacao; execucoes: Execucao
 // Uma métrica por gráfico, cada um com a sua meta tracejada (nunca dois eixos Y)
 function EvolucaoAvaliacoes({ execucoes }: { execucoes: ExecucaoAvaliacao[] }) {
   return (
-    <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+    <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
       {metasAvaliacao.map((meta) => (
         <Grafico key={meta.chave} meta={meta} execucoes={execucoes} />
       ))}
