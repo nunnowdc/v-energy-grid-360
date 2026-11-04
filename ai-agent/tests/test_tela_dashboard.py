@@ -229,6 +229,50 @@ def test_filtro_de_tempo_que_nao_da_um_periodo_fica_de_fora(where):
     assert _periodos(tela) == {}
 
 
+# Como o agente compara "o último ano" com o anterior: um WHERE com os 24 meses e
+# um CASE WHEN para cada janela (resposta real da auditoria, encurtada)
+SOMA_DA_JANELA = "SUM(CASE WHEN competencia >= '{de}' AND competencia <= '{ate}' THEN consumo_kwh ELSE 0 END)"
+ULTIMO_ANO_COM_CASE_WHEN = (
+    "SELECT 'jul/2025-jun/2026' AS periodo_atual, municipio, bairro, "
+    + SOMA_DA_JANELA.format(de="2024-07-01", ate="2025-06-30") + " AS volume_anterior_kwh, "
+    + SOMA_DA_JANELA.format(de="2025-07-01", ate="2026-06-30") + " AS volume_atual_kwh "
+    "FROM public.agg_receita_mensal WHERE UNACCENT(LOWER(classe)) = UNACCENT(LOWER('RESIDENCIAL')) "
+    "AND competencia >= '2024-07-01' AND competencia <= '2026-06-30' GROUP BY municipio, bairro "
+    "ORDER BY " + SOMA_DA_JANELA.format(de="2025-07-01", ate="2026-06-30") + " ASC LIMIT 1"
+)
+
+
+def test_janelas_do_case_when_viram_base_e_comparado_no_lugar_dos_24_meses():
+    tela = tela_do_dashboard(ULTIMO_ANO_COM_CASE_WHEN, [{"municipio": "Recife", "bairro": "Iputinga"}])
+
+    assert _periodos(tela) == {
+        "periodo_base": {"de": "2024-07", "ate": "2025-06"},
+        "periodo": {"de": "2025-07", "ate": "2026-06"},
+    }
+
+
+def test_case_when_por_ano_sem_where_tambem_compara():
+    sql = (
+        "SELECT SUM(CASE WHEN ano = 2023 THEN receita_faturada END), "
+        "SUM(CASE WHEN ano = 2024 THEN receita_faturada END) FROM agg_receita_mensal"
+    )
+    assert _periodos(tela_do_dashboard(sql, [{"sum": 1.0}])) == {"periodo_base": {"de": "2023-01", "ate": "2023-12"}, **ANO_2024}
+
+
+@pytest.mark.parametrize(
+    "quando",
+    [
+        # O mês de todos os anos não é uma janela
+        "mes = 3",
+        # Só o banco sabe qual é o último mês
+        "competencia = (SELECT MAX(competencia) FROM agg_receita_mensal)",
+    ],
+)
+def test_case_when_que_nao_e_janela_nao_muda_o_periodo_do_where(quando):
+    sql = f"SELECT SUM(CASE WHEN {quando} THEN consumo_kwh ELSE 0 END) FROM agg_receita_mensal WHERE ano = 2024"
+    assert _periodos(tela_do_dashboard(sql, [{"sum": 1.0}])) == ANO_2024
+
+
 def test_juncao_pela_competencia_nao_atrapalha_o_periodo():
     sql = (
         "SELECT SUM(f.receita_faturada) FROM fact_faturamento f, agg_receita_mensal r "

@@ -184,5 +184,93 @@
     "termos_obrigatorios_resposta": ["receita"],
     "deve_recusar": false,
     "somente_banco_real": true
+  },
+  {
+    "id": "TC-019",
+    "pergunta": "Qual foi a receita total da distribuidora de jul/2022 a jun/2023 e de jul/2025 a jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT SUM(receita_p0) AS receita_p0, SUM(receita_p1) AS receita_p1 FROM agg_receita_preco_volume",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["receita_p0", "receita_p1"],
+    "termos_obrigatorios_resposta": ["receita"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-020",
+    "pergunta": "Quanto foram o efeito preço e o efeito volume na variação da receita entre jul/2022-jun/2023 e jul/2025-jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT SUM(efeito_preco) AS efeito_preco, SUM(efeito_volume) AS efeito_volume FROM agg_receita_preco_volume",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["efeito_preco", "efeito_volume"],
+    "termos_obrigatorios_resposta": ["preço", "volume"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-021",
+    "pergunta": "Quanto variou, em percentual, o consumo medido das UCs com geração distribuída entre jul/2022-jun/2023 e jul/2025-jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT 100.0 * (SUM(kwh_p1) - SUM(kwh_p0)) / NULLIF(SUM(kwh_p0), 0) AS variacao_consumo_pct FROM agg_receita_preco_volume WHERE possui_gd = true",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["kwh_p0", "kwh_p1", "possui_gd"],
+    "termos_obrigatorios_resposta": ["%"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-022",
+    "pergunta": "Quanto a receita comercial de Jaboatão dos Guararapes variou entre jul/2022-jun/2023 e jul/2025-jun/2026?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT SUM(receita_p1) - SUM(receita_p0) AS variacao_receita FROM agg_receita_preco_volume WHERE municipio = 'Jaboatão dos Guararapes' AND classe = 'COMERCIAL'",
+    "tabelas_obrigatorias": ["agg_receita_preco_volume"],
+    "colunas_obrigatorias": ["receita_p0", "receita_p1", "municipio", "classe"],
+    "termos_obrigatorios_resposta": ["Jaboatão"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-023",
+    "pergunta": "Entre os alimentadores com pelo menos 100 UCs, qual teve o maior DEC em 2025?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT alimentador, dec FROM agg_continuidade_alimentador_anual WHERE ano = 2025 AND total_ucs >= 100 ORDER BY dec DESC LIMIT 1",
+    "tabelas_obrigatorias": ["agg_continuidade_alimentador_anual"],
+    "colunas_obrigatorias": ["alimentador", "dec", "total_ucs", "ano"],
+    "termos_obrigatorios_resposta": ["DEC"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-024",
+    "pergunta": "Quais são as 3 primeiras UCs da fila de inspeção?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT id_uc FROM fila_inspecao ORDER BY prioridade LIMIT 3",
+    "tabelas_obrigatorias": ["fila_inspecao"],
+    "colunas_obrigatorias": ["id_uc", "prioridade"],
+    "termos_obrigatorios_resposta": ["UC"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-025",
+    "pergunta": "Quantas UCs a campanha de inspeção visitou e em quantos por cento delas a irregularidade foi confirmada?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT COUNT(*) AS inspecoes, 100.0 * COUNT(*) FILTER (WHERE resultado = 'IRREGULARIDADE_CONFIRMADA') / NULLIF(COUNT(*), 0) AS taxa_irregularidade_pct FROM fact_inspecoes",
+    "tabelas_obrigatorias": ["fact_inspecoes"],
+    "colunas_obrigatorias": ["resultado"],
+    "termos_obrigatorios_resposta": ["%"],
+    "deve_recusar": false,
+    "somente_banco_real": true
+  },
+  {
+    "id": "TC-026",
+    "pergunta": "Qual a receita média por cliente comercial em Olinda em 2025?",
+    "rota_esperada": "sql",
+    "sql_esperado": "SELECT SUM(f.receita_faturada) / NULLIF(COUNT(DISTINCT f.id_uc), 0) AS receita_media_por_cliente FROM fact_faturamento f JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc WHERE u.classe = 'COMERCIAL' AND u.municipio = 'Olinda' AND f.ano = 2025",
+    "tabelas_obrigatorias": ["fact_faturamento", "dim_unidade_consumidora"],
+    "colunas_obrigatorias": ["receita_faturada", "id_uc", "classe", "municipio", "ano"],
+    "termos_obrigatorios_resposta": ["Olinda"],
+    "deve_recusar": false,
+    "somente_banco_real": true
   }
 ]

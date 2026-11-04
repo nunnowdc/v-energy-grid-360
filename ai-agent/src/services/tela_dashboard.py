@@ -266,16 +266,41 @@ def _meses_da_condicao(condicao: exp.Expression) -> Optional[List[Set[int]]]:
     return None
 
 
+def _meses_dos_case_when(arvore: exp.Expression) -> List[Set[int]]:
+    """
+    Janelas de tempo dos CASE WHEN. 'SUM(CASE WHEN competencia >= '2025-07-01' AND ...
+    THEN consumo_kwh END)' compara dois períodos com um WHERE só, que pega os dois juntos.
+    Fica de fora a condição sem tempo, a que não dá para ler e a que não é um bloco de
+    meses seguidos (ex.: 'mes = 3', de todos os anos).
+    """
+    partes: List[Set[int]] = []
+    for caso in arvore.find_all(exp.Case):
+        for quando in caso.args.get("ifs") or []:
+            try:
+                da_condicao = _meses_da_condicao(quando.this)
+            except _TempoNaoLido:
+                continue
+            for parte in da_condicao or []:
+                seguidos = bool(parte) and max(parte) - min(parte) + 1 == len(parte)
+                if seguidos and min(parte) != _MESES[0] and max(parte) != _MESES[-1]:
+                    partes.append(parte)
+    return partes
+
+
 def _meses_do_where(arvore: exp.Expression) -> Optional[List[Set[int]]]:
     """
-    Partes de meses de todos os WHEREs. Uma comparação de 2023 com 2024 costuma ter
-    um WHERE (ou FILTER) para cada ano, então as partes de cada um se somam.
+    Partes de meses de todos os WHEREs e dos CASE WHEN. Uma comparação de 2023 com 2024
+    costuma ter um WHERE (ou FILTER, ou CASE WHEN) para cada ano, então as partes de cada
+    um se somam; o WHERE que pega os dois anos juntos sai em _periodos, por conter os dois.
     """
     partes: Optional[List[Set[int]]] = None
     for where in arvore.find_all(exp.Where):
         do_where = _meses_da_condicao(where.this)
         if do_where is not None:
             partes = (partes or []) + do_where
+    do_case = _meses_dos_case_when(arvore)
+    if do_case:
+        partes = (partes or []) + do_case
     return partes
 
 

@@ -313,6 +313,36 @@ test('"Nova conversa" limpa a conversa e começa outra sessão', async () => {
   expect(segunda.history).toEqual([])
 })
 
+test('a premissa adotada pelo agente aparece abaixo da resposta', async () => {
+  backend({
+    perguntas: [
+      { corpo: resposta('p1', { premissas: ['Últimos 12 meses (jul/2025 a jun/2026) contra os 12 anteriores'] }) },
+      { corpo: resposta('p2', { premissas: ['Classe residencial', 'Só as UCs ativas'] }) },
+      { corpo: resposta('p3') },
+    ],
+    auditorias: {},
+  })
+  abrir()
+
+  perguntar('Qual bairro mais perdeu volume no último ano?')
+  expect(await screen.findByText('Resposta p1')).toBeInTheDocument()
+  expect(screen.getByText('Premissa adotada')).toBeInTheDocument()
+  expect(screen.getByText('Últimos 12 meses (jul/2025 a jun/2026) contra os 12 anteriores')).toBeInTheDocument()
+
+  perguntar('E as UCs ativas?')
+  expect(await screen.findByText('Resposta p2')).toBeInTheDocument()
+  expect(screen.getByText('Premissas adotadas')).toBeInTheDocument()
+  expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+    'Classe residencial',
+    'Só as UCs ativas',
+  ])
+
+  // Sem premissa (cache certificado, documentos), o bloco não aparece
+  perguntar('Qual o faturamento de Recife em 2024?')
+  expect(await screen.findByText('Resposta p3')).toBeInTheDocument()
+  expect(screen.getAllByText(/^Premissas? adotadas?$/)).toHaveLength(2)
+})
+
 test('a resposta em Markdown aparece formatada, sem os asteriscos', async () => {
   backend({
     perguntas: [{ corpo: resposta('d1', { answer: '**FEC** é a frequência.\n\n- por UC\n- em `agg_continuidade`' }) }],

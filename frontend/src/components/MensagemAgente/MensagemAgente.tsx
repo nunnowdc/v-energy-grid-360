@@ -1,4 +1,4 @@
-import { LayoutDashboard, Waypoints } from 'lucide-react'
+import { Lightbulb, LayoutDashboard, Waypoints } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import FeedbackResposta from '@/components/FeedbackResposta/FeedbackResposta'
@@ -18,11 +18,12 @@ type MensagemAgenteProps = {
   tela?: TelaNoDashboard
 }
 
-// Resposta do agente na conversa, com o selo de confiança, o tempo, o 👍/👎,
-// a tela que ela abriu no dashboard e o passo a passo, que só abre (e só é
-// buscado) quando a pessoa pede. O passo a passo é só do ADMIN_TI
+// Resposta do agente na conversa, com a premissa adotada, o selo de confiança, o
+// tempo, o 👍/👎, a tela que ela abriu no dashboard e o passo a passo, que só abre
+// (e só é buscado) quando a pessoa pede. O passo a passo é só do ADMIN_TI
 function MensagemAgente({ resposta, tela }: MensagemAgenteProps) {
   const { pode } = useUsuario()
+  const premissas = resposta.premissas ?? []
   const [verPassos, setVerPassos] = useState(false)
   const idPassos = useId()
   const passos = useRef<HTMLDivElement>(null)
@@ -37,6 +38,24 @@ function MensagemAgente({ resposta, tela }: MensagemAgenteProps) {
   return (
     <div className="flex min-w-0 flex-col gap-2 rounded-xl rounded-tl-sm border bg-card px-3.5 py-2.5">
       <TextoMarkdown texto={resposta.answer} />
+      {/* A interpretação que o número depende, ex.: o período de "no último ano" */}
+      {premissas.length > 0 && (
+        <div className="flex flex-col gap-1 rounded-md bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground">
+          <p className="inline-flex items-center gap-1.5 font-medium text-foreground">
+            <Lightbulb aria-hidden="true" className="size-3.5" />
+            {premissas.length === 1 ? 'Premissa adotada' : 'Premissas adotadas'}
+          </p>
+          {premissas.length === 1 ? (
+            <p>{premissas[0]}</p>
+          ) : (
+            <ul className="list-disc space-y-0.5 pl-4">
+              {premissas.map((premissa) => (
+                <li key={premissa}>{premissa}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       {resposta.fontes.length > 0 && (
         <p className="text-xs text-muted-foreground">Fontes: {resposta.fontes.join(', ')}</p>
       )}

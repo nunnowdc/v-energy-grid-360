@@ -272,11 +272,15 @@ _TEMPLATES_REGISTROS = [
             "competencia": (r"(?<!\d)(\d{4})(?!\d)", int),
         },
         "sql": (
-            "SELECT assunto, subassunto, canal, COUNT(protocolo) AS total_atendimentos, "
+            # Por assunto e canal (30 linhas em 2025): com o subassunto passava das 50 linhas
+            # que o executor devolve, e o total somado ficava sem os atendimentos cortados
+            "SELECT assunto, canal, COUNT(protocolo) AS total_atendimentos, "
             "AVG(tempo_resolucao_h) AS tempo_medio_resolucao_h, AVG(nota_satisfacao) AS media_nota_satisfacao "
             "FROM fact_atendimentos "
-            "WHERE competencia >= :competencia "
-            "GROUP BY assunto, subassunto, canal "
+            # competencia é data e o slot é o ano: "competencia >= 2025" dava erro no banco
+            "WHERE competencia >= make_date(:competencia, 1, 1) "
+            "AND competencia < make_date(:competencia + 1, 1, 1) "
+            "GROUP BY assunto, canal "
             "ORDER BY total_atendimentos DESC"
         ),
     },

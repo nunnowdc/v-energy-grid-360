@@ -457,6 +457,8 @@ CREATE TABLE public.fila_inspecao (
    - fact_faturamento.status_pagamento: 'PAGA', 'PENDENTE', 'ATRASADA'
    - bandeira_tarifaria: 'VERDE', 'AMARELA', 'VERMELHA_P1', 'VERMELHA_P2'
    - fact_ocorrencias.causa: 'CLIMATICA', 'FALHA DE EQUIPAMENTO', 'SOBRECARGA', 'TERCEIROS', 'VEGETACAO', 'NAO IDENTIFICADA', 'NAO INFORMADA'
+   - fact_inspecoes.resultado: 'IRREGULARIDADE_CONFIRMADA', 'SEM_IRREGULARIDADE'
+   - fact_inspecoes.tipo_irregularidade: 'DESVIO DIRETO', 'BY PASS', 'MEDIDOR ADULTERADO', 'LACRE VIOLADO', 'LIGACAO CLANDESTINA' (nulo quando não houve irregularidade)
    - possui_gd: boolean (true/false), nunca texto
    - agg_receita_preco_volume.periodo_p0 / periodo_p1: '2022-07 a 2023-06' / '2025-07 a 2026-06' (uma comparação só: não filtre por essas colunas, apenas selecione)
 
