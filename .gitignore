@@ -12,6 +12,31 @@ data/*
 .env
 .env.*
 !.env.example
+!.env.test.example
+backend/.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+# .ipynb_checkpoints/    SE FOR NECESSÁRIO, DESCOMENTE ESSA LINHA PARA IGNORAR CHECKPOINTS DE NOTEBOOKS
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Editor / SO
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Saídas de análise com dados de clientes (nome, CPF, endereço) ou conteúdo confidencial do case
+analisys/**/perfil_bruto.json
+analisys/**/camila_tela_360_atendimento_dados_brutos.json
+analisys/graficos/graficos_resultados*.ipynb
+analisys/contexto_perguntas_case.md
 
 # Ir incrementando conforme necessário
-analisys/graficos/resultados/*
+ai-agent/agente-resposta-correta.patch
