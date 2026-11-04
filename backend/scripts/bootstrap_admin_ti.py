@@ -15,7 +15,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core import config
-from app.core.database import get_connection
+from app.core.database import get_owner_connection
 from app.repositories.users import UsersRepository
 from app.security.passwords import hash_password
 
@@ -54,7 +54,7 @@ def bootstrap_admin(connection: Connection, password: str | None) -> bool:
 def main() -> int:
     """Executa o bootstrap sem divulgar senha ou detalhes de conexão."""
     try:
-        with get_connection() as connection:
+        with get_owner_connection() as connection:
             created = bootstrap_admin(connection, get_bootstrap_password())
     except ValueError:
         print("Configuração ou senha inicial inválida.", file=sys.stderr)

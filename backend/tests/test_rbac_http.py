@@ -13,6 +13,7 @@ from app.controllers.filters import get_filter_repository
 from app.main import app
 from app.security.dependencies import (
     authorize_business_route,
+    get_admin_user_repository,
     get_user_repository,
 )
 from app.security.permissions import PUBLIC_ROUTES, ROUTE_PERMISSIONS
@@ -70,6 +71,7 @@ def session_client(monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", SECRET)
     users = FakeUsers()
     app.dependency_overrides[get_user_repository] = lambda: nullcontext(users)
+    app.dependency_overrides[get_admin_user_repository] = lambda: nullcontext(users)
     client = TestClient(app, raise_server_exceptions=False)
     try:
         yield client, users

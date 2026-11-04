@@ -45,6 +45,7 @@ from ..nos.no_finaliza_auditoria import no_finaliza_auditoria
 from ..nos.no_cache_parametrizado import no_cache_parametrizado
 from ..nos.no_recupera_contexto import no_recupera_contexto
 from ..provedores.cliente_llm import ClienteLLM
+from ..services.conexao_banco import ExecutorComPerfil, url_do_banco, usa_roles
 from ..services.sql_executor import SQLExecutor
 
 logger = logging.getLogger("venergy.construtor_grafo")
@@ -127,8 +128,8 @@ def construir_grafo(
     """
     _llm = llm or ClienteLLM()
     _validador = validador or _validador_padrao()
-    _executor = executor or SQLExecutor(db_url=db_url or os.getenv("DATABASE_URL"))
-    _db_url = db_url or os.getenv("DATABASE_URL")
+    _db_url = db_url or url_do_banco()
+    _executor = executor or SQLExecutor(db_url=_db_url)
 
     def _rota_pos_cache(state: EstadoAgente) -> str:
         """Cache hit vai direto para execução; miss vai para geração de SQL."""
@@ -160,6 +161,9 @@ def construir_grafo(
         return no_valida_sql(s, validador=_validador)
 
     def _no_executa_sql(s: EstadoAgente) -> Dict[str, Any]:
+        if usa_roles():
+            # O perfil vem do estado (sessão), nunca do corpo da requisição
+            return no_executa_sql(s, executor=ExecutorComPerfil(_executor, s.get("perfil")))
         return no_executa_sql(s, executor=_executor)
 
     def _no_sintetiza_resposta(s: EstadoAgente) -> Dict[str, Any]:

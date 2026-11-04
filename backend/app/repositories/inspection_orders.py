@@ -23,6 +23,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 
 from app.entities.user import Usuario
+from app.repositories.transactions import transaction_scope
 
 ORDENS_INSPECAO = Table(
     "ordens_inspecao",
@@ -66,7 +67,7 @@ class InspectionOrdersRepository:
 
     @contextmanager
     def transaction(self) -> Iterator[None]:
-        with self.connection.begin():
+        with transaction_scope(self.connection):
             yield
 
     def get_active_orders(self, ids_uc: list[str]) -> list[dict[str, object]]:

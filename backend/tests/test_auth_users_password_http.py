@@ -8,7 +8,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
 from app.main import app
-from app.security.dependencies import get_user_repository
+from app.security.dependencies import (
+    get_admin_user_repository,
+    get_user_repository,
+)
 from app.security.passwords import hash_password, verify_password
 
 ADMIN_ID = UUID("550e8400-e29b-41d4-a716-446655440000")
@@ -61,6 +64,7 @@ def auth_client(monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", SECRET)
     users = FakeUsers()
     app.dependency_overrides[get_user_repository] = lambda: nullcontext(users)
+    app.dependency_overrides[get_admin_user_repository] = lambda: nullcontext(users)
     try:
         yield TestClient(app), users
     finally:
