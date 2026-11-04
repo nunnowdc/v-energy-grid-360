@@ -44,17 +44,48 @@ class _DecisaoRota(BaseModel):
     motivo: str = ""
 
 
+def _normalizar_confianca(val: Any) -> float:
+    if isinstance(val, (int, float)):
+        f_val = float(val)
+        if 1.0 < f_val <= 100.0:
+            return f_val / 100.0
+        return f_val
+    if isinstance(val, str):
+        v = val.strip().rstrip("%").replace(",", ".")
+        f_val = float(v)
+        if 1.0 < f_val <= 100.0:
+            return f_val / 100.0
+        return f_val
+    raise ValueError(f"Confiança inválida: {val}")
+
+
 def _parsear_resposta_roteador(texto: str) -> _DecisaoRota:
-    """Extrai o JSON da resposta do LLM com fallback seguro."""
-    import json, re
-    try:
-        # Extrai bloco JSON mesmo que o LLM adicione texto ao redor
-        match = re.search(r"\{.*?\}", texto, re.DOTALL)
-        if match:
-            dados = json.loads(match.group())
-            return _DecisaoRota(**dados)
-    except Exception:
-        pass
+    """Extrai o JSON da resposta do LLM com tolerância a formatações e fallback seguro."""
+    import json
+    from ..provedores.cliente_llm import remover_raciocinio
+
+    texto_sem_think = remover_raciocinio(texto)
+    decoder = json.JSONDecoder()
+
+    idx = 0
+    while True:
+        pos = texto_sem_think.find("{", idx)
+        if pos == -1:
+            break
+        try:
+            dados, _ = decoder.raw_decode(texto_sem_think[pos:])
+            if isinstance(dados, dict) and "rota" in dados:
+                rota_bruta = str(dados.get("rota", "")).strip().lower()
+                if rota_bruta in ("sql", "rag", "ambos", "recusa"):
+                    conf = _normalizar_confianca(dados.get("confianca", 0.0))
+                    conf = max(0.0, min(1.0, conf))
+                    motivo = str(dados.get("motivo", "")).strip()
+                    return _DecisaoRota(rota=rota_bruta, confianca=conf, motivo=motivo)
+        except Exception:
+            pass
+        idx = pos + 1
+
+    logger.warning("Falha ao parsear resposta do roteador. Resposta bruta do LLM: %r", texto[:300])
     return _DecisaoRota(rota="recusa", confianca=0.0, motivo="Falha ao parsear resposta do roteador.")
 
 

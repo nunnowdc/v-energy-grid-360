@@ -52,6 +52,7 @@ class RespostaAgente(BaseModel):
     pergunta_autonoma: str = Field(description="Pergunta após desambiguação de contexto/follow-up.")
     resposta_texto: str = Field(description="Narrativa clara gerada para o usuário.")
     sql_gerado: Optional[str] = Field(default=None, description="Consulta SQL executada no banco, se aplicável.")
+    premissas: List[str] = Field(default_factory=list, description="Premissas adotadas na consulta.")
     dados_tabela: Optional[List[Dict[str, Any]]] = Field(default=None, description="Amostra dos dados retornados pelo SQL.")
     selo_confianca: Literal[
         "certificada", 

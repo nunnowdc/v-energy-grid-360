@@ -8,10 +8,11 @@ from typing import Any, Dict
 
 from ..contratos.estado_agente import EstadoAgente
 from ..interfaces.validador_sql_interface import ValidadorSQLInterface
+from ..services.regras_semanticas_sql import problemas_semanticos
 
 logger = logging.getLogger("venergy.no_valida_sql")
 
-MAX_TENTATIVAS = 2
+MAX_TENTATIVAS = 3
 MARCADOR_SQL_INDISPONIVEL = "SQL_INDISPONIVEL"
 
 
@@ -52,15 +53,28 @@ def no_valida_sql(
     resultado = validador.validar(sql)
 
     if resultado.aprovado:
+        # SQL seguro e válido, mas com conta errada de negócio (ex.: soma de percentuais):
+        # volta ao LLM com o motivo. Na última tentativa só registra, para não virar recusa.
+        problemas = problemas_semanticos(sql)
+        if problemas and tentativas < MAX_TENTATIVAS:
+            logger.warning("Nó 8 — Regras de negócio reprovadas: %s", problemas)
+            return {
+                "erro_validacao_ou_execucao": "Regras de negócio: " + " ".join(problemas),
+                "malicioso": False,
+                "passos_executados": [
+                    f"Nó 8 — Regras de negócio reprovadas (tentativa {tentativas}): {problemas}"
+                ],
+            }
         # Se o validador oficial devolve sql_normalizado, retornamos no dicionário de resposta
         # para que o LangGraph propague ao próximo nó corretamente.
         sql_norm = getattr(resultado, "sql_normalizado", None)
+        passos = [f"Nó 8 — Validação aprovada. Tabelas identificadas: {resultado.tabelas_detectadas}"]
+        if problemas:
+            passos.append(f"Nó 8 — Regras de negócio ainda com aviso na última tentativa: {problemas}")
         resposta = {
             "erro_validacao_ou_execucao": None,
             "malicioso": False,
-            "passos_executados": [
-                f"Nó 8 — Validação aprovada. Tabelas identificadas: {resultado.tabelas_detectadas}"
-            ],
+            "passos_executados": passos,
         }
         if sql_norm:
             resposta["sql_gerado"] = sql_norm

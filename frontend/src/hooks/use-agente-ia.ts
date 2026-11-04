@@ -55,6 +55,9 @@ export type RespostaAgente = {
   tempo_ms: number
   // null: a resposta não tem consulta ou os dados dela não estão em nenhuma tela
   dashboard?: DashboardAgente | null
+  // Como o agente interpretou a pergunta para montar a consulta, ex.: o período
+  // adotado em "no último ano". Vazia no cache certificado e nas respostas de documentos
+  premissas?: string[]
 }
 
 export type AuditoriaAgente = {

@@ -33,6 +33,14 @@ _ESCALAS = {
     "bilhões": 1_000_000_000,
 }
 
+_TERMO_GRID_360 = re.compile(r"\bgrid\s+360\b", re.IGNORECASE)
+
+
+def _remover_termo_grid_360(texto: str) -> str:
+    """Ignora o '360' de 'V-Energy Grid 360' para não ser tratado como número a conferir."""
+    return _TERMO_GRID_360.sub("Grid", texto)
+
+
 
 def _numeros_dos_fatos(fatos: list[Dict[str, Any]]) -> list[float]:
     """Todos os números permitidos: valores numéricos, partes de datas e dígitos de textos.
@@ -99,7 +107,8 @@ def conferir(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -
     `tolerancia` é uma folga absoluta EXTRA, além do arredondamento (padrão: nenhuma).
     """
     permitidos = _numeros_dos_fatos(fatos)
-    for achado in _NUMERO_NO_TEXTO.finditer(texto):
+    texto_limpo = _remover_termo_grid_360(texto)
+    for achado in _NUMERO_NO_TEXTO.finditer(texto_limpo):
         inteiro, decimais, escala = achado.groups()
         multiplicador = _ESCALAS.get(escala.lower(), 1) if escala else 1
         leituras = _leituras_possiveis(inteiro, decimais)
@@ -122,7 +131,8 @@ def numeros_nao_encontrados(fatos: list[Dict[str, Any]], texto: str, tolerancia:
     """
     permitidos = _numeros_dos_fatos(fatos)
     nao_encontrados: list[str] = []
-    for achado in _NUMERO_NO_TEXTO.finditer(texto):
+    texto_limpo = _remover_termo_grid_360(texto)
+    for achado in _NUMERO_NO_TEXTO.finditer(texto_limpo):
         inteiro, decimais, escala = achado.groups()
         multiplicador = _ESCALAS.get(escala.lower(), 1) if escala else 1
         leituras = _leituras_possiveis(inteiro, decimais)

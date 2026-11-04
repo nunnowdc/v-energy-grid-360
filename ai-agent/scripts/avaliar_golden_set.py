@@ -38,12 +38,14 @@ from src.avaliacao.golden_set import (
     META_ABSTENCAO,
     META_COMPONENT_MATCH,
     META_EXECUCAO,
+    META_RESULTADO_CERTO,
     META_TOKENS,
     carregar_casos,
     executar_avaliacao,
 )
 from src.grafo.executor_agente import executar_agente
 from src.provedores.cliente_llm import ClienteLLM
+from src.services.sql_executor import SQLExecutor
 
 
 def modelo_usado(cliente: ClienteLLM) -> str | None:
@@ -63,6 +65,12 @@ def main(argv: list[str] | None = None) -> int:
         "--sem-gravar",
         action="store_true",
         help="Só mostra o resultado, sem gravar no banco",
+    )
+    parser.add_argument(
+        "--repeticoes",
+        type=int,
+        default=1,
+        help="Executa cada caso N vezes (só aprova se passar em todas as repetições)",
     )
     args = parser.parse_args(argv)
 
@@ -89,10 +97,22 @@ def main(argv: list[str] | None = None) -> int:
             f"  {caso['caso_id']}  {'passou' if caso['passou'] else 'FALHOU'}  {caso['motivo']}"
         )
 
+    # O resultado esperado vem do sql_esperado de cada caso, no mesmo banco (só leitura)
+    executor = SQLExecutor(db_url=db_url)
+
+    def resultado_esperado(sql: str) -> list[dict]:
+        # O executor não lança exceção: devolve o erro no resultado
+        resultado = executor.executar(sql)
+        if resultado.erro:
+            raise RuntimeError(resultado.erro)
+        return resultado.linhas
+
     execucao = executar_avaliacao(
         casos,
         lambda **kwargs: executar_agente(llm=cliente, **kwargs),
         ao_terminar_caso=mostrar,
+        executar_esperado=resultado_esperado,
+        repeticoes=args.repeticoes,
     )
 
     print()
@@ -105,6 +125,16 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"Tabelas certas (AST):   {_taxa(execucao['taxa_component_match'])} (meta: {META_COMPONENT_MATCH:.0f}% ou mais)"
     )
+    print(
+        f"Resultado certo:        {_taxa(execucao['taxa_resultado_certo'])} (meta: {META_RESULTADO_CERTO:.0f}% ou mais)"
+    )
+    nao_conferidos = [
+        caso["caso_id"]
+        for caso in execucao["casos"]
+        if caso["executou"] and caso["resultado_certo"] is None
+    ]
+    if nao_conferidos:
+        print(f"  Atenção, resultado NÃO conferido em: {', '.join(nao_conferidos)}")
     print(
         f"Abstenção correta:      {_taxa(execucao['taxa_abstencao'])} (meta: {META_ABSTENCAO:.0f}%)"
     )

@@ -21,12 +21,16 @@ class AgentEvaluationsRepository:
 
     def get_runs(self, limite: int) -> list[dict[str, Any]]:
         """As execuções mais recentes, da mais antiga para a mais nova."""
+        # A coluna taxa_resultado_certo só aparece na primeira execução do script novo;
+        # pelo to_jsonb, a tabela de antes dela devolve nulo em vez de erro
         rows = self.connection.execute(
             text(
                 "SELECT * FROM ("
                 "SELECT id, executada_em, modelo, total_casos, casos_aprovados, "
                 "taxa_execucao, taxa_component_match, taxa_abstencao, tokens_medio, "
-                "duracao_ms FROM tb_avaliacoes_agente "
+                "duracao_ms, "
+                "(to_jsonb(a) ->> 'taxa_resultado_certo')::float AS taxa_resultado_certo "
+                "FROM tb_avaliacoes_agente AS a "
                 "ORDER BY executada_em DESC LIMIT :limite"
                 ") AS recentes ORDER BY executada_em"
             ),
