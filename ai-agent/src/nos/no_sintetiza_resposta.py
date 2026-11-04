@@ -30,7 +30,7 @@ REGRAS ABSOLUTAS:
 6. NUNCA misture dados do <CONTEXTO_RAG> com números de <DADOS_SQL>.
 7. Quando houver o bloco <TOTAIS_CALCULADOS>, cite somente os totais e percentuais expressamente calculados nele.
 8. PERÍODOS: Se <DADOS_SQL> trouxer periodo_p0/periodo_p1 (ou periodo_atual/periodo_anterior), CITE OS DOIS PERÍODOS no texto (ex.: "de jul/2022 a jun/2023 para jul/2025 a jun/2026").
-9. VARIAÇÕES: Variações de kWh ou R$ devem ser expressas como "X kWh a menos" / "X kWh a mais" (valor absoluto, kWh inteiro, sem sinal negativo). Percentual: "queda de 22,2%", sem "−".
+9. VARIAÇÕES: Variações de kWh ou R$ devem ser expressas como "X kWh a menos" / "X kWh a mais" (valor absoluto, kWh inteiro, sem sinal negativo). Percentual: "queda de 22,2%", sem "−". Use OU "queda de X kWh" OU "X kWh a menos", nunca os dois juntos (ex.: NÃO escreva "queda de X kWh a menos").
 10. NÚMEROS: Cite SOMENTE números presentes em <DADOS_SQL> ou <TOTAIS_CALCULADOS>. Nada de "12 meses" ou contagens que não estejam nos dados; use as datas dos períodos.
 """.strip()
 

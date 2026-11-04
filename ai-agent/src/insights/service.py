@@ -53,6 +53,11 @@ class InsightsService:
             if isinstance(f_copy.get("competencia"), (datetime, date)):
                 c = f_copy["competencia"]
                 f_copy["competencia"] = f"{MESES[c.month - 1]}/{c.year}"
+            if "consumo_kwh" in f_copy and f_copy["consumo_kwh"] is not None:
+                try:
+                    f_copy["consumo_kwh"] = int(round(float(f_copy["consumo_kwh"])))
+                except (ValueError, TypeError):
+                    pass
             fatos_formatados.append(f_copy)
 
         # Tentativa de geração com retry até 3 vezes se a conferência falhar

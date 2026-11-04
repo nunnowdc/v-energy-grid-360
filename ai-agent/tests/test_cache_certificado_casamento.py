@@ -9,6 +9,9 @@ from src.nos.no_cache_parametrizado import _encontrar_template, no_cache_paramet
 
 # Perguntas reais da auditoria e variações que o template responde
 CASAM = {
+    "Qual a receita média faturada por cliente residencial em Recife em 2023?": (
+        "receita_media_por_cliente", "Recife", 2023,
+    ),
     "Qual o faturamento em Recife no ano de 2024?": ("faturamento_por_municipio_ano", "Recife", 2024),
     "Qual o faturamento de Recife em 2024?": ("faturamento_por_municipio_ano", "Recife", 2024),
     "Qual o faturamento em Olinda no ano de 2023?": ("faturamento_por_municipio_ano", "Olinda", 2023),
@@ -24,6 +27,7 @@ CASAM = {
 
 # Perguntas diferentes que antes recebiam a receita faturada total com selo "certificada"
 NAO_CASAM = [
+    "Qual o ticket médio por fatura residencial em Recife em 2023?",
     "Qual a receita recebida em Recife em 2023?",
     "Qual a receita média por cliente em Recife em 2023?",
     "Qual a receita de Recife em 2023 comparada com 2022?",

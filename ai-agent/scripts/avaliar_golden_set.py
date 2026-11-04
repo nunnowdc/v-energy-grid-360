@@ -66,6 +66,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Só mostra o resultado, sem gravar no banco",
     )
+    parser.add_argument(
+        "--repeticoes",
+        type=int,
+        default=1,
+        help="Executa cada caso N vezes (só aprova se passar em todas as repetições)",
+    )
     args = parser.parse_args(argv)
 
     db_url = os.getenv("DATABASE_URL")
@@ -106,6 +112,7 @@ def main(argv: list[str] | None = None) -> int:
         lambda **kwargs: executar_agente(llm=cliente, **kwargs),
         ao_terminar_caso=mostrar,
         executar_esperado=resultado_esperado,
+        repeticoes=args.repeticoes,
     )
 
     print()

@@ -58,6 +58,23 @@ ANOS = set(range(2022, 2027))
 # ---------------------------------------------------------------------------
 
 _TEMPLATES_REGISTROS = [
+    {
+        "esqueleto": "receita_media_por_cliente",
+        "intencao": {"media", "cliente"},
+        "palavras": {"receita", "faturada", "faturamento", "media", "por", "cliente", "classe"},
+        "slots": {
+            "classe": (r"\b({})\b".format("|".join(CLASSES)), str),
+            "municipio": (r"(?<!\w)({}) (?!\w)".replace(" ", "").format("|".join(MUNICIPIOS)), _municipio_do_banco),
+            "ano": (r"(?<!\d)(\d{4})(?!\d)", int),
+        },
+        "sql": (
+            "SELECT SUM(f.receita_faturada) / NULLIF(COUNT(DISTINCT f.id_uc), 0) AS receita_media_por_cliente "
+            "FROM fact_faturamento f "
+            "JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc "
+            "WHERE unaccent(lower(u.classe)) = unaccent(lower(:classe)) "
+            "AND unaccent(lower(u.municipio)) = unaccent(lower(:municipio)) AND f.ano = :ano"
+        ),
+    },
     # New template to handle faturamento by class, municipio and ano
     {
         "esqueleto": "faturamento_classe_municipio_ano",

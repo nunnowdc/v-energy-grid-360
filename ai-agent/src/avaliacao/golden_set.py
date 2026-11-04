@@ -226,27 +226,45 @@ def executar_avaliacao(
     executar: Callable[..., RespostaAgente],
     ao_terminar_caso: Callable[[dict[str, Any]], None] | None = None,
     executar_esperado: Callable[[str], list[dict[str, Any]]] | None = None,
+    repeticoes: int = 1,
 ) -> dict[str, Any]:
     """Faz cada pergunta ao agente, sem gravar na auditoria (não entra no uso do portal)."""
     inicio = time.perf_counter()
     resultados = []
     for caso in casos:
-        resposta = executar(
-            pergunta=caso["pergunta"],
-            sessao_id=f"golden-{caso['id']}",
-            persistir_auditoria=False,
-        )
         esperado = erro_esperado = None
         if executar_esperado and caso.get("sql_esperado"):
-            # Um sql_esperado quebrado não derruba a rodada: o caso fica "não conferido"
             try:
                 esperado = executar_esperado(caso["sql_esperado"])
             except Exception as erro:
                 erro_esperado = str(erro) or type(erro).__name__
-        resultado = avaliar_caso(caso, resposta, esperado, erro_esperado)
-        resultados.append(resultado)
+
+        rodadas_caso = []
+        for rep in range(max(1, repeticoes)):
+            sessao = f"golden-{caso['id']}-rep{rep+1}" if repeticoes > 1 else f"golden-{caso['id']}"
+            resposta = executar(
+                pergunta=caso["pergunta"],
+                sessao_id=sessao,
+                persistir_auditoria=False,
+            )
+            res_rep = avaliar_caso(caso, resposta, esperado, erro_esperado)
+            rodadas_caso.append(res_rep)
+
+        if repeticoes <= 1:
+            resultado_final = rodadas_caso[0]
+        else:
+            acertos = sum(1 for r in rodadas_caso if r["passou"])
+            passou_todas = (acertos == repeticoes)
+            resultado_final = rodadas_caso[-1].copy()
+            resultado_final["passou"] = passou_todas
+            resultado_final["motivo"] = f"passou {acertos} de {repeticoes} ({rodadas_caso[-1]['motivo']})"
+            resultado_final["tokens"] = int(sum(r["tokens"] for r in rodadas_caso) / repeticoes)
+            resultado_final["tempo_ms"] = sum(r["tempo_ms"] for r in rodadas_caso) / repeticoes
+
+        resultados.append(resultado_final)
         if ao_terminar_caso:
-            ao_terminar_caso(resultado)
+            ao_terminar_caso(resultado_final)
+
     return {
         **resumir(resultados),
         "duracao_ms": (time.perf_counter() - inicio) * 1000,

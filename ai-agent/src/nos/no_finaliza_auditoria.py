@@ -21,7 +21,7 @@ COLUNAS_AUDITORIA_BASE = (
 )
 COLUNAS_AUDITORIA_OPCIONAIS = (
     "tentativas_sql", "chamadas_llm", "malicioso", "motivo_recusa",
-    "ids_chunks_rag", "user_id", "perfil",
+    "ids_chunks_rag", "user_id", "perfil", "premissas",
 )
 
 
@@ -125,6 +125,7 @@ def no_finaliza_auditoria(
         ),
         "user_id": state.get("user_id"),
         "perfil": state.get("perfil"),
+        "premissas": json.dumps(state.get("premissas_sql") or [], ensure_ascii=False),
     }
 
     _gravar_auditoria(registro, db_url)
