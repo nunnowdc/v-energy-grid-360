@@ -42,3 +42,4 @@ analisys/contexto_perguntas_case.md
 
 db.dump
 *.dump
+ai-agent/agente-resposta-correta.patch

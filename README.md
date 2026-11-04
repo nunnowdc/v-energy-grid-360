@@ -753,7 +753,7 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 
 | Perfil | Quem usa | Telas |
 |---|---|---|
-| `DIRETORIA` | Diretoria, incluindo o diretor comercial | Indicadores, Receita, Continuidade |
+| `DIRETORIA` | Diretoria, incluindo o diretor comercial | Indicadores, Receita, Continuidade, Visão 360 |
 | `ATENDIMENTO` | Atendentes do call center | Visão 360 |
 | `PERDAS` | Gerente e analistas de perdas | Fila de inspeção, Visão 360 |
 | `OPERACAO` | Gerência de operação | Continuidade |
@@ -762,7 +762,8 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - Diretor e diretor comercial usam o mesmo perfil, `DIRETORIA`.
 - A Diretoria também vê a Continuidade, porque acompanha a qualidade do serviço, que gera multas regulatórias.
 - Perdas também vê a Visão 360, para investigar a unidade consumidora suspeita.
-- A Diretoria não vê a Visão 360 (dados pessoais de clientes) nem a Fila de inspeção (ações operacionais), seguindo a LGPD e o princípio do menor privilégio.
+- A Diretoria também vê a Visão 360, como o case pede.
+- A Diretoria não vê a Fila de inspeção (ações operacionais), seguindo o princípio do menor privilégio.
 - `ADMIN_TI` não é um cargo do case: é uma conta técnica para administrar o portal.
 - As contas são pré-cadastradas pelo `ADMIN_TI`, sem cadastro público. A troca de senha é opcional. A primeira conta `ADMIN_TI` é criada pelo setup (passo 7.2).
 - O chat da IA fica disponível para todos os perfis e responde só com dados agregados, nunca com dados pessoais.
@@ -777,6 +778,8 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 - **Gold:** no MVP, é um retrato fixo carregado no PostgreSQL local, sem atualização.
 - **Decomposição preço × volume:** usa a fórmula publicada na Gold: efeito-volume = (kWh P1 − kWh P0) × preço P0, e efeito-preço = (preço P1 − preço P0) × kWh P1. A decomposição de Shapley do diagnóstico fica fora do MVP.
 - **Filtros:** um valor por filtro. A Continuidade filtra por alimentador e causa: o município limita os alimentadores mostrados, e a causa filtra só as ocorrências. DEC e FEC são sempre do alimentador inteiro, nunca de um município ou de uma causa.
+- **Ordem dos piores alimentadores:** a Continuidade começa pelas horas sem energia somando todos os clientes (DEC × UCs), porque é onde a manutenção alcança mais gente. Pelo DEC, que é a média por cliente, um alimentador com 20 UCs passa na frente de um com 2.285. A ordem pelo DEC continua a um clique. O card "Pior DEC" e o gráfico mês a mês não mudam.
+- **DEC evitável:** no ranking da Continuidade, é a parte do DEC que vem de vegetação, falha de equipamento e sobrecarga, causas que a manutenção preventiva reduz (poda, revisão de equipamento, reforço de carga). Climática, terceiros e as sem causa ficam de fora. A lista de causas é suposição do time.
 - **Alimentadores pequenos:** na Continuidade, o "Pior DEC" e o gráfico mês a mês destacam o pior alimentador com 100 UCs ou mais. Nos com menos de 100 UCs (14 dos 122), poucas interrupções já inflam o DEC. Eles continuam no ranking, marcados com "Menos de 100 UCs".
 - **Motivo da suspeita:** a Fila de inspeção não filtra por motivo, porque a Gold guarda vários motivos no mesmo texto. 
 - **Dados reais:** todas as telas usam a Gold pelo backend. Os testes automatizados usam dados inventados, nunca da base real (veja `frontend/README.md`).
@@ -786,11 +789,11 @@ O que o time precisou decidir ou supor por conta própria, registrado aqui como 
 Toda a seção de engenharia de dados foi organizada em um job nativo do databricks (como foi especificado no case), a pipeline roda sempre que dados novos chegam ao volume na plataforma, essa abordagem foi tomada pelo time de dados tendo em vista a importância do tratamento e disponibilidade de dados no portal de forma celere sempre que dados novos forem coletados. Seguem algumas evidências de como está configurado e como ocorreram as últimas execuções do job:
 
 - **Arquitetura do Job**
-![configuração atual do job no databricks](data-engineering\job\estrutura_job.png)
+![configuração atual do job no databricks](data-engineering/job/estrutura_job.png)
 
 
 - **Runs da Pipeline**
-![runs do job no databricks](data-engineering\job\evidencia_runs.png)
+![runs do job no databricks](data-engineering/job/evidencia_runs.png)
 
 ## Fluxo de trabalho (Git Flow)
 

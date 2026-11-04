@@ -11,8 +11,8 @@ from ..provedores.cliente_llm import ClienteLLM
 from ..services.conexao_banco import ExecutorComPerfil, aplicar_perfil, url_do_banco, usa_roles
 from ..services.sql_executor import SQLExecutor
 from .conferente_numerico import conferir
-from .extrator_metricas_fixas import extrair_metricas
-from .narrador_insights import narrar_insight
+from .extrator_metricas_fixas import extrair_metricas, fontes_da_tela
+from .narrador_insights import narrar_insight, gerar_texto_modelo
 
 logger = logging.getLogger("venergy.insights.service")
 
@@ -51,11 +51,18 @@ class InsightsService:
             }
 
         # Prepara fatos para a narração: converte datas para formato curto (ex.: "jun/2026")
+        MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
         fatos_formatados = []
         for f in fatos:
             f_copy = f.copy()
             if isinstance(f_copy.get("competencia"), (datetime, date)):
-                f_copy["competencia"] = f_copy["competencia"].strftime("%b/%Y").lower()
+                c = f_copy["competencia"]
+                f_copy["competencia"] = f"{MESES[c.month - 1]}/{c.year}"
+            if "consumo_kwh" in f_copy and f_copy["consumo_kwh"] is not None:
+                try:
+                    f_copy["consumo_kwh"] = int(round(float(f_copy["consumo_kwh"])))
+                except (ValueError, TypeError):
+                    pass
             fatos_formatados.append(f_copy)
 
         # Tentativa de geração com retry até 3 vezes se a conferência falhar
@@ -70,15 +77,11 @@ class InsightsService:
             logger.warning("Tentativa %d de geração de insight falhou (conferência). Texto rejeitado: %s", tentativa, texto)
 
         # Se todas as tentativas falharem, usa texto-modelo fallback sem gravar cache
+        # Se todas as tentativas falharem, usa texto-modelo fallback sem gravar cache
         if selo == "template_fallback":
-            primeiro = fatos_formatados[0]
-            resumo = ", ".join(f"{k}: {v}" for k, v in list(primeiro.items())[:3])
-            texto = f"Dados recentes da tela: {resumo}."
+            texto = gerar_texto_modelo(tela, fatos_formatados)
 
-        fontes = list({
-            "fact_faturamento" if "faturamento" in str(f).lower() else "fact_leituras"
-            for f in fatos_formatados
-        })
+        fontes = fontes_da_tela(tela)
 
         resultado = {
             "tela": tela,
@@ -126,7 +129,7 @@ class InsightsService:
                 "metricas_destaque": fatos[0] if fatos else {},
                 "selo": row["selo_validacao"],
                 "tempo_ms": 0.0,
-                "fontes": ["fact_faturamento", "fact_leituras"] if fatos else [],
+                "fontes": fontes_da_tela(tela) if fatos else [],
             }
         except Exception as exc:
             logger.warning("Cache de insights indisponível: %s", exc)

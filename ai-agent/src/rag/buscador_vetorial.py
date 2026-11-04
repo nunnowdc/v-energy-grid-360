@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import os
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from pydantic import ValidationError
@@ -49,10 +50,22 @@ def _obter_limiar_padrao() -> float:
     return LIMIAR_SIMILARIDADE
 
 
+@lru_cache(maxsize=None)
+def _modelo_compartilhado(nome: str):
+    """Um modelo por nome no processo inteiro.
+
+    O nó 5 cria um BuscadorVetorial a cada pergunta; guardado só no objeto, o modelo
+    era carregado de novo em toda pergunta (cerca de 5 s).
+    """
+    from sentence_transformers import SentenceTransformer
+    logger.info("Carregando modelo de embedding: %s", nome)
+    return SentenceTransformer(nome)
+
+
 class BuscadorVetorial:
     """
     Realiza buscas semânticas na tabela tb_conhecimento_vetorial usando pgvector.
-    O modelo de embedding é carregado uma vez e reutilizado (lazy load).
+    O modelo de embedding é carregado na primeira busca do processo e reutilizado.
     """
 
     def __init__(
@@ -71,12 +84,10 @@ class BuscadorVetorial:
         self._modelo = None  # lazy load
 
     def _carregar_modelo(self):
-        """Carrega o modelo de embedding apenas na primeira chamada."""
+        """Usa o modelo já carregado no processo; carrega só na primeira vez."""
         if self._modelo is None:
             try:
-                from sentence_transformers import SentenceTransformer
-                logger.info("Carregando modelo de embedding: %s", self.modelo_embedding)
-                self._modelo = SentenceTransformer(self.modelo_embedding)
+                self._modelo = _modelo_compartilhado(self.modelo_embedding)
             except ImportError:
                 raise RuntimeError(
                     "sentence-transformers não instalado. "

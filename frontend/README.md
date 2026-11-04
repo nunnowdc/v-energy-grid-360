@@ -243,7 +243,7 @@ A lista de componentes está em https://ui.shadcn.com/docs/components.
 |---|---|---|---|
 | `/` | Indicadores | Diretoria, Administrador (TI) | Principais KPIs do negócio, comparados entre períodos |
 | `/receita` | Receita | Diretoria, Administrador (TI) | Variação de receita (efeito-preço × efeito-volume) por município, bairro e classe |
-| `/visao-360/:idUc` | Visão 360 | Atendimento, Perdas, Administrador (TI) | Tudo sobre uma unidade consumidora em uma única tela |
+| `/visao-360/:idUc` | Visão 360 | Diretoria, Atendimento, Perdas, Administrador (TI) | Tudo sobre uma unidade consumidora em uma única tela |
 | `/inspecoes` | Fila de inspeção | Perdas, Administrador (TI) | Unidades suspeitas priorizadas e gestão das ordens de inspeção |
 | `/continuidade` | Continuidade | Diretoria, Operação, Administrador (TI) | DEC e FEC por alimentador ao longo do tempo |
 | `/usuarios` | Usuários | Administrador (TI) | Criação das contas de acesso, com o perfil de cada pessoa |
@@ -402,7 +402,7 @@ Todas as telas usam as rotas reais do backend, que precisa estar ligado e com a 
 - `GET /api/filters/options`: as opções dos filtros. Nos testes, as opções inventadas de `src/mocks/opcoes-filtros.ts`.
 - `GET /api/metrics/general`: os Indicadores. Os testes deles usam números redondos inventados no próprio teste.
 - `GET /api/metrics/revenue-variance`: a Receita. Os testes dela usam números redondos inventados no próprio teste.
-- `GET /api/network/continuity`: a Continuidade. Os testes dela usam números redondos inventados no próprio teste. O card "Pior DEC" e o gráfico mês a mês, sem alimentador escolhido, mostram o pior DEC entre os alimentadores com 100 UCs ou mais: nos pequenos, poucas interrupções já inflam o DEC. Como a série da resposta é a do primeiro do ranking, quando ele é pequeno a tela pede a série do alimentador em destaque numa segunda consulta (`alimentadorEmDestaque` em `src/hooks/use-continuidade.ts`).
+- `GET /api/network/continuity`: a Continuidade. Os testes dela usam números redondos inventados no próprio teste. O card "Pior DEC" e o gráfico mês a mês, sem alimentador escolhido, mostram o pior DEC entre os alimentadores com 100 UCs ou mais: nos pequenos, poucas interrupções já inflam o DEC. Como a série da resposta é a do primeiro do ranking, quando ele é pequeno a tela pede a série do alimentador em destaque numa segunda consulta (`alimentadorEmDestaque` em `src/hooks/use-continuidade.ts`). O ranking começa pelas horas sem energia (DEC × UCs, calculado no front em `RankingAlimentadores`) e pode ser reordenado pelo DEC, sem nova consulta. Ele mostra também o DEC evitável (`dec_evitavel`): a parte do DEC que vem de vegetação, falha de equipamento e sobrecarga, com a porcentagem do DEC ao lado.
 - `GET /api/inspections/queue`, `GET /api/inspections/orders`, `POST /api/inspections/order`, `PATCH` e `DELETE /api/inspections/{id}`: a Fila de inspeção. As ordens ficam na tabela `ordens_inspecao`, que não vem com a Gold: crie uma vez com `backend/sql/ordens_inspecao.sql` (veja `backend/README.md`). Os testes da tela usam um backend inventado no próprio teste, com as mesmas regras (gerar é tudo ou nada; a hora vem em UTC).
 - `GET /api/inspections/queue/export`: baixa a fila inteira do recorte em Excel, com endereço e sem o nome do titular.
 - `GET /api/uc/{id}/360`: a Visão 360. Os testes dela usam os dados inventados de `src/mocks/uc-360.ts`.

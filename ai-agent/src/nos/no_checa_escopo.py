@@ -61,6 +61,12 @@ _TERMOS_FORA_ESCOPO_CLIMA = re.compile(
     re.IGNORECASE,
 )
 
+# Regex para bloquear comandos SQL brutos disfarçados ou que passaram no Nó 1
+_SQL_DIRETO_IMEDIATO = re.compile(
+    r"^\s*SELECT\s+.*?\bFROM\b",
+    re.IGNORECASE | re.DOTALL
+)
+
 
 def _contem_termo(texto: str, termo: str) -> bool:
     """Verifica um termo completo, sem casar apenas parte de outra palavra."""
@@ -69,8 +75,10 @@ def _contem_termo(texto: str, termo: str) -> bool:
 SYSTEM_PROMPT_ESCOPO = """
 Você é um classificador de escopo para a distribuidora de energia V-Energy Grid 360.
 
-TAREFA: Determine se a pergunta é sobre os dados operacionais, regulatórios ou comerciais
+TAREFA: 
+1. Determine se a pergunta é sobre os dados operacionais, regulatórios ou comerciais
 da distribuidora V-Energy na concessão da Região Metropolitana do Recife (14 municípios de PE).
+2. O usuário DEVE fazer perguntas em linguagem natural. Se o usuário enviar CÓDIGO SQL DIRETO (ex: "SELECT * FROM..."), classifique como FORA_ESCOPO.
 
 Responda EXCLUSIVAMENTE com um dos dois textos abaixo:
 - DENTRO_ESCOPO
@@ -81,6 +89,7 @@ EXEMPLOS:
 - "Quantas UCs têm geração solar?" → DENTRO_ESCOPO
 - "Qual a previsão do tempo para Recife?" → FORA_ESCOPO: Informação meteorológica não operacional
 - "Qual a receita da Enel no Rio de Janeiro?" → FORA_ESCOPO: Empresa e local fora da concessão
+- "SELECT count(*) FROM dim_unidade_consumidora;" → FORA_ESCOPO: Apenas perguntas em linguagem natural são permitidas
 """.strip()
 
 
@@ -96,6 +105,15 @@ def no_checa_escopo(
     pergunta_lower = pergunta.lower()
 
     # ── 1. Rejeição heurística rápida: zero custo de LLM ──
+    if _SQL_DIRETO_IMEDIATO.search(pergunta_lower):
+        logger.info("Nó 3 — Tentativa de SQL bruto detectada: %s", pergunta[:80])
+        return {
+            "dentro_escopo": False,
+            "rota": "fora_escopo",
+            "motivo_fora_escopo": "Por segurança, não aceito comandos SQL diretos. Por favor, me faça uma pergunta em linguagem natural.",
+            "passos_executados": ["Nó 3 — Bloqueio: SQL bruto detectado por heurística."],
+        }
+
     if _TERMOS_FORA_ESCOPO_IMEDIATO.search(pergunta_lower):
         logger.info("Nó 3 — Fora de escopo (heurística): %s", pergunta[:80])
         return {

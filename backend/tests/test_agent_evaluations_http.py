@@ -27,6 +27,7 @@ def execucao(id_, dia, aprovados, taxa_execucao):
         "taxa_abstencao": 100.0,
         "tokens_medio": 7500.4,
         "duracao_ms": 180000.0,
+        "taxa_resultado_certo": 87.5,
     }
 
 
@@ -99,6 +100,7 @@ def test_runs_in_date_order_and_the_cases_of_the_last_one(client) -> None:
         "taxa_abstencao": 100.0,
         "tokens_medio": 7500.4,
         "duracao_ms": 180000.0,
+        "taxa_resultado_certo": 87.5,
     }
     assert body["casos"][0]["motivo"] == (
         "Rodou, mas sem a tabela esperada: fact_faturamento"

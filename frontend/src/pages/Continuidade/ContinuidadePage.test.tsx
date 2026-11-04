@@ -22,6 +22,7 @@ const alimentador = (
   dec,
   fec: dec / 2,
   dec_sem_dia_critico: dec - 1,
+  dec_evitavel: dec / 4,
   dec_anterior: dec - 2,
 })
 
@@ -173,11 +174,28 @@ test('com uma causa só, o bloco das causas sai: o cartão "Principal causa" já
   expect(screen.queryByText('Ocorrências por causa')).not.toBeInTheDocument()
 })
 
+test('o ranking começa pelas horas sem energia e pode ser ordenado pelo DEC', async () => {
+  abrir()
+
+  const codigos = async () =>
+    (await screen.findAllByRole('button', { name: /^ALM-/ })).map((botao) => botao.textContent)
+  // Horas = DEC × UCs: 30.000, 9.000, 1.500 e 800. O de maior DEC tem só 20 UCs
+  expect(await codigos()).toEqual(['ALM-REC-001', 'ALM-JAB-001', 'ALM-OLI-001', 'ALM-REC-003'])
+  expect(screen.getByRole('button', { name: 'Mais horas sem energia' })).toHaveAttribute('aria-pressed', 'true')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Maior DEC' }))
+
+  expect(await codigos()).toEqual(['ALM-REC-003', 'ALM-OLI-001', 'ALM-REC-001', 'ALM-JAB-001'])
+  expect(screen.getByRole('button', { name: 'Maior DEC' })).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('com um alimentador escolhido, o ranking oferece voltar a todos sem subir até os filtros', async () => {
   abrir('/continuidade?alimentador=ALM-REC-001')
 
   expect(await alimentadorDoGrafico('ALM-REC-001')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /^ALM-/ })).not.toBeInTheDocument()
+  // Com uma linha só, não há o que ordenar
+  expect(screen.queryByRole('group', { name: 'Ordenar por' })).not.toBeInTheDocument()
 
   fireEvent.click(screen.getByRole('button', { name: 'Ver todos os alimentadores' }))
 

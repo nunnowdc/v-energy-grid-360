@@ -61,6 +61,17 @@ def test_continuidade_padrao_concilia_com_gold_local() -> None:
             ),
             {"inicio": current_start, "fim": last},
         ).all()
+        preventable_dec = connection.execute(
+            text(
+                "SELECT COALESCE(SUM(o.duracao_h), 0) / MAX(a.total_ucs) "
+                "FROM dim_alimentador a LEFT JOIN fact_ocorrencias o "
+                "ON o.alimentador = a.alimentador "
+                "AND o.competencia BETWEEN :inicio AND :fim "
+                "AND o.causa IN ('FALHA DE EQUIPAMENTO', 'SOBRECARGA', 'VEGETACAO') "
+                "WHERE a.alimentador = :alimentador"
+            ),
+            {"alimentador": first.alimentador, "inicio": current_start, "fim": last},
+        ).scalar_one()
 
     response = TestClient(app).get("/api/network/continuity")
     assert response.status_code == 200, response.text
@@ -83,6 +94,8 @@ def test_continuidade_padrao_concilia_com_gold_local() -> None:
         first.dec_sem_dia_critico, abs=0.5e-6
     )
     assert top["dec_anterior"] == pytest.approx(previous_dec, abs=0.5e-6)
+    assert top["dec_evitavel"] == pytest.approx(preventable_dec, abs=0.5e-6)
+    assert 0 <= top["dec_evitavel"] <= top["dec"] + 1e-3
     assert body["serie"]["alimentador"] == first.alimentador
     assert len(body["serie"]["atual"]) == 12
     assert len(body["serie"]["anterior"]) == 12

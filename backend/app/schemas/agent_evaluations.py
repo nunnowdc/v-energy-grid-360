@@ -21,6 +21,9 @@ class AgentEvaluationRun(BaseModel):
     taxa_abstencao: float | None
     tokens_medio: float | None
     duracao_ms: float
+    # Casos de dados cujo resultado bate com o do SQL esperado; nula nas execuções
+    # anteriores à conferência de resultado ou quando nenhum caso foi conferido
+    taxa_resultado_certo: float | None
 
 
 class AgentEvaluationCase(BaseModel):

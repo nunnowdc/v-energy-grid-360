@@ -19,7 +19,7 @@ function CartaoMeta({ meta, execucao }: { meta: MetaAvaliacao; execucao: Execuca
   const atingiu = atingiuMeta(meta, execucao)
 
   if (valor === null) {
-    return <CartaoKpi titulo={meta.titulo} valor="—" detalhe="Sem casos desse tipo nesta execução" />
+    return <CartaoKpi titulo={meta.titulo} valor="—" detalhe={meta.semValor} />
   }
   return (
     <CartaoKpi
@@ -45,7 +45,8 @@ function UltimaExecucao({ dados }: { dados: AvaliacoesAgente }) {
         )}
         , em {formatarNumero(ultima.duracao_ms / 60_000)} min
       </p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* Casos aprovados e as 5 métricas: duas linhas de 3 */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <CartaoKpi
           titulo="Casos aprovados"
           valor={`${ultima.casos_aprovados} de ${ultima.total_casos}`}
@@ -61,8 +62,8 @@ function UltimaExecucao({ dados }: { dados: AvaliacoesAgente }) {
 
 function KpisEsqueleto() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      {Array.from({ length: 5 }, (_, indice) => (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, indice) => (
         <CartaoKpiEsqueleto key={indice} />
       ))}
     </div>

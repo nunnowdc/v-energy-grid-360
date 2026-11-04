@@ -24,11 +24,17 @@ REGRAS ABSOLUTAS:
 3. Formate números no padrão brasileiro (vírgula decimal, ponto milhar). Ex.: R$ 1.250.430,00.
 4. Cite fontes do <CONTEXTO_RAG> no rodapé, se utilizadas.
 5. MANTENHA a resposta curta (máx. 4‑6 linhas), porém deixe‑a **conversacional**:
-   • Comece com um breve preâmbulo (“Conforme a base de dados,…”).
-   • Use conectores (“Além disso”, “Portanto”).
-   • Termine com um encerramento amigável (“Qualquer outra informação, estou à disposição.”).
+   • Comece com um breve preâmbulo ("Conforme a base de dados,…").
+   • Use conectores ("Além disso", "Portanto").
+   • Termine com um encerramento amigável ("Qualquer outra informação, estou à disposição.").
 6. NUNCA misture dados do <CONTEXTO_RAG> com números de <DADOS_SQL>.
 7. Quando houver o bloco <TOTAIS_CALCULADOS>, cite somente os totais e percentuais expressamente calculados nele.
+8. PERÍODOS: Se <DADOS_SQL> trouxer periodo_p0/periodo_p1 (ou periodo_atual/periodo_anterior), CITE OS DOIS PERÍODOS no texto (ex.: "de jul/2022 a jun/2023 para jul/2025 a jun/2026").
+9. VARIAÇÕES: Variações de kWh ou R$ devem ser expressas como "X kWh a menos" / "X kWh a mais" (valor absoluto, kWh inteiro, sem sinal negativo). Percentual: "queda de 22,2%", sem "−". Use OU "queda de X kWh" OU "X kWh a menos", nunca os dois juntos (ex.: NÃO escreva "queda de X kWh a menos").
+10. NÚMEROS: Cite SOMENTE números presentes em <DADOS_SQL> ou <TOTAIS_CALCULADOS>. Nada de "12 meses" ou contagens que não estejam nos dados; use as datas dos períodos.
+11. ALIMENTADOR PEQUENO: Se uma linha tiver alimentador_pequeno = true, diga que esse alimentador tem poucas UCs (menos de 100) e, se houver nos dados, cite também o de maior valor entre os que não são pequenos.
+12. GERAÇÃO PRÓPRIA: Se os dados vierem separados por possui_gd, diga quanto da variação veio das UCs com geração própria e quanto das demais.
+13. DOCUMENTOS: Não cite a numeração de seções, itens ou regras dos documentos do <CONTEXTO_RAG> (ex.: "regra 6.3"); use só o nome do documento no rodapé.
 """.strip()
 
 SYSTEM_PROMPT_SINTESE_RAG = """
@@ -79,7 +85,7 @@ _NOMES_COLUNAS = {
     # outros nomes podem ser adicionados conforme necessidade
 }
 
-_COLUNAS_SEM_SEPARADOR = {"ano", "mes", "mês", "competencia"}
+_COLUNAS_SEM_SEPARADOR = {"ano", "mes", "mês", "competencia", "periodo", "periodo_atual", "periodo_anterior", "periodo_p0", "periodo_p1"}
 
 def _numero_br(valor: float, casas: int) -> str:
     """Formata número no padrão brasileiro (ponto milhar, vírgula decimal)."""
@@ -95,18 +101,41 @@ def _formatar_valor(chave: str, valor: Any) -> str:
     # colunas que não precisam de separador de milhar
     if c in _COLUNAS_SEM_SEPARADOR or c.startswith(("id_", "cod")):
         return str(int(valor)) if float(valor) == int(valor) else str(valor)
+    
+    is_var = c.startswith(("variacao", "perda", "diferenca")) or ("variacao" in c or "diferenca" in c or "perda" in c)
+    val_f = float(valor)
+    
     # valores monetários ou de faturamento
     if any(p in c for p in ("receita", "faturamento", "fatura", "valor", "preco", "preço")):
-        return f"R$ {_numero_br(float(valor), 2)}"
-    # kilowatt‑hour
+        fmt = f"R$ {_numero_br(abs(val_f), 2)}"
+        if is_var:
+            if val_f < 0:
+                return f"R$ {_numero_br(abs(val_f), 2)} a menos"
+            elif val_f > 0:
+                return f"R$ {_numero_br(abs(val_f), 2)} a mais"
+        return fmt
+    # kilowatt-hour
     if "kwh" in c:
-        return f"{_numero_br(float(valor), 0)} kWh"
-    # percentuais
-    if "pct" in c or "percentual" in c:
-        return f"{_numero_br(float(valor), 1)}%"
+        fmt = f"{_numero_br(abs(val_f), 0)} kWh"
+        if is_var:
+            if val_f < 0:
+                return f"{_numero_br(abs(val_f), 0)} kWh a menos"
+            elif val_f > 0:
+                return f"{_numero_br(abs(val_f), 0)} kWh a mais"
+        return fmt
+    # percentuais: "pct" como palavra do nome (variacao_volume_pct), e não dentro de
+    # outra (total_ucs_queda_acima_30pct é uma contagem, não um percentual)
+    if {"pct", "percentual"} & set(c.split("_")):
+        fmt = f"{_numero_br(abs(val_f), 1)}%"
+        if is_var:
+            if val_f < 0:
+                return f"queda de {_numero_br(abs(val_f), 1)}%"
+            elif val_f > 0:
+                return f"crescimento de {_numero_br(abs(val_f), 1)}%"
+        return fmt
     # demais números – se for inteiro, sem casas decimais; caso contrário, duas casas
     inteiro = isinstance(valor, int) or float(valor) == int(valor)
-    return _numero_br(float(valor), 0 if inteiro else 2)
+    return _numero_br(val_f, 0 if inteiro else 2)
 
 
 def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
@@ -117,8 +146,15 @@ def _gerar_resposta_mock(dados: list[dict], pergunta: str) -> str:
     """
     if not dados:
         return "Não há dados disponíveis para responder a esta pergunta no momento."
-    # Preâmbulo: reutiliza a própria pergunta (sem o ponto final) como introdução.
-    preambulo = f"Conforme solicitado, {pergunta.rstrip('?')}: "
+    
+    primeira = dados[0]
+    periodo_str = ""
+    for k in ("periodo_atual", "periodo", "periodo_p1", "periodo_p0"):
+        if k in primeira and primeira[k]:
+            periodo_str = f" referentes ao período {primeira[k]}"
+            break
+
+    preambulo = f"Conforme a base de dados, {pergunta.rstrip('?')}{periodo_str}: "
     partes = []
     for linha in dados:
         linha_parts = [
@@ -178,8 +214,8 @@ def no_sintetiza_resposta(
     fatos_adicionais = []
     if rota in ("sql", "ambos") and len(dados_sql) >= 2:
         total_linhas = len(dados_sql)
-        colunas_excluidas = {"ano", "mes", "mês", "competencia", "id", "cod", "codigo", "perfil", "classe"}
-        colunas_excluidas_aditivos = {"pct", "percent", "preco", "preço", "valor", "media", "média", "percentual"}
+        colunas_excluidas = {"ano", "mes", "mês", "competencia", "id", "cod", "codigo", "perfil", "classe", "rank", "dec", "fec", "score", "prioridade"}
+        colunas_excluidas_aditivos = {"pct", "percent", "preco", "preço", "valor", "media", "média", "percentual", "kwh_por_uc", "_por_", "tempo_medio", "nota"}
         primeira_linha = dados_sql[0]
         colunas_numericas = []
         for k in primeira_linha.keys():

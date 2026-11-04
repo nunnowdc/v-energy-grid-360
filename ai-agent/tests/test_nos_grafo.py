@@ -207,7 +207,7 @@ def test_no_valida_sql_reprovado_esgotado_vira_recusa():
     validador = StubValidadorSQL()
     estado = {
         "sql_gerado": "SELECT * FROM tb_usuarios_senhas",
-        "tentativas_sql": 2,  # Teto atingido
+        "tentativas_sql": 3,  # Teto atingido (MAX_TENTATIVAS = 3)
     }
     resultado = no_valida_sql(estado, validador=validador)
 

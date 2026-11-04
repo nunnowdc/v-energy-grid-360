@@ -64,6 +64,8 @@ class RespostaChat(BaseModel):
     tempo_ms: float
     # Tela e filtros que o portal abre ao lado da resposta (None = não muda a tela)
     dashboard: Optional[TelaDashboard] = None
+    # Interpretações que o SQL adotou (linhas "-- Premissa:"); vazia no cache e no RAG
+    premissas: List[str] = []
 
 
 class RequisicaoFeedback(BaseModel):
@@ -100,6 +102,7 @@ def ask(req: RequisicaoChat, usuario: UsuarioLogado) -> RespostaChat:
         fontes=resultado.fontes_citadas,
         tempo_ms=resultado.tempo_execucao_ms,
         dashboard=resultado.dashboard,
+        premissas=resultado.premissas,
     )
 
 

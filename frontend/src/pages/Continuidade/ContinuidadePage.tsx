@@ -158,7 +158,7 @@ function ContinuidadePage() {
 
       <BlocoDados
         titulo="Piores alimentadores"
-        descricao="Do maior DEC para o menor: onde a manutenção preventiva rende mais. Clique no código para filtrar."
+        descricao="DEC evitável: a parte que vem de vegetação, falha de equipamento e sobrecarga. Clique no código para filtrar."
         consulta={consulta}
         estaVazio={semAlimentadores}
         mensagemVazio={MENSAGEM_VAZIO}

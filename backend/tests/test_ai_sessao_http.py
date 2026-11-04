@@ -37,6 +37,7 @@ def _resposta_falsa():
         fontes_citadas=[],
         tempo_execucao_ms=1.0,
         dashboard=None,
+        premissas=["Últimos 12 meses contra os 12 anteriores"],
     )
 
 
@@ -56,6 +57,7 @@ def test_ask_grava_usuario_e_perfil_da_sessao_e_ignora_o_corpo(client, monkeypat
     )
 
     assert response.status_code == 200
+    assert response.json()["premissas"] == ["Últimos 12 meses contra os 12 anteriores"]
     assert chamadas[0]["user_id"] == str(USUARIO["id"])
     assert chamadas[0]["perfil"] == "ATENDIMENTO"
     assert OUTRA_PESSOA not in chamadas[0].values()

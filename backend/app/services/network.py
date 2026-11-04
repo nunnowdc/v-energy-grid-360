@@ -12,6 +12,11 @@ from app.services.metrics import (
 )
 
 
+# Causas que a manutenção preventiva reduz (poda, revisão de equipamento, reforço de carga).
+# Climática, terceiros e as sem causa ficam de fora. Suposição do time, registrada no README
+PREVENTABLE_CAUSES = ("FALHA DE EQUIPAMENTO", "SOBRECARGA", "VEGETACAO")
+
+
 class NetworkCalendarUnavailableError(Exception):
     """Calendário Gold incapaz de formar as duas janelas padrão."""
 
@@ -181,6 +186,16 @@ def get_continuity(
             raise NetworkGoldUnavailableError
         by_feeder[feeder][month] = row
 
+    # Horas x UC das causas evitáveis no período comparado, do alimentador inteiro (como o DEC)
+    preventable: dict[str, float] = {}
+    for row in repository.get_preventable_hours(
+        compared_start, compared_end, feeders, PREVENTABLE_CAUSES
+    ):
+        feeder = row.get("alimentador")
+        if not isinstance(feeder, str) or feeder not in by_feeder or feeder in preventable:
+            raise NetworkGoldUnavailableError
+        preventable[feeder] = _number(row, "horas_x_uc")
+
     ranked: list[tuple[float, dict[str, object]]] = []
     for feeder in feeders:
         rows_by_month = by_feeder[feeder]
@@ -226,6 +241,9 @@ def get_continuity(
                     "dec": round(current["dec"], 6),
                     "fec": round(current["fec"], 6),
                     "dec_sem_dia_critico": round(current["dec_sem_dia_critico"], 6),
+                    "dec_evitavel": round(
+                        preventable.get(feeder, 0.0) / latest["total_ucs"], 6
+                    ),
                     "dec_anterior": round(previous["dec"], 6),
                 },
             )

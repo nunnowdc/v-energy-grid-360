@@ -126,6 +126,7 @@ def executar_agente(
                 "Nossa equipe técnica foi notificada."
             ),
             sql_gerado=None,
+            premissas=[],
             dados_tabela=None,
             selo_confianca="erro_bloqueado",
             fontes_citadas=[],
@@ -150,6 +151,7 @@ def executar_agente(
         pergunta_autonoma=estado_final.get("pergunta_autonoma", pergunta),
         resposta_texto=estado_final.get("texto_resposta", ""),
         sql_gerado=estado_final.get("sql_gerado"),
+        premissas=estado_final.get("premissas_sql") or [],
         dados_tabela=dados_brutos,
         selo_confianca=selo,
         fontes_citadas=estado_final.get("fontes_citadas", []),

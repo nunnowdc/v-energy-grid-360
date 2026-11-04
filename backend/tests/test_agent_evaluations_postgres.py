@@ -1,6 +1,7 @@
 """Avaliações gravadas pelo ai-agent e lidas pelo backend, em PostgreSQL descartável."""
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 # O gravador de verdade do ai-agent: o conftest importa o app.main, que põe o
@@ -21,6 +22,7 @@ def execucao(aprovados: int, casos: list[tuple[str, bool]]) -> dict:
         "taxa_abstencao": 100.0,
         "tokens_medio": 1234.5,
         "duracao_ms": 9000.0,
+        "taxa_resultado_certo": 80.0,
         "casos": [
             {
                 "caso_id": caso_id,
@@ -71,6 +73,7 @@ def test_backend_reads_what_the_ai_agent_writes(evaluations_engine) -> None:
     assert [str(run["id"]) for run in runs] == [primeira, ultima]
     assert [run["modelo"] for run in runs] == ["a", "b"]
     assert runs[0]["taxa_component_match"] is None
+    assert runs[0]["taxa_resultado_certo"] == 80.0
     assert runs[0]["executada_em"] <= runs[1]["executada_em"]
     # Na ordem do golden set, não na de gravação
     assert [(case["caso_id"], case["passou"]) for case in cases] == [
@@ -85,3 +88,14 @@ def test_runs_keep_only_the_most_recent_ones(evaluations_engine) -> None:
 
     assert len(runs) == 1
     assert runs[0]["modelo"] == "b"
+
+
+def test_table_from_before_the_result_check_reads_it_as_null(evaluations_engine) -> None:
+    # Tabela criada por uma versão anterior do script, sem a coluna; o DDL do
+    # PostgreSQL é transacional, então o rollback devolve a coluna aos outros testes
+    with evaluations_engine.connect() as connection:
+        connection.execute(text("ALTER TABLE tb_avaliacoes_agente DROP COLUMN taxa_resultado_certo"))
+        runs = AgentEvaluationsRepository(connection).get_runs(30)
+        connection.rollback()
+
+    assert [run["taxa_resultado_certo"] for run in runs] == [None, None]

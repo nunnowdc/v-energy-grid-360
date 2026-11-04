@@ -25,7 +25,7 @@ export const nomesPerfis: Record<Perfil, string> = {
 // a passo de cada resposta (GET /api/ai/audit) é só do ADMIN_TI (decisão do time).
 // Criar contas (POST /api/auth/users) também é só do ADMIN_TI
 export const permissoesPorPerfil: Record<Perfil, Permissao[]> = {
-  DIRETORIA: ['ver_indicadores', 'ver_receita', 'ver_continuidade', 'usar_agente_ia'],
+  DIRETORIA: ['ver_indicadores', 'ver_receita', 'ver_continuidade', 'ver_visao_360', 'usar_agente_ia'],
   ATENDIMENTO: ['ver_visao_360', 'usar_agente_ia'],
   PERDAS: ['ver_fila_inspecao', 'ver_visao_360', 'usar_agente_ia'],
   OPERACAO: ['ver_continuidade', 'usar_agente_ia'],

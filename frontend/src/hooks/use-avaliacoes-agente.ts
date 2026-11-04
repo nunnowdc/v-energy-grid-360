@@ -18,6 +18,9 @@ export type ExecucaoAvaliacao = {
   taxa_abstencao: number | null
   tokens_medio: number | null
   duracao_ms: number
+  // Casos de dados cujo resultado bate com o do SQL esperado; nula nas execuções
+  // anteriores à conferência de resultado ou quando nenhum caso foi conferido
+  taxa_resultado_certo: number | null
 }
 
 // O que o caso espera do agente: consulta aos dados, documentos ou recusa

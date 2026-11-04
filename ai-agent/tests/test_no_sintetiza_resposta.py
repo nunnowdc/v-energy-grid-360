@@ -62,7 +62,7 @@ def test_gerar_resposta_mock_formata_valores_monetarios():
     resp = _gerar_resposta_mock(dados, pergunta)
 
     # Preâmbulo baseado na pergunta original
-    assert resp.startswith("Conforme solicitado, Qual o faturamento em Recife no ano de 2024:")
+    assert resp.startswith("Conforme a base de dados, Qual o faturamento em Recife no ano de 2024:")
     # Nomes de coluna amigáveis
     assert "Município: Recife" in resp
     assert "Ano: 2024" in resp
