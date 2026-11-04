@@ -505,7 +505,11 @@ def test_consumo_imputado_real_preserva_valor_gold_e_sinalizador() -> None:
             connection.execute(
                 text(
                     "SELECT id_uc, id_leitura, mes_referencia, consumo_kwh "
-                    "FROM fact_leituras WHERE consumo_imputado = true LIMIT 1"
+                    "FROM fact_leituras WHERE consumo_imputado = true "
+                    "AND competencia IN ("
+                    "SELECT competencia FROM dim_competencia "
+                    "ORDER BY competencia DESC LIMIT 12) "
+                    "ORDER BY competencia DESC, id_leitura DESC LIMIT 1"
                 )
             )
             .mappings()
