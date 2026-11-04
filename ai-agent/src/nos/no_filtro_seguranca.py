@@ -23,7 +23,8 @@ _PADROES_ATAQUE = re.compile(
     <\s*/?system\s*> |
     <\s*/?instructions\s*> |
     IGNORE\s+ALL |
-    # SQL direto no prompt
+    # SQL direto no prompt (defesa contra SELECT bruto)
+    ^\s*SELECT\s+ |
     (DROP|ALTER|TRUNCATE)\s+(TABLE|DATABASE)\s+\w+ |
     (DELETE\s+FROM|INSERT\s+INTO|UPDATE)\s+\w+ |
     # Tentativa de sair do escopo via instrução
@@ -61,15 +62,15 @@ def no_filtro_seguranca(state: EstadoAgente) -> Dict[str, Any]:
             ],
         }
 
-    # 2. Detecção de padrões de injeção / jailbreak
+    # 2. Detecção de padrões de injeção / jailbreak / comandos diretos
     if _PADROES_ATAQUE.search(pergunta):
-        logger.warning("Nó 1 — Bloqueio: padrão de injeção detectado na pergunta.")
+        logger.warning("Nó 1 — Bloqueio: padrão de injeção ou SQL direto detectado na pergunta.")
         return {
             "rota": "bloqueio_seguranca",
-            "motivo_fora_escopo": "Padrão de manipulação de prompt detectado.",
+            "motivo_fora_escopo": "Padrão de manipulação de prompt ou comando SQL direto detectado.",
             "malicioso": True,
             "passos_executados": [
-                "Nó 1 — Bloqueado: padrão de prompt injection detectado."
+                "Nó 1 — Bloqueado: padrão de prompt injection ou comando SQL direto detectado."
             ],
         }
 
