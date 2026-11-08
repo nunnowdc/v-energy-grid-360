@@ -114,6 +114,7 @@ def conferir(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -
         leituras = _leituras_possiveis(inteiro, decimais)
         aceito = any(
             _bate(valor, casas, multiplicador, permitido, tolerancia)
+            or (multiplicador != 1 and _bate(valor, casas, 1, permitido, tolerancia))
             for valor, casas in leituras
             for permitido in permitidos
         )
@@ -138,6 +139,7 @@ def numeros_nao_encontrados(fatos: list[Dict[str, Any]], texto: str, tolerancia:
         leituras = _leituras_possiveis(inteiro, decimais)
         aceito = any(
             _bate(valor, casas, multiplicador, permitido, tolerancia)
+            or (multiplicador != 1 and _bate(valor, casas, 1, permitido, tolerancia))
             for valor, casas in leituras
             for permitido in permitidos
         )
