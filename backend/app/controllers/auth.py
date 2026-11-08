@@ -15,6 +15,7 @@ from app.schemas.auth import (
     LoginRequest,
 )
 from app.security.dependencies import (
+    get_admin_user_repository,
     get_current_user,
     get_user_repository,
     require_admin_ti,
@@ -131,7 +132,7 @@ def register_user(
     _admin: Annotated[dict[str, object], Depends(require_admin_ti)],
     repository_context: Annotated[
         AbstractContextManager[UsersRepository],
-        Depends(get_user_repository, use_cache=False),
+        Depends(get_admin_user_repository, use_cache=False),
     ],
 ) -> AuthUser:
     try:

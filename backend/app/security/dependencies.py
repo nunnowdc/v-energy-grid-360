@@ -8,7 +8,7 @@ from fastapi import Cookie, Depends, HTTPException, Request
 from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 
 from app.core.config import ConfigurationUnavailableError
-from app.core.database import get_connection
+from app.core.database import current_profile, get_auth_connection, get_connection
 from app.repositories.users import UsersRepository
 from app.security.permissions import (
     INSIGHT_PERMISSIONS,
@@ -28,13 +28,28 @@ ALLOWED_WRITE_ORIGINS = frozenset(
 
 @contextmanager
 def _user_repository_context() -> Iterator[UsersRepository]:
-    with get_connection() as connection:
+    with get_auth_connection() as connection:
         yield UsersRepository(connection)
+
+
+@contextmanager
+def _admin_user_repository_context() -> Iterator[UsersRepository]:
+    token = current_profile.set("ADMIN_TI")
+    try:
+        with get_connection() as connection:
+            yield UsersRepository(connection)
+    finally:
+        current_profile.reset(token)
 
 
 def get_user_repository() -> AbstractContextManager[UsersRepository]:
     """Entrega o repository de usuários com conexão fechada ao sair do contexto."""
     return _user_repository_context()
+
+
+def get_admin_user_repository() -> AbstractContextManager[UsersRepository]:
+    """Repository de usuários com o perfil Admin TI, para criar contas."""
+    return _admin_user_repository_context()
 
 
 def get_current_user(
@@ -77,16 +92,18 @@ def get_current_user(
     return user
 
 
-def require_admin_ti(
+async def require_admin_ti(
     user: Annotated[dict[str, object], Depends(get_current_user)],
 ) -> dict[str, object]:
     """Protege o cadastro administrativo antes do RBAC geral do Ticket 04."""
     if user["perfil"] != "ADMIN_TI":
         raise HTTPException(status_code=403, detail="Acesso não permitido")
+    # Async: roda no contexto da requisição, que as rotas síncronas herdam
+    current_profile.set(user["perfil"])
     return user
 
 
-def authorize_business_route(
+async def authorize_business_route(
     request: Request,
     user: Annotated[dict[str, object], Depends(get_current_user)],
 ) -> None:
@@ -105,3 +122,4 @@ def authorize_business_route(
     # As rotas do ai-agent não importam o backend: leem a conta autorizada daqui,
     # nunca de um id enviado pelo cliente
     request.state.usuario = user
+    current_profile.set(user["perfil"])

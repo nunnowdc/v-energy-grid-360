@@ -35,11 +35,15 @@ class FakeUsers:
 
 @pytest.fixture
 def auth_client(monkeypatch):
-    from app.security.dependencies import get_user_repository
+    from app.security.dependencies import (
+        get_admin_user_repository,
+        get_user_repository,
+    )
 
     monkeypatch.setenv("JWT_SECRET_KEY", SECRET)
     users = FakeUsers()
     app.dependency_overrides[get_user_repository] = lambda: nullcontext(users)
+    app.dependency_overrides[get_admin_user_repository] = lambda: nullcontext(users)
     try:
         yield TestClient(app), users
     finally:

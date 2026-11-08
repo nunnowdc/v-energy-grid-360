@@ -8,6 +8,7 @@ from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from ..provedores.cliente_llm import ClienteLLM
+from ..services.conexao_banco import ExecutorComPerfil, aplicar_perfil, url_do_banco, usa_roles
 from ..services.sql_executor import SQLExecutor
 from .conferente_numerico import conferir
 from .extrator_metricas_fixas import extrair_metricas, fontes_da_tela
@@ -23,16 +24,20 @@ class InsightsService:
         llm: Optional[ClienteLLM] = None,
         db_url: Optional[str] = None,
     ):
-        self.db_url = db_url or os.getenv("DATABASE_URL")
+        self.db_url = db_url or url_do_banco()
         self.executor = executor or SQLExecutor(db_url=self.db_url)
         self.llm = llm or ClienteLLM()
 
-    def obter(self, tela: str, entidade_id: str) -> Dict[str, Any]:
-        cached = self._ler_cache(tela, entidade_id)
+    def obter(
+        self, tela: str, entidade_id: str, perfil: Optional[str] = None
+    ) -> Dict[str, Any]:
+        # O perfil vem da sessão (ai_router), nunca do corpo da requisição
+        executor = ExecutorComPerfil(self.executor, perfil) if usa_roles() else self.executor
+        cached = self._ler_cache(tela, entidade_id, perfil)
         if cached is not None:
             return cached
 
-        fatos = extrair_metricas(tela, entidade_id, self.executor)
+        fatos = extrair_metricas(tela, entidade_id, executor)
         if not fatos:
             # Retorna 404/vazio caso não haja fatos (tratado pelo endpoint se necessário)
             return {
@@ -94,11 +99,13 @@ class InsightsService:
 
         # Apenas grava no cache se obteve sucesso auditado pela LLM
         if selo == "auditado_llm":
-            self._gravar_cache(resultado, fatos)
+            self._gravar_cache(resultado, fatos, perfil)
 
         return resultado
 
-    def _ler_cache(self, tela: str, entidade_id: str) -> Optional[Dict[str, Any]]:
+    def _ler_cache(
+        self, tela: str, entidade_id: str, perfil: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         if not self.db_url:
             return None
         try:
@@ -106,6 +113,7 @@ class InsightsService:
             from psycopg2.extras import RealDictCursor
             with psycopg2.connect(self.db_url, connect_timeout=3) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    aplicar_perfil(cur, perfil)
                     cur.execute(
                         "SELECT tela, entidade_id, fatos_calculados_json, texto_insight, "
                         "selo_validacao FROM tb_insights_tela "
@@ -131,13 +139,16 @@ class InsightsService:
             logger.warning("Cache de insights indisponível: %s", exc)
             return None
 
-    def _gravar_cache(self, resultado: Dict[str, Any], fatos: list[Dict[str, Any]]) -> None:
+    def _gravar_cache(
+        self, resultado: Dict[str, Any], fatos: list[Dict[str, Any]], perfil: Optional[str] = None
+    ) -> None:
         if not self.db_url:
             return
         try:
             import psycopg2
             with psycopg2.connect(self.db_url) as conn:
                 with conn.cursor() as cur:
+                    aplicar_perfil(cur, perfil)
                     cur.execute(
                         "INSERT INTO tb_insights_tela "
                         "(tela, entidade_id, fatos_calculados_json, texto_insight, selo_validacao) "

@@ -192,3 +192,74 @@ def test_database_url_rejects_invalid_scheme_or_missing_database(
 
     with pytest.raises(ValueError, match="DATABASE_URL"):
         get_settings()
+
+
+def _clean_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(config, "ENV_LOCAL_PATH", tmp_path / "missing.env.local")
+    for name in (
+        "USE_DB_ROLES",
+        "PORTAL_APP_DATABASE_URL",
+        "PORTAL_AUTH_DATABASE_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_db_roles_defaults_to_off(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clean_env(monkeypatch, tmp_path)
+
+    settings = get_settings()
+
+    assert settings.use_db_roles is False
+    assert settings.portal_app_database_url is None
+    assert settings.portal_auth_database_url is None
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("true", True), ("TRUE", True), ("1", True), ("false", False), ("0", False)],
+)
+def test_use_db_roles_parses_boolean(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, raw: str, expected: bool
+) -> None:
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv("USE_DB_ROLES", raw)
+
+    assert get_settings().use_db_roles is expected
+
+
+def test_use_db_roles_rejects_invalid_value(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv("USE_DB_ROLES", "talvez")
+
+    with pytest.raises(ValueError, match="USE_DB_ROLES"):
+        get_settings()
+
+
+@pytest.mark.parametrize("name", ["PORTAL_APP_DATABASE_URL", "PORTAL_AUTH_DATABASE_URL"])
+def test_portal_urls_are_normalized_to_psycopg(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str
+) -> None:
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv(name, "postgresql://u:p@localhost:5433/gold")
+
+    value = getattr(get_settings(), name.lower())
+
+    assert value == "postgresql+psycopg://u:p@localhost:5433/gold"
+
+
+@pytest.mark.parametrize("name", ["PORTAL_APP_DATABASE_URL", "PORTAL_AUTH_DATABASE_URL"])
+@pytest.mark.parametrize(
+    "url", ["mysql://u:p@localhost/gold", "postgresql://u:p@localhost", "nao-e-url"]
+)
+def test_portal_urls_reject_invalid_values(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str, url: str
+) -> None:
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv(name, url)
+
+    with pytest.raises(ValueError, match=name):
+        get_settings()

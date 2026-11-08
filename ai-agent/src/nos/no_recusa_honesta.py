@@ -29,6 +29,10 @@ MENSAGENS_RECUSA = {
         "Após múltiplas tentativas, não consegui gerar uma consulta válida para esta pergunta. "
         "Por favor, tente reformular ou entre em contato com o time de dados."
     ),
+    "sem_permissao": (
+        "Seu perfil ({perfil}) não tem permissão para consultar os dados "
+        "necessários para essa pergunta."
+    ),
     "llm_indisponivel": (
         "O serviço de IA está temporariamente indisponível. Tente novamente em instantes."
     ),
@@ -57,6 +61,9 @@ def no_recusa_honesta(state: EstadoAgente) -> Dict[str, Any]:
     elif motivo_recusa_estado == "llm_indisponivel":
         tipo = "llm_indisponivel"
         texto = MENSAGENS_RECUSA["llm_indisponivel"]
+    elif motivo_recusa_estado == "sem_permissao":
+        tipo = "sem_permissao"
+        texto = MENSAGENS_RECUSA[tipo].format(perfil=state.get("perfil") or "desconhecido")
     elif rota in ("fora_escopo", "bloqueio_seguranca"):
         tipo = rota
         texto = MENSAGENS_RECUSA[rota]

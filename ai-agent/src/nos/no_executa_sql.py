@@ -50,6 +50,8 @@ def no_executa_sql(
         "total_linhas_retornadas": 0,
         "tempo_execucao_sql_ms": resultado.tempo_execucao_ms,
         "erro_validacao_ou_execucao": resultado.erro,
+        # permission denied não se resolve reescrevendo o SQL: sem novas tentativas
+        **({"motivo_recusa": "sem_permissao"} if getattr(resultado, "sem_permissao", False) is True else {}),
         "passos_executados": [
             f"Nó 9 — Erro na execução (tentativa {tentativas}): {resultado.erro}"
         ],
@@ -65,6 +67,9 @@ def rota_pos_execucao(state: EstadoAgente) -> str:
 
     if not erro:
         return "sintetiza"
+
+    if state.get("motivo_recusa") == "sem_permissao":
+        return "recusa"
 
     if tentativas >= MAX_TENTATIVAS:
         return "recusa"

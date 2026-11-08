@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from ..contratos.estado_agente import EstadoAgente
 from ..rag.buscador_vetorial import BuscadorVetorial
+from ..services.conexao_banco import url_do_banco
 
 logger = logging.getLogger("venergy.no_recupera_contexto")
 
@@ -55,8 +56,9 @@ def no_recupera_contexto(
         limiar_calculado = _LIMIAR_POR_ROTA.get(rota, 0.70)
 
     _buscador = buscador or BuscadorVetorial(
-        db_url=os.getenv("DATABASE_URL"),
+        db_url=url_do_banco(),
         limiar=limiar_calculado,
+        perfil=state.get("perfil"),
     )
 
     categorias = _CATEGORIAS_POR_ROTA.get(rota, ["glossario", "esquema"])

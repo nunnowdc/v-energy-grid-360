@@ -8,6 +8,7 @@ import unicodedata
 from typing import Any, Dict, Optional
 
 from ..contratos.estado_agente import EstadoAgente
+from ..services.conexao_banco import aplicar_perfil, url_do_banco
 
 logger = logging.getLogger("venergy.no_cache_parametrizado")
 
@@ -371,11 +372,14 @@ def _encontrar_template(pergunta: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _template_do_banco(db_url: str, esqueleto: str) -> Optional[str]:
+def _template_do_banco(
+    db_url: str, esqueleto: str, perfil: Optional[str] = None
+) -> Optional[str]:
     try:
         import psycopg2
         with psycopg2.connect(db_url, connect_timeout=3) as conn:
             with conn.cursor() as cur:
+                aplicar_perfil(cur, perfil)
                 cur.execute(
                     "SELECT sql_template FROM tb_cache_perguntas_certificadas "
                     "WHERE esqueleto = %s AND ativo = TRUE LIMIT 1;",
@@ -407,8 +411,9 @@ def no_cache_parametrizado(
     slots = match_res["slots"]
     esqueleto = registro["esqueleto"]
 
-
-    template_db = _template_do_banco(db_url or os.getenv("DATABASE_URL", ""), esqueleto)
+    template_db = _template_do_banco(
+        db_url or url_do_banco() or "", esqueleto, state.get("perfil")
+    )
     # Usa template do banco se houver; caso contrário, recorre ao SQL embutido no registro.
     sql = template_db or registro.get("sql")
     if sql:
