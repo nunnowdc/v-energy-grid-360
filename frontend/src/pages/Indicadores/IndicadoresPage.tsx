@@ -5,9 +5,11 @@ import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
 import CartaoKpiEsqueleto from '@/components/CartaoKpi/CartaoKpiEsqueleto'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
+import InsightIa from '@/components/InsightIa/InsightIa'
 import GraficosMensais from '@/components/GraficosMensais/GraficosMensais'
 import ReceitaPorClasse from '@/components/ReceitaPorClasse/ReceitaPorClasse'
 import { useFiltros } from '@/hooks/use-filtros'
+import { ENTIDADE_GLOBAL } from '@/hooks/use-insight-ia'
 import { useIndicadores, type IndicadoresGerais } from '@/hooks/use-indicadores'
 import { variacaoPercentual } from '@/lib/comparacao'
 import {
@@ -102,7 +104,10 @@ function IndicadoresPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'classe']} />} />
+      <CabecalhoPagina
+        destaque={<InsightIa tela="indicadores" entidadeId={ENTIDADE_GLOBAL} descricao="Base completa, não muda com os filtros" />}
+        acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'classe']} />}
+      />
 
       <EstadoConsulta
         consulta={consulta}
