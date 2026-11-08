@@ -41,7 +41,12 @@ CASES = (
     ("PATCH", "/api/inspections/OI-INVALID", LOSSES),
     ("DELETE", "/api/inspections/OI-INVALID", LOSSES),
     ("POST", "/api/ai/ask", ALL),
-    ("GET", "/api/ai/insights/teste/entidade", UC),
+    ("GET", "/api/ai/insights/visao_360_uc/UC132549", UC),
+    ("GET", "/api/ai/insights/receita/global", DIRECTORS),
+    ("GET", "/api/ai/insights/indicadores/global", DIRECTORS),
+    ("GET", "/api/ai/insights/continuidade/global", NETWORK),
+    ("GET", "/api/ai/insights/fila_inspecao/global", LOSSES),
+    ("GET", "/api/ai/insights/tela_inexistente/global", frozenset()),
     ("POST", "/api/ai/feedback", ALL),
     ("GET", "/api/ai/audit/nao-existe", frozenset({"ADMIN_TI"})),
     ("GET", "/api/ai/usage?dias=0", frozenset({"ADMIN_TI"})),
@@ -129,6 +134,26 @@ def test_persisted_profile_controls_each_business_route(
     else:
         assert response.status_code == 403
         assert response.json() == {"detail": "Acesso não permitido"}
+
+
+def test_insight_of_forbidden_screen_never_reaches_the_ai_agent(
+    session_client, monkeypatch
+):
+    from src.insights.service import InsightsService
+
+    client, users = session_client
+    users.profile = "OPERACAO"
+    client.cookies.set(COOKIE_NAME, issue_token(USER_ID))
+    calls = []
+    monkeypatch.setattr(
+        InsightsService,
+        "obter",
+        lambda _self, tela, entidade_id: calls.append(tela) or {"tela": tela},
+    )
+    assert client.get("/api/ai/insights/fila_inspecao/global").status_code == 403
+    assert client.get("/api/ai/insights/receita/global").status_code == 403
+    assert client.get("/api/ai/insights/continuidade/global").status_code == 200
+    assert calls == ["continuidade"]
 
 
 def test_profile_changes_in_database_apply_without_new_token(session_client):
