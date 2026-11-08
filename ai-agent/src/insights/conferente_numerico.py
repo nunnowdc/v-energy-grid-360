@@ -15,7 +15,7 @@ from typing import Any, Dict
 # Número escrito no texto: "1.250,50", "289.60", "12,5", "2025", seguido ou não de "mil/milhão".
 _NUMERO_NO_TEXTO = re.compile(
     r"(?<!\w)(\d+(?:\.\d+)*)(?:,(\d+))?"
-    r"(?:\s*(mil|milhao|milhão|milhoes|milhões|bilhao|bilhão|bilhoes|bilhões)\b)?",
+    r"(?:\s*(mil|milhao|milhão|milhoes|milhões|bilhao|bilhão|bilhoes|bilhões|mi|bi)\b)?",
     re.IGNORECASE,
 )
 _MILHAR_BR = re.compile(r"\d{1,3}(?:\.\d{3})+")
@@ -31,6 +31,8 @@ _ESCALAS = {
     "bilhão": 1_000_000_000,
     "bilhoes": 1_000_000_000,
     "bilhões": 1_000_000_000,
+    "mi": 1_000_000,
+    "bi": 1_000_000_000,
 }
 
 _TERMO_GRID_360 = re.compile(r"\bgrid\s+360\b", re.IGNORECASE)
@@ -42,13 +44,16 @@ def _remover_termo_grid_360(texto: str) -> str:
 
 
 
-def _numeros_dos_fatos(fatos: list[Dict[str, Any]]) -> list[float]:
+def _numeros_dos_fatos(fatos: list[Dict[str, Any]], escala: int | None = None) -> list[float]:
     """Todos os números permitidos: valores numéricos, partes de datas e dígitos de textos.
 
     Além dos valores originais, aceita também o valor absoluto de números (ex.: -3.9 aceita 3.9)."""
     permitidos: list[float] = []
     for fato in fatos:
-        for valor in fato.values():
+        for campo, valor in fato.items():
+            escala_campo = _ESCALAS.get(campo.lower().rsplit("_", 1)[-1], 1)
+            if escala is not None and escala_campo != escala:
+                continue
             if valor is None or isinstance(valor, bool):
                 continue
             if isinstance(valor, (int, float, Decimal)):
@@ -106,42 +111,39 @@ def conferir(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -
 
     `tolerancia` é uma folga absoluta EXTRA, além do arredondamento (padrão: nenhuma).
     """
-    permitidos = _numeros_dos_fatos(fatos)
-    texto_limpo = _remover_termo_grid_360(texto)
-    for achado in _NUMERO_NO_TEXTO.finditer(texto_limpo):
-        inteiro, decimais, escala = achado.groups()
-        multiplicador = _ESCALAS.get(escala.lower(), 1) if escala else 1
-        leituras = _leituras_possiveis(inteiro, decimais)
-        aceito = any(
-            _bate(valor, casas, multiplicador, permitido, tolerancia)
-            or (multiplicador != 1 and _bate(valor, casas, 1, permitido, tolerancia))
-            for valor, casas in leituras
-            for permitido in permitidos
-        )
-        if not aceito:
-            return False
-    return True
+    return not numeros_nao_encontrados(fatos, texto, tolerancia)
 
 
 def numeros_nao_encontrados(fatos: list[Dict[str, Any]], texto: str, tolerancia: float = 0.0) -> list[str]:
     """Retorna os números (texto original) que NÃO possuem correspondência nos fatos.
 
-    Reutiliza a mesma lógica de `conferir`, mas ao invés de abortar na primeira falha
-    coleta todas as ocorrências que não batem e devolve a lista de strings encontradas
+    Compartilha a lógica com `conferir`, coletando as ocorrências que não batem
     (ex.: ['38,3 mil', '45.000']).
     """
     permitidos = _numeros_dos_fatos(fatos)
+    sem_escala = _numeros_dos_fatos(fatos, escala=1)
+    por_escala = {
+        escala: _numeros_dos_fatos(fatos, escala=escala)
+        for escala in set(_ESCALAS.values())
+    }
     nao_encontrados: list[str] = []
     texto_limpo = _remover_termo_grid_360(texto)
     for achado in _NUMERO_NO_TEXTO.finditer(texto_limpo):
         inteiro, decimais, escala = achado.groups()
         multiplicador = _ESCALAS.get(escala.lower(), 1) if escala else 1
         leituras = _leituras_possiveis(inteiro, decimais)
+        # Uma escala explícita pode corresponder a um valor bruto ou a um
+        # campo já expresso nessa MESMA escala. Nunca ignoramos a escala
+        # indiscriminadamente: 778,4 em *_mil não autoriza 778,4 milhões.
+        candidatos = permitidos if multiplicador == 1 else sem_escala
         aceito = any(
             _bate(valor, casas, multiplicador, permitido, tolerancia)
-            or (multiplicador != 1 and _bate(valor, casas, 1, permitido, tolerancia))
             for valor, casas in leituras
-            for permitido in permitidos
+            for permitido in candidatos
+        ) or any(
+            _bate(valor, casas, 1, permitido, tolerancia)
+            for valor, casas in leituras
+            for permitido in por_escala.get(multiplicador, [])
         )
         if not aceito:
             original = achado.group(0).strip()
