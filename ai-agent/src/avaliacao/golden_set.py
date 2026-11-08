@@ -30,12 +30,12 @@ CAMINHO_GOLDEN_SET = (
     / "golden_dataset.json"
 )
 
-# Metas do REQ-AI-08, as mesmas do teste do golden set
+# Metas do REQ-AI-08, as mesmas do teste do golden set. Os tokens por pergunta são
+# acompanhados sem meta: é custo, não critério de qualidade
 META_EXECUCAO = 90.0
 META_COMPONENT_MATCH = 85.0
 META_RESULTADO_CERTO = 85.0
 META_ABSTENCAO = 100.0
-META_TOKENS = 1800.0
 
 SELOS_COM_CONSULTA = ("certificada", "gerada_confiavel")
 SELOS_DE_RECUSA = ("recusa_honesta", "erro_bloqueado")

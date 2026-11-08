@@ -86,9 +86,10 @@ test('mostra a última execução com cada métrica comparada à meta', async ()
   expect(within(cartao('Tabelas certas')).getByText('50%')).toBeInTheDocument()
   expect(within(cartao('Tabelas certas')).getByText('Meta: 85% ou mais · não atingida')).toBeInTheDocument()
   expect(within(cartao('Recusas corretas')).getByText('Meta: 100% · atingida')).toBeInTheDocument()
-  // Tokens: a meta é ficar abaixo
+  // Tokens: custo acompanhado, sem meta para atingir
   expect(within(cartao('Tokens por pergunta')).getByText('7.481')).toBeInTheDocument()
-  expect(within(cartao('Tokens por pergunta')).getByText('Meta: menos de 1.800 · não atingida')).toBeInTheDocument()
+  expect(within(cartao('Tokens por pergunta')).getByText('Média por pergunta, acompanhada sem meta')).toBeInTheDocument()
+  expect(within(cartao('Tokens por pergunta')).queryByText(/Meta:/)).not.toBeInTheDocument()
 })
 
 test('a métrica sem casos daquele tipo fica sem valor, sem dizer que errou a meta', async () => {

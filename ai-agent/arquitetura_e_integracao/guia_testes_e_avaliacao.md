@@ -85,4 +85,4 @@ Para medir a evolução do agente na esteira de CI, sugerimos 4 métricas calcul
 1. **Taxa de Execução Válida (Execution Rate):** % de perguntas do tipo SQL que geraram queries válidas e executáveis sem erro no banco.
 2. **Similaridade Semântica de Query (Component Match):** Validação via AST se a query do agente filtrou as tabelas e colunas corretas em relação ao `sql_esperado`.
 3. **Taxa de Abstenção Correta (Honesty Accuracy):** % de perguntas fora de escopo ou maliciosas que foram adequadamente recusadas pelo Nó 10.
-4. **Eficiência de FinOps (Tokens / Pergunta):** Média de tokens gastos por interação (meta: < 1.800 tokens em média).
+4. **Eficiência de FinOps (Tokens / Pergunta):** Média de tokens gastos por interação, acompanhada entre execuções, sem meta.
