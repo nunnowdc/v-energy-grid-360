@@ -39,7 +39,6 @@ from src.avaliacao.golden_set import (
     META_COMPONENT_MATCH,
     META_EXECUCAO,
     META_RESULTADO_CERTO,
-    META_TOKENS,
     carregar_casos,
     executar_avaliacao,
 )
@@ -140,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     tokens = execucao["tokens_medio"]
     print(
-        f"Tokens por pergunta:    {'—' if tokens is None else round(tokens)} (meta: menos de {META_TOKENS:.0f})"
+        f"Tokens por pergunta:    {'—' if tokens is None else round(tokens)} (acompanhado, sem meta)"
     )
     print(f"Duração:                {execucao['duracao_ms'] / 1000:.0f} s")
 

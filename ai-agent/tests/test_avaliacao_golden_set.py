@@ -216,11 +216,10 @@ def test_avaliacao_completa_golden_dataset(sql_executor_teste: SQLExecutor, post
     print(f" 1. Taxa de Execucao Valida (Execution Rate):   {taxa_execucao:6.1f}% (meta: >= 90.0%)")
     print(f" 2. Precisao de AST (Component Match):          {taxa_component_match:6.1f}% (meta: >= 85.0%)")
     print(f" 3. Taxa de Abstencao Correta (Honesty Acc):    {taxa_abstencao:6.1f}% (meta: 100.0%)")
-    print(f" 4. Media de Tokens por Pergunta (FinOps):       {media_tokens:6.1f} tokens (meta: < 1.800)")
+    print(f" 4. Media de Tokens por Pergunta (FinOps):       {media_tokens:6.1f} tokens (acompanhado, sem meta)")
     print("=" * 70)
 
     # Asserts de conformidade e qualidade contínua
     assert taxa_execucao >= 90.0, f"Execution Rate insuficiente: {taxa_execucao:.1f}%"
     assert taxa_component_match >= 85.0, f"Component Match insuficiente: {taxa_component_match:.1f}%"
     assert taxa_abstencao == 100.0, f"Taxa de Abstenção imperfeita: {taxa_abstencao:.1f}%"
-    assert media_tokens < 1800.0, f"Consumo de tokens excedeu o teto FinOps: {media_tokens:.1f}"

@@ -5,11 +5,13 @@ import { buscarItemAtual } from '@/config/navegacao'
 type CabecalhoPaginaProps = {
   // Fica numa linha própria abaixo do título, ex.: a barra de filtros
   acoes?: ReactNode
+  // Fica entre o título e as ações, ex.: o insight da base inteira, que não depende dos filtros
+  destaque?: ReactNode
 }
 
 // Título e descrição vêm da lista de telas (src/config/navegacao.ts),
 // então o nome da tela é o mesmo no menu, na trilha e aqui
-function CabecalhoPagina({ acoes }: CabecalhoPaginaProps) {
+function CabecalhoPagina({ acoes, destaque }: CabecalhoPaginaProps) {
   const { pathname } = useLocation()
   const item = buscarItemAtual(pathname)
 
@@ -23,6 +25,7 @@ function CabecalhoPagina({ acoes }: CabecalhoPaginaProps) {
         <h1 className="text-2xl font-bold tracking-tight">{item.label}</h1>
         <p className="text-sm text-muted-foreground">{item.descricao}</p>
       </div>
+      {destaque}
       {acoes}
     </div>
   )

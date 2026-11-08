@@ -7,6 +7,13 @@ import { opcoesFiltrosExemplo } from '@/mocks/opcoes-filtros'
 import InspecoesPage from '@/pages/Inspecoes/InspecoesPage'
 import { renderizar } from '@/test/renderizar'
 
+// O insight tem os próprios testes; aqui só importa qual insight a tela pede
+vi.mock('@/components/InsightIa/InsightIa', () => ({
+  default: ({ tela, entidadeId }: { tela: string; entidadeId: string }) => (
+    <output data-testid="insight">{`${tela}/${entidadeId}`}</output>
+  ),
+}))
+
 // UCs inventadas (fora da faixa da base), na prioridade da Gold
 const fila: Omit<ItemFila, 'ordem_aberta'>[] = [
   {
@@ -373,4 +380,9 @@ test('ordem de antes da autoria aparece sem autor', async () => {
   fireEvent.click(await screen.findByRole('tab', { name: /Ordens de inspeção/ }))
   expect(await within(screen.getByRole('tabpanel')).findByText('Em campo')).toBeInTheDocument()
   expect(screen.queryByText(/^por /)).not.toBeInTheDocument()
+})
+
+test('o insight da IA fala da base inteira, mesmo com filtro escolhido', async () => {
+  abrir('/inspecoes?municipio=Recife')
+  expect(await screen.findByTestId('insight')).toHaveTextContent('fila_inspecao/global')
 })
