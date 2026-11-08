@@ -24,6 +24,13 @@ test('sem variação, não mostra seta', () => {
   expect(container.textContent).not.toMatch(/[▲▼▬]/)
 })
 
+test('com muitos valores (ex.: 90 dias), junta em 12 barrinhas para não espremer o texto', () => {
+  const noventaDias = Array.from({ length: 90 }, (_, dia) => dia)
+  const { container } = render(<CartaoKpi titulo="Perguntas" valor="162" detalhe="Média de 1,8 por dia" tendencia={noventaDias} />)
+  const tendencia = container.querySelector('[aria-hidden="true"].flex')
+  expect(tendencia?.children).toHaveLength(12)
+})
+
 test('com tendência, desenha uma barrinha por valor, escondida do leitor de tela', () => {
   const { container } = render(<CartaoKpi titulo="Receita" valor="R$ 1" tendencia={[1, 2, 3, 4]} />)
   const tendencia = container.querySelector('[aria-hidden="true"].flex')
