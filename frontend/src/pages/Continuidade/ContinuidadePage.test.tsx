@@ -8,6 +8,12 @@ import { renderizar } from '@/test/renderizar'
 
 // O gráfico precisa medir a tela, o que o jsdom não faz
 vi.mock('@/components/GraficosMensais/GraficosMensais', () => ({ default: () => null }))
+// O insight tem os próprios testes; aqui só importa qual insight a tela pede
+vi.mock('@/components/InsightIa/InsightIa', () => ({
+  default: ({ tela, entidadeId }: { tela: string; entidadeId: string }) => (
+    <output data-testid="insight">{`${tela}/${entidadeId}`}</output>
+  ),
+}))
 
 const alimentador = (
   codigo: string,
@@ -201,4 +207,9 @@ test('com um alimentador escolhido, o ranking oferece voltar a todos sem subir a
 
   await waitFor(() => expect(screen.getAllByRole('button', { name: /^ALM-/ })).toHaveLength(4))
   expect(screen.queryByRole('button', { name: 'Ver todos os alimentadores' })).not.toBeInTheDocument()
+})
+
+test('o insight da IA fala da base inteira, mesmo com filtro escolhido', async () => {
+  abrir('/continuidade?municipio=Recife')
+  expect(await screen.findByTestId('insight')).toHaveTextContent('continuidade/global')
 })

@@ -177,9 +177,11 @@ Legenda: `✓` permitido, `—` negado, `público` sem login. “Existente” si
 | `PATCH /api/inspections/{id}` | Existente | — | — | ✓ | — | ✓ |
 | `DELETE /api/inspections/{id}` | Existente | — | — | ✓ | — | ✓ |
 | `POST /api/ai/ask` | Existente | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `GET /api/ai/insights/{tela}/{entidade_id}` | Existente | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `GET /api/ai/insights/{tela}/{entidade_id}` | Existente | por tela | por tela | por tela | por tela | por tela |
 | `POST /api/ai/feedback` | Existente | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `GET /api/ai/audit/{audit_id}` | Existente | — | — | — | — | ✓ |
+
+O insight de cada tela segue os perfis da rota de dados da tela (`INSIGHT_PERMISSIONS` em `backend/app/security/permissions.py`): `visao_360_uc` como `GET /api/uc/{uc_id}/360`, `receita` e `indicadores` como as métricas, `continuidade` como `GET /api/network/continuity` e `fila_inspecao` como a Fila. Tela fora dessa lista recebe 403.
 
 Rotas futuras de importação/exportação da Fila permanecem previstas para `PERDAS` e `ADMIN_TI`, mas **sem método/path/contrato definidos** e sem linhas fictícias na matriz. `GET /api/health` e documentação não passam pela dependência RBAC. O acesso HTTP à auditoria detalhada da IA depende de aplicar a política inclusive ao roteador importado de `ai-agent/`; a autorização interna das tools permanece responsabilidade dessa equipe.
 

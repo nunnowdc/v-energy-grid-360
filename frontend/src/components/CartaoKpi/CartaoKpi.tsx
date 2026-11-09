@@ -45,7 +45,7 @@ function CartaoKpi({
           {valor}
         </span>
         <div className="flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             {variacao !== undefined && (
               <Variacao percentual={variacao} sentido={sentido} complemento={complementoVariacao} />
             )}

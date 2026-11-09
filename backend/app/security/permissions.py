@@ -17,6 +17,17 @@ PUBLIC_ROUTES = frozenset(
     }
 )
 
+INSIGHT_ROUTE = ("GET", "/api/ai/insights/{tela}/{entidade_id}")
+
+# Quem vê o insight de cada tela: os mesmos perfis da rota de dados da tela
+INSIGHT_PERMISSIONS: dict[str, frozenset[str]] = {
+    "visao_360_uc": CUSTOMER_SERVICE,
+    "receita": DIRECTORS,
+    "indicadores": DIRECTORS,
+    "continuidade": OPERATIONS,
+    "fila_inspecao": LOSSES,
+}
+
 ROUTE_PERMISSIONS: dict[tuple[str, str], frozenset[str]] = {
     ("GET", "/api/auth/me"): ALL_PROFILES,
     ("POST", "/api/auth/logout"): ALL_PROFILES,
@@ -34,7 +45,8 @@ ROUTE_PERMISSIONS: dict[tuple[str, str], frozenset[str]] = {
     ("PATCH", "/api/inspections/{id}"): LOSSES,
     ("DELETE", "/api/inspections/{id}"): LOSSES,
     ("POST", "/api/ai/ask"): ALL_PROFILES,
-    ("GET", "/api/ai/insights/{tela}/{entidade_id}"): CUSTOMER_SERVICE,
+    # Cada tela tem o próprio perfil, conferido em INSIGHT_PERMISSIONS
+    INSIGHT_ROUTE: ALL_PROFILES,
     ("POST", "/api/ai/feedback"): ALL_PROFILES,
     ("GET", "/api/ai/audit/{audit_id}"): ADMIN_ONLY,
     ("GET", "/api/ai/usage"): ADMIN_ONLY,

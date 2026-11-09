@@ -5,6 +5,7 @@ import CartaoKpi from '@/components/CartaoKpi/CartaoKpi'
 import CartaoKpiEsqueleto from '@/components/CartaoKpi/CartaoKpiEsqueleto'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
+import InsightIa from '@/components/InsightIa/InsightIa'
 import GraficosMensais from '@/components/GraficosMensais/GraficosMensais'
 import Nota from '@/components/Nota/Nota'
 import OcorrenciasPorCausa from '@/components/OcorrenciasPorCausa/OcorrenciasPorCausa'
@@ -12,6 +13,7 @@ import RankingAlimentadores from '@/components/RankingAlimentadores/RankingAlime
 import { rotuloCausa } from '@/config/causas'
 import { alimentadorEmDestaque, useContinuidade, type ContinuidadeRede } from '@/hooks/use-continuidade'
 import { useFiltros } from '@/hooks/use-filtros'
+import { ENTIDADE_GLOBAL } from '@/hooks/use-insight-ia'
 import { variacaoPercentual } from '@/lib/comparacao'
 import { formatarNumero, formatarPeriodo } from '@/lib/formatacao'
 
@@ -100,7 +102,10 @@ function ContinuidadePage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'alimentador', 'causa']} />} />
+      <CabecalhoPagina
+        destaque={<InsightIa tela="continuidade" entidadeId={ENTIDADE_GLOBAL} descricao="Base completa, não muda com os filtros" />}
+        acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'alimentador', 'causa']} />}
+      />
 
       <EstadoConsulta
         consulta={consulta}

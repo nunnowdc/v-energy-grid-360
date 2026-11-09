@@ -264,7 +264,17 @@ Não é uma tela: o botão **Agente de IA** do cabeçalho abre o agente numa col
 
 ### Insights da IA
 
-Caixa **Insight da IA** (`components/InsightIa`) com um texto curto que a IA escreve sobre os dados da tela. Fica só na **Visão 360**, logo abaixo do resumo da UC, sobre aquela unidade consumidora. A Receita não tem insight: o bloco de destaque "Com e sem geração própria" já explica a variação, calculado direto dos dados.
+Caixa **Insight da IA** (`components/InsightIa`) com um texto curto que a IA escreve sobre os dados da tela. Está nas 5 telas de negócio:
+
+| Tela | `tela` | Sobre o quê | Onde fica |
+|---|---|---|---|
+| Visão 360 | `visao_360_uc` | A UC aberta (`entidade_id` = ID da UC) | Abaixo do resumo da UC |
+| Receita | `receita` | A base inteira (`entidade_id` = `global`) | Entre o título e os filtros |
+| Indicadores | `indicadores` | A base inteira | Entre o título e os filtros |
+| Continuidade | `continuidade` | A base inteira | Entre o título e os filtros |
+| Fila de inspeção | `fila_inspecao` | A base inteira | Entre o título e os filtros |
+
+Nas telas com filtros, o insight fala da base completa e **não muda com os filtros**, por isso fica acima deles e diz isso no título da caixa. Assim ele é gerado uma vez e abre na hora, em vez de a IA escrever um texto novo a cada filtro. Os nomes das telas são os mesmos do backend (`INSIGHT_PERMISSIONS`) e do ai-agent; o plano completo está em [`docs/ai/insights-todas-as-telas.md`](../docs/ai/insights-todas-as-telas.md).
 
 O texto vem de `GET /api/ai/insights/{tela}/{id}`. Na primeira vez, a IA escreve o texto na hora (pode levar alguns segundos, e a caixa mostra "A IA está analisando os dados…"); depois ele vem guardado do banco.
 

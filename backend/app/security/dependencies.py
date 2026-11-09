@@ -10,7 +10,11 @@ from sqlalchemy.exc import InterfaceError, OperationalError, TimeoutError
 from app.core.config import ConfigurationUnavailableError
 from app.core.database import get_connection
 from app.repositories.users import UsersRepository
-from app.security.permissions import ROUTE_PERMISSIONS
+from app.security.permissions import (
+    INSIGHT_PERMISSIONS,
+    INSIGHT_ROUTE,
+    ROUTE_PERMISSIONS,
+)
 from app.security.tokens import COOKIE_NAME, InvalidSessionToken, read_subject
 
 ALLOWED_WRITE_ORIGINS = frozenset(
@@ -93,6 +97,11 @@ def authorize_business_route(
     profiles = ROUTE_PERMISSIONS.get((request.method, pattern))
     if profiles is None or user["perfil"] not in profiles:
         raise HTTPException(status_code=403, detail="Acesso não permitido")
+    if (request.method, pattern) == INSIGHT_ROUTE:
+        # Tela fora do mapa também é 403, para não revelar quais telas existem
+        allowed = INSIGHT_PERMISSIONS.get(request.path_params.get("tela"))
+        if allowed is None or user["perfil"] not in allowed:
+            raise HTTPException(status_code=403, detail="Acesso não permitido")
     # As rotas do ai-agent não importam o backend: leem a conta autorizada daqui,
     # nunca de um id enviado pelo cliente
     request.state.usuario = user

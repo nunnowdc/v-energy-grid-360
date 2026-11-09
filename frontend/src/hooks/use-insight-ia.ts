@@ -3,9 +3,12 @@ import { apiFetch } from '@/lib/api/api-fetch'
 
 // Rota dos insights (ai-agent/src/insights/, montada no backend em /api/ai):
 //   GET /api/ai/insights/{tela}/{entidade_id} → InsightIa
-// visao_360_uc: um insight por UC (entidade = ID da UC). É a única tela com insight
-// (decisão do time, veja "Suposições e decisões do time" no README da raiz)
-export type TelaInsight = 'visao_360_uc'
+// visao_360_uc: um insight por UC (entidade = ID da UC). As outras telas têm um insight
+// da base inteira (entidade = ENTIDADE_GLOBAL), que não muda com os filtros.
+// Os nomes são os mesmos do backend (INSIGHT_PERMISSIONS) e do ai-agent (QUERIES)
+export type TelaInsight = 'visao_360_uc' | 'receita' | 'indicadores' | 'continuidade' | 'fila_inspecao'
+
+export const ENTIDADE_GLOBAL = 'global'
 
 // auditado_llm: cada número do texto foi conferido com os dados consultados.
 // template_fallback: a conferência falhou e o texto é um aviso padrão

@@ -8,6 +8,12 @@ import { renderizar } from '@/test/renderizar'
 
 // O gráfico precisa medir a tela, o que o jsdom não faz
 vi.mock('@/components/PonteReceita/PonteReceita', () => ({ default: () => null }))
+// O insight tem os próprios testes; aqui só importa qual insight a tela pede
+vi.mock('@/components/InsightIa/InsightIa', () => ({
+  default: ({ tela, entidadeId }: { tela: string; entidadeId: string }) => (
+    <output data-testid="insight">{`${tela}/${entidadeId}`}</output>
+  ),
+}))
 
 // Recorte sem nenhuma linha na Gold: a API manda tudo nulo
 const vazio: DecomposicaoReceita = {
@@ -218,4 +224,10 @@ test('recorte sem dados na base avisa em vez de mostrar zeros', async () => {
 
   expect(await screen.findAllByText('Nenhuma receita para esses filtros.')).toHaveLength(4)
   expect(screen.queryByText(/R\$/)).not.toBeInTheDocument()
+})
+
+test('o insight da IA fala da base inteira, mesmo com filtro escolhido', async () => {
+  responderCom(receita)
+  abrir('/receita?municipio=Recife')
+  expect(await screen.findByTestId('insight')).toHaveTextContent('receita/global')
 })

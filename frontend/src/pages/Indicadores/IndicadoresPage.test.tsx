@@ -8,6 +8,12 @@ import { renderizar } from '@/test/renderizar'
 
 // O gráfico precisa medir a tela, o que o jsdom não faz
 vi.mock('@/components/GraficosMensais/GraficosMensais', () => ({ default: () => null }))
+// O insight tem os próprios testes; aqui só importa qual insight a tela pede
+vi.mock('@/components/InsightIa/InsightIa', () => ({
+  default: ({ tela, entidadeId }: { tela: string; entidadeId: string }) => (
+    <output data-testid="insight">{`${tela}/${entidadeId}`}</output>
+  ),
+}))
 
 const resumo = (periodo: Partial<ResumoIndicadores>): ResumoIndicadores => ({
   inicio: '2026-04',
@@ -120,4 +126,10 @@ test('sem faturas no recorte, avisa em vez de mostrar zeros', async () => {
   abrir('/?classe=RURAL')
 
   expect(await screen.findAllByText('Nenhuma fatura para esses filtros.')).toHaveLength(3)
+})
+
+test('o insight da IA fala da base inteira, mesmo com filtro escolhido', async () => {
+  responderCom(indicadores)
+  abrir('/?municipio=Recife')
+  expect(await screen.findByTestId('insight')).toHaveTextContent('indicadores/global')
 })

@@ -24,7 +24,7 @@ function Dica({ ponto, meta }: { ponto: Ponto; meta: MetaAvaliacao }) {
       <span className="tabular-nums text-foreground">
         {ponto.valor === null ? meta.semValor : formatarValor(meta, ponto.valor)}
       </span>
-      <span className="text-muted-foreground">Meta: {meta.textoMeta}</span>
+      {meta.meta !== null && <span className="text-muted-foreground">Meta: {meta.textoMeta}</span>}
       {ponto.modelo && <span className="text-muted-foreground">{ponto.modelo}</span>}
     </div>
   )
@@ -62,8 +62,10 @@ function Grafico({ meta, execucoes }: { meta: MetaAvaliacao; execucoes: Execucao
             axisLine={false}
             tickFormatter={(valor: number) => (percentual ? `${valor}%` : formatarNumero(valor))}
           />
-          {/* A meta tracejada; com tokens acima dela, o eixo cresce para mostrar as duas */}
-          <ReferenceLine y={meta.meta} stroke="var(--muted-foreground)" strokeDasharray="4 4" ifOverflow="extendDomain" />
+          {/* A meta tracejada; com o valor acima dela, o eixo cresce para mostrar os dois */}
+          {meta.meta !== null && (
+            <ReferenceLine y={meta.meta} stroke="var(--muted-foreground)" strokeDasharray="4 4" ifOverflow="extendDomain" />
+          )}
           <ChartTooltip
             cursor={{ stroke: 'var(--border)' }}
             content={({ active, payload }) =>
@@ -94,7 +96,7 @@ function Grafico({ meta, execucoes }: { meta: MetaAvaliacao; execucoes: Execucao
   )
 }
 
-// Uma métrica por gráfico, cada um com a sua meta tracejada (nunca dois eixos Y)
+// Uma métrica por gráfico, cada um com a sua meta tracejada, se tiver (nunca dois eixos Y)
 function EvolucaoAvaliacoes({ execucoes }: { execucoes: ExecucaoAvaliacao[] }) {
   return (
     <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-3">

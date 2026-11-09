@@ -6,6 +6,7 @@ import CartaoKpiEsqueleto from '@/components/CartaoKpi/CartaoKpiEsqueleto'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FilaSuspeitas from '@/components/FilaSuspeitas/FilaSuspeitas'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
+import InsightIa from '@/components/InsightIa/InsightIa'
 import OrdensInspecao from '@/components/OrdensInspecao/OrdensInspecao'
 import Paginacao from '@/components/Paginacao/Paginacao'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useExportarFila, useFilaInspecao, type FilaInspecao } from '@/hooks/use-fila-inspecao'
 import { useFiltros } from '@/hooks/use-filtros'
+import { ENTIDADE_GLOBAL } from '@/hooks/use-insight-ia'
 import { useGerarOrdens, useOrdensInspecao, type OrdemInspecao } from '@/hooks/use-ordens-inspecao'
 import { ErroApi } from '@/lib/api/erro-api'
 import type { Filtros } from '@/lib/filtros-url'
@@ -222,7 +224,10 @@ function InspecoesPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['municipio', 'bairro', 'classe']} />} />
+      <CabecalhoPagina
+        destaque={<InsightIa tela="fila_inspecao" entidadeId={ENTIDADE_GLOBAL} descricao="Base completa, não muda com os filtros" />}
+        acoes={<FiltrosGlobais campos={['municipio', 'bairro', 'classe']} />}
+      />
       <ConteudoInspecoes key={chaveFiltros} filtros={filtros} />
     </section>
   )

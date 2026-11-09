@@ -1,6 +1,6 @@
 import type { ExecucaoAvaliacao } from '@/hooks/use-avaliacoes-agente'
 
-// Metas do REQ-AI-08, as mesmas de ai-agent/src/avaliacao/golden_set.py
+// Métricas do REQ-AI-08 e as metas delas, as mesmas de ai-agent/src/avaliacao/golden_set.py
 export type MetaAvaliacao = {
   chave: 'taxa_resultado_certo' | 'taxa_execucao' | 'taxa_component_match' | 'taxa_abstencao' | 'tokens_medio'
   titulo: string
@@ -8,10 +8,12 @@ export type MetaAvaliacao = {
   explicacao: string
   // No lugar do valor, quando a execução não tem o que medir
   semValor: string
-  meta: number
-  // "minimo": atinge com o valor igual ou acima da meta; "maximo": abaixo da meta
+  // Nulo: a métrica é só acompanhada, sem meta (ex.: tokens)
+  meta: number | null
+  // "minimo": atinge com o valor igual ou acima da meta; "maximo": abaixo da meta.
+  // Também diz o formato: "minimo" é percentual, "maximo" é contagem
   sentido: 'minimo' | 'maximo'
-  // Texto da meta, ex.: "90% ou mais"
+  // Texto da meta, ex.: "90% ou mais"; sem meta, o que o cartão diz no lugar
   textoMeta: string
 }
 
@@ -61,16 +63,17 @@ export const metasAvaliacao: MetaAvaliacao[] = [
     titulo: 'Tokens por pergunta',
     explicacao: 'Média de tokens gastos em cada pergunta do golden set',
     semValor: SEM_CASOS,
-    meta: 1800,
+    // Custo para acompanhar entre execuções, não um critério de qualidade
+    meta: null,
     sentido: 'maximo',
-    textoMeta: 'menos de 1.800',
+    textoMeta: 'Média por pergunta, acompanhada sem meta',
   },
 ]
 
-// Nulo quando a execução não tem caso daquele tipo
+// Nulo quando a execução não tem caso daquele tipo ou a métrica não tem meta
 export function atingiuMeta(meta: MetaAvaliacao, execucao: ExecucaoAvaliacao): boolean | null {
   const valor = execucao[meta.chave]
-  if (valor === null) {
+  if (valor === null || meta.meta === null) {
     return null
   }
   return meta.sentido === 'minimo' ? valor >= meta.meta : valor < meta.meta

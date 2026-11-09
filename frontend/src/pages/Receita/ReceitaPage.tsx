@@ -7,10 +7,12 @@ import CartaoKpiEsqueleto from '@/components/CartaoKpi/CartaoKpiEsqueleto'
 import DetalheReceita, { type PassoTrilha } from '@/components/DetalheReceita/DetalheReceita'
 import EstadoConsulta from '@/components/EstadoConsulta/EstadoConsulta'
 import FiltrosGlobais from '@/components/FiltrosGlobais/FiltrosGlobais'
+import InsightIa from '@/components/InsightIa/InsightIa'
 import PonteReceita from '@/components/PonteReceita/PonteReceita'
 import ValorEfeito from '@/components/ValorEfeito/ValorEfeito'
 import Variacao from '@/components/Variacao/Variacao'
 import { useFiltros } from '@/hooks/use-filtros'
+import { ENTIDADE_GLOBAL } from '@/hooks/use-insight-ia'
 import { temDados, useReceita, type DecomposicaoCompleta, type VariacaoReceita } from '@/hooks/use-receita'
 import { tomDaVariacao, variacaoPercentual } from '@/lib/comparacao'
 import {
@@ -183,7 +185,10 @@ function ReceitaPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <CabecalhoPagina acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'bairro', 'classe']} padraoComparacao="inicio-da-base" />} />
+      <CabecalhoPagina
+        destaque={<InsightIa tela="receita" entidadeId={ENTIDADE_GLOBAL} descricao="Base completa, não muda com os filtros" />}
+        acoes={<FiltrosGlobais campos={['comparacao', 'municipio', 'bairro', 'classe']} padraoComparacao="inicio-da-base" />}
+      />
 
       <EstadoConsulta
         consulta={consulta}

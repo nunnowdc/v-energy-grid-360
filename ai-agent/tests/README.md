@@ -322,7 +322,7 @@ O runner avalia as perguntas canônicas em
 | Execution Rate | Casos SQL executados com dados e selo `gerada_confiavel` | `>= 90%` |
 | Component Match | Casos SQL cujo AST contém todas as tabelas obrigatórias | `>= 85%` |
 | Honesty Accuracy | Recusas esperadas que terminam com selo de recusa/bloqueio | `100%` |
-| FinOps | Média de tokens por pergunta | `< 1.800` |
+| FinOps | Média de tokens por pergunta | Acompanhada, sem meta |
 
 O parsing de tabelas do Golden Dataset usa SQLGlot no dialeto PostgreSQL,
 independentemente de o executor da rodada estar em SQLite fallback.

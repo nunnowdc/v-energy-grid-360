@@ -40,6 +40,17 @@ describe('insight da IA', () => {
     expect(screen.queryByText(/^Fonte:/)).not.toBeInTheDocument()
   })
 
+  test('nas telas sem UC, busca o insight da base inteira', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      json(insight({ tela: 'receita', entidade_id: 'global', insight_texto: 'A receita subiu 8,0%.' })),
+    )
+    renderizar(<InsightIa tela="receita" entidadeId="global" descricao="Base completa, não muda com os filtros" />)
+
+    expect(await screen.findByText('A receita subiu 8,0%.')).toBeInTheDocument()
+    expect(fetch.mock.calls[0][0]).toBe('/api/ai/insights/receita/global')
+    expect(screen.getByText('· Base completa, não muda com os filtros')).toBeInTheDocument()
+  })
+
   test('mostra as tabelas de origem quando a resposta traz', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(insight({ fontes: ['fact_faturamento'] })))
     abrir()

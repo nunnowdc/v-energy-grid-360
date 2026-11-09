@@ -25,8 +25,8 @@ function CartaoMeta({ meta, execucao }: { meta: MetaAvaliacao; execucao: Execuca
     <CartaoKpi
       titulo={meta.titulo}
       valor={meta.sentido === 'maximo' ? formatarNumero(Math.round(valor)) : `${formatarNumero(valor)}%`}
-      tomValor={atingiu ? 'positivo' : 'negativo'}
-      detalhe={`Meta: ${meta.textoMeta} · ${atingiu ? 'atingida' : 'não atingida'}`}
+      tomValor={atingiu === null ? undefined : atingiu ? 'positivo' : 'negativo'}
+      detalhe={meta.meta === null ? meta.textoMeta : `Meta: ${meta.textoMeta} · ${atingiu ? 'atingida' : 'não atingida'}`}
     />
   )
 }
@@ -103,7 +103,7 @@ function AvaliacaoAgentePage() {
 
       <BlocoDados
         titulo="Evolução por execução"
-        descricao="As 30 execuções mais recentes; a linha tracejada é a meta"
+        descricao="As 30 execuções mais recentes; a linha tracejada é a meta, nas métricas que têm uma"
         consulta={consulta}
         estaVazio={semExecucoes}
         mensagemVazio={mensagemVazio}

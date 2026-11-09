@@ -38,7 +38,11 @@ class InsightsService:
             return {
                 "tela": tela,
                 "entidade_id": entidade_id,
-                "insight_texto": "Não há dados disponíveis para esta unidade consumidora.",
+                "insight_texto": (
+                    "Não há dados disponíveis para esta unidade consumidora."
+                    if tela == "visao_360_uc"
+                    else "Não há dados disponíveis para este insight no momento."
+                ),
                 "metricas_destaque": {},
                 "selo": "template_fallback",
                 "tempo_ms": 0.0,

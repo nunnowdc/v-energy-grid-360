@@ -26,7 +26,7 @@ def test_fontes_por_tela():
 
     # Testa fontes_da_tela
     assert fontes_da_tela("visao_360_uc") == ["fact_faturamento"]
-    assert fontes_da_tela("diagnostico_receita") == ["agg_receita_mensal"]
+    assert fontes_da_tela("receita") == ["agg_receita_preco_volume"]
 
     # Tela desconhecida deve levantar ValueError
     with pytest.raises(ValueError):
